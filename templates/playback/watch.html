@@ -62,14 +62,14 @@
     </div>
 
     <!-- Video.js Player -->
-    <div class="relative w-full h-full flex-grow">
+    <div class="absolute inset-0 w-full h-full bg-black">
         <video-js
             id="filvora-player"
             class="video-js vjs-fill vjs-default-skin"
             controls
             preload="auto"
             autoplay
-            data-setup='{"fluid": true, "fill": true}'
+            data-setup='{"fill": true}'
         >
             <source src="{{ video_url }}" type="application/x-mpegURL">
             <p class="vjs-no-js">
