@@ -1710,7 +1710,7 @@ That gives Filvora a clean architecture, keeps the application lightweight, and 
 - `apps.tmdb`: `TMDBClient` with methods `get_trending_movies`, `get_popular_movies`, `get_popular_series`, `get_movie_details`, `get_tv_details`, `get_tv_season`, `search_multi`. All methods return dictionary structures with normalized `display_title`, `release_year`, and fallback data.
 - `apps.catalog`: Detail views, browse views, and search views (`/movies/`, `/movies/<id>/`, `/series/`, `/series/<id>/`, `/series/<id>/season/<num>/`, `/search/`, `/search/suggest/`).
 - `apps.library`: `LibraryItem` model storing user's saved list, URLs at `/library/`.
-- `apps.playback`: View `watch` rendering `templates/playback/watch.html`, URLs at `/watch/<media_type>/<tmdb_id>/` and `/watch/tv/<tmdb_id>/<season>/<episode>/`.
+- `apps.playback`: Multi-server provider engine (`providers.py` with VidLink, AutoEmbed, VidSrc, MultiEmbed, SmashyStream), view `watch` rendering `templates/playback/watch.html` with server switching, next episode navigation, and watch progress tracking.
 - `apps.watch`: `WatchProgress` model, `/progress/save/` endpoint, resume position injection, continue watching queries.
 
 ### 3. Static Assets & Dependencies

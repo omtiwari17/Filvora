@@ -4,22 +4,33 @@ from apps.tmdb.client import TMDBClient
 
 from apps.watch.models import WatchProgress
 
+from apps.playback.providers import PROVIDERS, get_provider
+
 @login_required
 def watch(request, media_type, tmdb_id, season=None, episode=None):
     client = TMDBClient()
+    server_id = request.GET.get('server')
+    provider = get_provider(server_id)
+
     if media_type == 'movie':
         media = client.get_movie(tmdb_id)
         title = media.get('title', 'Unknown Movie')
+        video_url = provider.get_movie_url(tmdb_id)
+        next_episode = None
     else:
         media = client.get_tv(tmdb_id)
         series_name = media.get('name', 'Unknown Series')
-        if season and episode:
-            title = f"{series_name} — S{season}:E{episode}"
-        else:
-            title = series_name
+        s_num = season or 1
+        ep_num = episode or 1
+        title = f"{series_name} — S{s_num}:E{ep_num}"
+        video_url = provider.get_tv_url(tmdb_id, s_num, ep_num)
         
-    # Standard open-source Big Buck Bunny HLS stream for testing
-    video_url = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        # Calculate next episode
+        next_episode = {
+            'season': s_num,
+            'episode': ep_num + 1,
+            'url': f"/watch/tv/{tmdb_id}/{s_num}/{ep_num + 1}/"
+        }
     
     # Check if user has saved watch progress to resume
     resume_position = 0
@@ -40,7 +51,10 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
         'video_url': video_url,
         'media_type': media_type,
         'tmdb_id': tmdb_id,
-        'season': season or '',
-        'episode': episode or '',
+        'season': season or (1 if media_type == 'tv' else ''),
+        'episode': episode or (1 if media_type == 'tv' else ''),
         'resume_position': resume_position,
+        'providers': PROVIDERS,
+        'current_server': provider.id,
+        'next_episode': next_episode,
     })
