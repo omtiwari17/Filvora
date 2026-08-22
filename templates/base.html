@@ -1,4 +1,5 @@
 {% load static %}
+{% load django_browser_reload %}
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -50,6 +51,7 @@
 
     <!-- Custom JS -->
     <script src="{% static 'js/main.js' %}"></script>
+    {% django_browser_reload %}
     {% block extra_js %}{% endblock %}
 </body>
 </html>
