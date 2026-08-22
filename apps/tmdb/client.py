@@ -161,6 +161,7 @@ class TMDBClient:
         for r in results:
             if r.get('media_type') in ['movie', 'tv']:
                 r['display_title'] = r.get('title') or r.get('name')
+                r['release_year'] = (r.get('release_date') or r.get('first_air_date') or '')[:4]
                 filtered.append(r)
         return filtered
 

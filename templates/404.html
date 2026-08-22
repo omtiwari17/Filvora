@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}404 - Page Not Found | Filvora{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex flex-col items-center justify-center px-4 text-center">
+    <div class="space-y-6 max-w-lg">
+        <div class="relative inline-block">
+            <h1 class="text-8xl md:text-9xl font-black text-gray-800 tracking-widest select-none">404</h1>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-2xl md:text-3xl font-extrabold text-white tracking-wide drop-shadow">Lost in Space?</span>
+            </div>
+        </div>
+        
+        <p class="text-gray-400 text-base md:text-lg leading-relaxed">
+            The page or movie you're looking for doesn't exist, has been moved, or is temporarily unavailable.
+        </p>
+
+        <div class="pt-4 flex flex-wrap items-center justify-center gap-4">
+            <a href="/" class="bg-brand-500 hover:bg-red-600 text-white px-8 py-3.5 rounded-lg font-bold transition shadow-lg shadow-brand-500/25 inline-flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                </svg>
+                Return to Home
+            </a>
+            <a href="/movies/" class="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 px-6 py-3.5 rounded-lg font-semibold transition">
+                Browse Movies
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

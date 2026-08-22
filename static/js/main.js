@@ -12,4 +12,13 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+
+    // Dismiss search dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const searchContainer = document.getElementById('navbar-search-container');
+        const dropdown = document.getElementById('search-results-dropdown');
+        if (searchContainer && dropdown && !searchContainer.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
 });

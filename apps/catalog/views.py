@@ -83,3 +83,24 @@ def season_episodes(request, tmdb_id, season_number):
         'season_number': season_number,
         'episodes': episodes,
     })
+
+def search_suggest(request):
+    q = request.GET.get('q', '').strip()
+    if len(q) < 2:
+        return HttpResponse('')
+    
+    client = TMDBClient()
+    results = client.search_multi(q)[:6]
+    return render(request, 'catalog/partials/search_suggestions.html', {
+        'results': results,
+        'query': q,
+    })
+
+def search_results(request):
+    q = request.GET.get('q', '').strip()
+    client = TMDBClient()
+    results = client.search_multi(q) if q else []
+    return render(request, 'catalog/search_results.html', {
+        'results': results,
+        'query': q,
+    })
