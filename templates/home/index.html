@@ -43,7 +43,7 @@
             </button>
             <button hx-post="/library/toggle/" 
                     hx-vals='{"tmdb_id": "{{ hero_movie.id }}", "media_type": "movie"}' 
-                    hx-swap="none"
+                    hx-swap="outerHTML"
                     class="bg-gray-500/50 text-white px-8 py-3 rounded font-bold text-lg flex items-center gap-2 hover:bg-gray-500/70 transition backdrop-blur-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
