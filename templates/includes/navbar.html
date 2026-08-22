@@ -34,7 +34,10 @@
                         <p class="text-sm text-white font-medium truncate">{{ user.username }}</p>
                     </div>
                     <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 transition-colors">Account Settings</a>
-                    <a href="/accounts/logout/" class="block px-4 py-2 text-sm text-red-500 hover:text-red-400 hover:bg-gray-800 transition-colors">Sign Out</a>
+                    <form method="post" action="/accounts/logout/">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full text-left block px-4 py-2 text-sm text-red-500 hover:text-red-400 hover:bg-gray-800 transition-colors">Sign Out</button>
+                    </form>
                 </div>
             </div>
         </div>
