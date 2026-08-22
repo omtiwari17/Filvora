@@ -128,7 +128,45 @@
             
             // Auto play
             player.play();
-        });
+
+            // Global Keyboard Shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName.toLowerCase() === 'input') return;
+                
+                switch(e.key.toLowerCase()) {
+                    case ' ':
+                    case 'k':
+                        e.preventDefault();
+                        player.paused() ? player.play() : player.pause();
+                        break;
+                    case 'f':
+                        e.preventDefault();
+                        player.isFullscreen() ? player.exitFullscreen() : player.requestFullscreen();
+                        break;
+                    case 'm':
+                        e.preventDefault();
+                        player.muted(!player.muted());
+                        break;
+                    case 'arrowright':
+                    case 'l':
+                        e.preventDefault();
+                        player.currentTime(player.currentTime() + 10);
+                        break;
+                    case 'arrowleft':
+                    case 'j':
+                        e.preventDefault();
+                        player.currentTime(player.currentTime() - 10);
+                        break;
+                    case 'arrowup':
+                        e.preventDefault();
+                        player.volume(Math.min(1, player.volume() + 0.1));
+                        break;
+                    case 'arrowdown':
+                        e.preventDefault();
+                        player.volume(Math.max(0, player.volume() - 0.1));
+                        break;
+                }
+            });
     </script>
 </body>
 </html>
