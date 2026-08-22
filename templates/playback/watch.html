@@ -145,10 +145,11 @@
                 });
             }
 
-            // Watch Progress Tracking
             const csrfToken = '{{ csrf_token }}';
             const tmdbId = {{ tmdb_id }};
             const mediaType = '{{ media_type }}';
+            const seasonNum = {% if season %}{{ season }}{% else %}null{% endif %};
+            const episodeNum = {% if episode %}{{ episode }}{% else %}null{% endif %};
 
             const sendProgress = (isBeacon = false) => {
                 if (!player) return;
@@ -160,7 +161,9 @@
                     tmdb_id: tmdbId,
                     media_type: mediaType,
                     position: position,
-                    duration: isNaN(duration) ? 0 : duration
+                    duration: isNaN(duration) ? 0 : duration,
+                    season: seasonNum,
+                    episode: episodeNum
                 });
 
                 if (isBeacon && navigator.sendBeacon) {

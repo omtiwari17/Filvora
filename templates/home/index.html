@@ -35,12 +35,12 @@
                 </svg>
                 Play
             </a>
-            <button class="bg-gray-500/50 text-white px-8 py-3 rounded font-bold text-lg flex items-center gap-2 hover:bg-gray-500/70 transition backdrop-blur-sm">
+            <a href="/movies/{{ hero_movie.id }}/" class="bg-gray-500/50 text-white px-8 py-3 rounded font-bold text-lg flex items-center gap-2 hover:bg-gray-500/70 transition backdrop-blur-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 More Info
-            </button>
+            </a>
             <button hx-post="/library/toggle/" 
                     hx-vals='{"tmdb_id": "{{ hero_movie.id }}", "media_type": "movie"}' 
                     hx-swap="outerHTML"
@@ -110,7 +110,7 @@
         <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
             {% for movie in trending_movies %}
             <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
-                <div class="aspect-[2/3] rounded overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+                <a href="/movies/{{ movie.id }}/" class="aspect-[2/3] block rounded overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
                     {% if movie.poster_path %}
                     <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
                     {% else %}
@@ -126,7 +126,7 @@
                         </div>
                         <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ movie.title }}</p>
                     </div>
-                </div>
+                </a>
             </div>
             {% endfor %}
         </div>
@@ -138,7 +138,7 @@
         <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
             {% for series in popular_series %}
             <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
-                <div class="aspect-[2/3] rounded overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+                <a href="/series/{{ series.id }}/" class="aspect-[2/3] block rounded overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
                     {% if series.poster_path %}
                     <img src="https://image.tmdb.org/t/p/w500{{ series.poster_path }}" alt="{{ series.name }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
                     {% else %}
@@ -154,7 +154,7 @@
                         </div>
                         <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ series.name }}</p>
                     </div>
-                </div>
+                </a>
             </div>
             {% endfor %}
         </div>

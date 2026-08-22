@@ -1,0 +1,51 @@
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {% for ep in episodes %}
+    <div class="flex gap-4 p-4 rounded-xl bg-gray-900/60 border border-gray-800/80 hover:border-gray-700 transition group relative overflow-hidden">
+        <!-- Episode Thumbnail -->
+        <a href="/watch/tv/{{ tmdb_id }}/{{ season_number }}/{{ ep.episode_number }}/" class="flex-none w-36 sm:w-44 aspect-video rounded-lg overflow-hidden bg-gray-800 relative block ring-1 ring-gray-700/50 group-hover:ring-brand-500 transition">
+            {% if ep.still_path %}
+            <img src="https://image.tmdb.org/t/p/w300{{ ep.still_path }}" alt="{{ ep.name }}" class="w-full h-full object-cover group-hover:scale-105 transition">
+            {% else %}
+            <div class="w-full h-full flex items-center justify-center text-gray-500 text-xs font-bold">EP {{ ep.episode_number }}</div>
+            {% endif %}
+            
+            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                <div class="p-2 bg-brand-500 rounded-full text-white shadow">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </div>
+            
+            <span class="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-[10px] text-gray-300 font-mono">
+                {% if ep.runtime %}{{ ep.runtime }}m{% else %}45m{% endif %}
+            </span>
+        </a>
+
+        <!-- Episode Info -->
+        <div class="flex-grow flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between gap-2">
+                    <h3 class="text-sm sm:text-base font-bold text-white group-hover:text-brand-500 transition">
+                        {{ ep.episode_number }}. {{ ep.name }}
+                    </h3>
+                </div>
+                <p class="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed">
+                    {{ ep.overview|default:"No description available for this episode." }}
+                </p>
+            </div>
+
+            <div class="flex items-center justify-between mt-3 text-[11px] text-gray-500">
+                <span>{{ ep.air_date|default:"" }}</span>
+                <a href="/watch/tv/{{ tmdb_id }}/{{ season_number }}/{{ ep.episode_number }}/" class="text-brand-500 hover:underline font-semibold flex items-center gap-1">
+                    Play
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-2 text-center py-12 text-gray-500">
+        <p>No episodes found for Season {{ season_number }}.</p>
+    </div>
+    {% endfor %}
+</div>

@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ movie.display_title }} - Filvora{% endblock %}
+
+{% block content %}
+<div class="relative min-h-screen pb-20">
+    <!-- Cinematic Backdrop Banner -->
+    <div class="relative w-full h-[70vh] md:h-[80vh] overflow-hidden">
+        {% if movie.backdrop_path %}
+        <img src="https://image.tmdb.org/t/p/original{{ movie.backdrop_path }}" alt="{{ movie.display_title }}" class="w-full h-full object-cover">
+        {% else %}
+        <div class="w-full h-full bg-gray-900"></div>
+        {% endif %}
+        <!-- Gradient overlays -->
+        <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-950/40 to-transparent"></div>
+    </div>
+
+    <!-- Main Content Container (Overlapping Backdrop) -->
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-64 md:-mt-80">
+        <div class="flex flex-col md:flex-row gap-8 lg:gap-12">
+            <!-- Left: Poster -->
+            <div class="flex-none w-48 sm:w-60 md:w-72 mx-auto md:mx-0 shadow-2xl rounded-xl overflow-hidden ring-1 ring-gray-800 bg-gray-900 aspect-[2/3]">
+                {% if movie.poster_path %}
+                <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.display_title }}" class="w-full h-full object-cover">
+                {% else %}
+                <div class="w-full h-full flex items-center justify-center p-4 text-center text-gray-500 font-medium">{{ movie.display_title }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Right: Details -->
+            <div class="flex-grow space-y-6 pt-4 text-center md:text-left">
+                <div>
+                    <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-white drop-shadow-lg tracking-tight">{{ movie.display_title }}</h1>
+                    {% if movie.tagline %}
+                    <p class="text-base sm:text-lg text-gray-400 italic mt-1 drop-shadow">{{ movie.tagline }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Badges & Metadata -->
+                <div class="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-gray-300">
+                    {% if movie.release_date %}
+                    <span class="font-medium">{{ movie.release_date|slice:":4" }}</span>
+                    <span>•</span>
+                    {% endif %}
+                    {% if movie.runtime %}
+                    <span>{{ movie.runtime }} min</span>
+                    <span>•</span>
+                    {% endif %}
+                    {% if movie.vote_average %}
+                    <span class="flex items-center gap-1 text-yellow-400 font-bold">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        {{ movie.vote_average|floatformat:1 }}
+                    </span>
+                    <span>•</span>
+                    {% endif %}
+                    <span class="border border-gray-600 px-1.5 py-0.5 rounded text-xs font-semibold">HD</span>
+                </div>
+
+                <!-- Genre Tags -->
+                {% if movie.genres %}
+                <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                    {% for g in movie.genres %}
+                    <span class="bg-gray-800/80 border border-gray-700 text-gray-300 text-xs px-3 py-1 rounded-full">{{ g.name }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Call to Action Buttons -->
+                <div class="flex items-center justify-center md:justify-start gap-4 pt-2">
+                    <a href="/watch/movie/{{ movie.id }}/" class="bg-brand-500 hover:bg-red-600 text-white px-8 py-3.5 rounded-lg font-bold text-lg flex items-center gap-2 shadow-lg shadow-brand-500/25 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                        </svg>
+                        Watch Movie
+                    </a>
+                    
+                    <button hx-post="/library/toggle/" 
+                            hx-vals='{"tmdb_id": "{{ movie.id }}", "media_type": "movie"}' 
+                            hx-swap="outerHTML"
+                            class="{% if in_library %}bg-brand-500 text-white hover:bg-red-600{% else %}bg-gray-800 hover:bg-gray-700 text-white border border-gray-700{% endif %} px-6 py-3.5 rounded-lg font-semibold text-base flex items-center gap-2 transition shadow-md">
+                        {% if in_library %}
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Saved
+                        {% else %}
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        My List
+                        {% endif %}
+                    </button>
+                </div>
+
+                <!-- Overview -->
+                <div class="pt-4 max-w-3xl">
+                    <h2 class="text-xl font-bold text-white mb-2">Overview</h2>
+                    <p class="text-gray-300 leading-relaxed text-base sm:text-lg">{{ movie.overview }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Cast Rail -->
+        {% if cast %}
+        <div class="mt-16 border-t border-gray-800/80 pt-12">
+            <h2 class="text-2xl font-bold text-white mb-6">Top Cast</h2>
+            <div class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                {% for actor in cast %}
+                <div class="flex-none w-28 text-center space-y-2">
+                    <div class="w-24 h-24 mx-auto rounded-full overflow-hidden bg-gray-800 ring-2 ring-gray-700">
+                        {% if actor.profile_path %}
+                        <img src="https://image.tmdb.org/t/p/w185{{ actor.profile_path }}" alt="{{ actor.name }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center font-bold text-gray-500 text-lg">{{ actor.name|slice:":1" }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-white truncate">{{ actor.name }}</p>
+                        <p class="text-[11px] text-gray-400 truncate">{{ actor.character }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recommendations Rail -->
+        {% if recommendations %}
+        <div class="mt-12 border-t border-gray-800/80 pt-12">
+            <h2 class="text-2xl font-bold text-white mb-6">More Like This</h2>
+            <div class="flex gap-4 overflow-x-auto pb-6 scrollbar-hide">
+                {% for rec in recommendations %}
+                <div class="flex-none w-36 sm:w-44 transform transition duration-300 hover:scale-105 group">
+                    <a href="/movies/{{ rec.id }}/" class="block">
+                        <div class="aspect-[2/3] rounded-lg overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+                            {% if rec.poster_path %}
+                            <img src="https://image.tmdb.org/t/p/w500{{ rec.poster_path }}" alt="{{ rec.title }}" class="w-full h-full object-cover group-hover:scale-105 transition">
+                            {% else %}
+                            <div class="w-full h-full flex items-center justify-center p-2 text-center text-gray-500 text-xs">{{ rec.title }}</div>
+                            {% endif %}
+                        </div>
+                        <p class="mt-2 text-xs sm:text-sm font-semibold text-white truncate">{{ rec.title }}</p>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

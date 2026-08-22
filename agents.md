@@ -1691,6 +1691,7 @@ That gives Filvora a clean architecture, keeps the application lightweight, and 
 | **Phase 4** | Library (My List) | **Completed** | `LibraryItem` model (`apps/library/models.py`) with unique constraint, `my_list` and `toggle_item` views, HTMX dynamic save/remove with visual state feedback (`Saved` button), dedicated `/library/` grid view with empty states. |
 | **Phase 5** | Playback & Video Player | **Completed** | Localized `video.js 8.10.0`, `hls.js`, and `theme-fantasy.css` in `static/` (zero external CDN dependency for playback). Fullscreen player (`templates/playback/watch.html`) at `/watch/<media_type>/<tmdb_id>/` with 10s skip controls, title overlay, and comprehensive global hotkeys (`Space`, `K`, `F`, `M`, `Arrows`, `J`, `L`). |
 | **Phase 6** | Watch Progress & Continue Watching | **Completed** | `WatchProgress` model (`apps/watch/models.py`), background beaconing (`/progress/save/`) every 10s and on pause/page unload, seamless resume playback seeking, and dynamic "Continue Watching" rail on homepage with live % progress bars. |
+| **Phase 7** | Catalog Detail Pages & Series Hierarchy | **Completed** | Full movie detail view (`/movies/<id>/`), TV series detail view (`/series/<id>/`), HTMX-powered season episode switching (`/series/<id>/season/<num>/`), multi-episode playback (`/watch/tv/<id>/<s_num>/<ep_num>/`), cast rails, and browse discovery pages (`/movies/`, `/series/`). |
 | **DX Setup** | Developer Experience & Auto-reload | **Completed** | `django-browser-reload` installed and configured with middleware for instant browser refreshes on file changes. Django development server managed persistently in background. |
 
 ---
@@ -1705,11 +1706,11 @@ That gives Filvora a clean architecture, keeps the application lightweight, and 
 ### 2. File & App Mapping
 - `apps.core`: Homepage (`HomeView`), root routing, shared utilities.
 - `apps.accounts`: Authentication (`register`, `login`, `logout`), URLs at `/accounts/`.
-- `apps.tmdb`: `TMDBClient` with methods `get_trending_movies`, `get_popular_series`, `get_movie`, `get_tv`. All methods return dictionary structures with normalized `display_title` and fallback data.
+- `apps.tmdb`: `TMDBClient` with methods `get_trending_movies`, `get_popular_movies`, `get_popular_series`, `get_movie_details`, `get_tv_details`, `get_tv_season`. All methods return dictionary structures with normalized `display_title` and fallback data.
+- `apps.catalog`: Detail views and browse views (`/movies/`, `/movies/<id>/`, `/series/`, `/series/<id>/`, `/series/<id>/season/<num>/`).
 - `apps.library`: `LibraryItem` model storing user's saved list, URLs at `/library/`.
-- `apps.playback`: View `watch` rendering `templates/playback/watch.html`, URLs at `/watch/<media_type>/<tmdb_id>/`.
+- `apps.playback`: View `watch` rendering `templates/playback/watch.html`, URLs at `/watch/<media_type>/<tmdb_id>/` and `/watch/tv/<tmdb_id>/<season>/<episode>/`.
 - `apps.watch`: `WatchProgress` model, `/progress/save/` endpoint, resume position injection, continue watching queries.
-- `apps.catalog`: Reserved for deep movie/series detail pages and season/episode hierarchy.
 
 ### 3. Static Assets & Dependencies
 - `static/css/videojs/video-js.css`, `theme-fantasy.css`, `theme-forest.css`, `theme-city.css`.
@@ -1726,16 +1727,15 @@ That gives Filvora a clean architecture, keeps the application lightweight, and 
 
 ## Next Steps & Roadmap
 
-### **Next Immediate Target: Phase 7 — Catalog Detail Pages & Series Hierarchy**
-1. **Movie Detail View (`/movies/<tmdb_id>/`):**
-   - Full backdrop, cast list, runtime, release year, genres, overview, trailer, similar titles, direct "Watch Now" & "+ My List" buttons.
-2. **Series Detail View (`/series/<tmdb_id>/`):**
-   - Season selector with HTMX-powered episode list swapping without full page refresh.
-3. **Multi-Episode Playback (`/watch/series/<tmdb_id>/<season>/<episode>/`):**
-   - Auto-advance to next episode when playback finishes.
+### **Next Immediate Target: Phase 8 — Live Search & Polish**
+1. **Live Search Suggestions (`/search/?q=...`):**
+   - Interactive search icon/bar in navbar with HTMX debounce typing (`hx-trigger="keyup changed delay:300ms"`).
+   - Instant drop-down search result overlay with movie/series posters, year, and direct links.
+   - Dedicated search results view (`/search/`).
+2. **Skeleton Loaders & UI Polish:**
+   - Add sleek skeleton loaders for asynchronous HTMX card rails and images.
+   - Polished 404 / 500 error pages matching the dark cinematic theme.
+   - Final accessibility and mobile responsiveness audit.
 
-### **Follow-up Target: Phase 8 — Search & Polish**
-1. Live search suggestions overlay with HTMX (`/search/?q=...`).
-2. Skeleton loading animations and edge-case error pages.
 
 
