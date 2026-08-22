@@ -28,27 +28,43 @@ class HomeView(TemplateView):
         context['action_movies'] = action_movies
         context['animation_movies'] = animation_movies
         
-        # Continue watching for logged in user
+        # Continue watching for logged in user (deduplicated by media_type + tmdb_id)
         continue_watching = []
         if self.request.user.is_authenticated:
             progress_items = WatchProgress.objects.filter(
                 user=self.request.user,
                 completed=False,
                 position_seconds__gt=5
-            ).order_by('-updated_at')[:10]
+            ).order_by('-updated_at')
             
+            seen = set()
             for p in progress_items:
+                key = (p.media_type, p.tmdb_id)
+                if key in seen:
+                    continue
+                seen.add(key)
+                
                 if p.media_type == 'movie':
-                    data = client.get_movie(p.tmdb_id)
+                    data = dict(client.get_movie(p.tmdb_id))
                     data['display_title'] = data.get('title', f"Movie {p.tmdb_id}")
+                    data['sub_label'] = "Movie"
+                    data['watch_url'] = f"/watch/movie/{p.tmdb_id}/"
                 else:
-                    data = client.get_tv(p.tmdb_id)
-                    data['display_title'] = data.get('name', f"Series {p.tmdb_id}")
+                    data = dict(client.get_tv(p.tmdb_id))
+                    s_num = p.season or 1
+                    ep_num = p.episode or 1
+                    series_name = data.get('name', f"Series {p.tmdb_id}")
+                    data['display_title'] = series_name
+                    data['sub_label'] = f"S{s_num}:E{ep_num}"
+                    data['watch_url'] = f"/watch/tv/{p.tmdb_id}/{s_num}/{ep_num}/"
                 
                 data['media_type'] = p.media_type
                 data['progress_percentage'] = p.progress_percentage
                 data['position_seconds'] = p.position_seconds
                 continue_watching.append(data)
+                
+                if len(continue_watching) >= 10:
+                    break
                 
         context['continue_watching'] = continue_watching
         return context
