@@ -12,31 +12,54 @@
     <!-- Video.js Base CSS (Local) -->
     <link href="{% static 'css/videojs/video-js.css' %}" rel="stylesheet" />
     
+    <!-- Video.js Themes -->
+    <link href="{% static 'css/videojs/theme-fantasy.css' %}" rel="stylesheet" />
+    
     <style>
-        /* Custom Cinematic Video Player Theme */
+        /* Custom Modern Player Theme (Matching Screenshot) */
+        .video-js {
+            font-family: inherit !important;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        /* The Big Play Button */
         .video-js .vjs-big-play-button {
-            background-color: rgba(229, 9, 20, 0.8) !important;
-            border-color: transparent !important;
+            background-color: rgba(0, 0, 0, 0.5) !important;
+            border: 2px solid white !important;
             border-radius: 50% !important;
             width: 80px !important;
             height: 80px !important;
-            line-height: 80px !important;
+            line-height: 76px !important;
             left: 50% !important;
             top: 50% !important;
             transform: translate(-50%, -50%) !important;
             transition: all 0.3s ease !important;
         }
         .video-js:hover .vjs-big-play-button {
-            background-color: rgba(229, 9, 20, 1) !important;
+            background-color: rgba(229, 9, 20, 0.9) !important;
+            border-color: transparent !important;
             transform: translate(-50%, -50%) scale(1.1) !important;
         }
-        .vjs-control-bar {
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%) !important;
-            height: 60px !important;
-            padding: 0 20px !important;
+
+        /* Floating Pill Control Bar */
+        .vjs-theme-fantasy .vjs-control-bar {
+            background: rgba(0, 0, 0, 0.85) !important;
+            border-radius: 12px !important;
+            bottom: 20px !important;
+            left: 2% !important;
+            width: 96% !important;
+            height: 50px !important;
+            padding: 0 15px !important;
+            display: flex !important;
+            align-items: center !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
         }
-        .video-js {
-            font-family: inherit !important;
+        
+        /* Adjust progress bar for the pill theme */
+        .vjs-theme-fantasy .vjs-progress-control {
+            display: flex !important;
+            align-items: center !important;
         }
     </style>
 </head>
@@ -65,7 +88,7 @@
     <div class="absolute inset-0 w-full h-full bg-black">
         <video-js
             id="filvora-player"
-            class="video-js vjs-fill vjs-default-skin"
+            class="video-js vjs-fill vjs-theme-fantasy"
             controls
             preload="auto"
             autoplay
