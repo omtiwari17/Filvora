@@ -6,7 +6,11 @@
 <section class="relative h-[85vh] w-full flex items-center justify-start overflow-hidden">
     <!-- Background Image -->
     <div class="absolute inset-0 z-0">
+        {% if hero_movie.backdrop_path %}
         <img src="https://image.tmdb.org/t/p/original{{ hero_movie.backdrop_path }}" alt="{{ hero_movie.title }} Backdrop" class="w-full h-full object-cover">
+        {% else %}
+        <div class="w-full h-full bg-gray-900"></div>
+        {% endif %}
         <!-- Gradients for blending -->
         <div class="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent"></div>
         <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/20 to-transparent"></div>
