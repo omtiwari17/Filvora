@@ -113,67 +113,78 @@
             
             // Fade out the overlay when inactive
             const resetTimer = () => {
-                overlay.style.opacity = '1';
+                if (overlay) overlay.style.opacity = '1';
                 clearTimeout(timeout);
                 timeout = setTimeout(() => {
-                    if (!player.paused()) {
+                    if (player && !player.paused() && overlay) {
                         overlay.style.opacity = '0';
                     }
                 }, 3000);
             };
 
             document.addEventListener('mousemove', resetTimer);
-            player.on('pause', () => overlay.style.opacity = '1');
-            player.on('play', resetTimer);
             
-            // Auto play
-            player.play();
+            player.ready(() => {
+                player.on('pause', () => {
+                    if (overlay) overlay.style.opacity = '1';
+                });
+                player.on('play', resetTimer);
+                
+                // Auto play with promise catch
+                const p = player.play();
+                if (p !== undefined) {
+                    p.catch(() => { /* Autoplay blocked by browser policy */ });
+                }
+            });
 
             // Global Keyboard Shortcuts
             document.addEventListener('keydown', (e) => {
-                try {
-                    // Safely ignore inputs
-                    if (e.target && e.target.tagName) {
-                        const tag = e.target.tagName.toLowerCase();
-                        if (tag === 'input' || tag === 'textarea') return;
-                    }
-                    
-                    const key = e.key.toLowerCase();
-                    
-                    if ([' ', 'k', 'f', 'm', 'arrowright', 'l', 'arrowleft', 'j', 'arrowup', 'arrowdown'].includes(key)) {
-                        e.preventDefault();
-                    }
+                // Ignore if user is focused on an input element
+                const active = document.activeElement;
+                if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
+                    return;
+                }
+                
+                const key = e.key ? e.key.toLowerCase() : '';
+                const code = e.code || '';
 
-                    switch(key) {
-                        case ' ':
-                        case 'k':
-                            player.paused() ? player.play() : player.pause();
-                            break;
-                        case 'f':
-                            player.isFullscreen() ? player.exitFullscreen() : player.requestFullscreen();
-                            break;
-                        case 'm':
-                            player.muted(!player.muted());
-                            break;
-                        case 'arrowright':
-                        case 'l':
-                            player.currentTime(player.currentTime() + 10);
-                            break;
-                        case 'arrowleft':
-                        case 'j':
-                            player.currentTime(player.currentTime() - 10);
-                            break;
-                        case 'arrowup':
-                            player.volume(Math.min(1, player.volume() + 0.1));
-                            break;
-                        case 'arrowdown':
-                            player.volume(Math.max(0, player.volume() - 0.1));
-                            break;
+                if (key === ' ' || code === 'Space' || key === 'k' || code === 'KeyK') {
+                    e.preventDefault();
+                    if (player.paused()) {
+                        player.play();
+                    } else {
+                        player.pause();
                     }
-                } catch(err) {
-                    console.error('Keyboard shortcut error:', err);
+                } else if (key === 'f' || code === 'KeyF') {
+                    e.preventDefault();
+                    if (player.isFullscreen()) {
+                        player.exitFullscreen();
+                    } else {
+                        player.requestFullscreen();
+                    }
+                } else if (key === 'm' || code === 'KeyM') {
+                    e.preventDefault();
+                    player.muted(!player.muted());
+                } else if (key === 'arrowright' || code === 'ArrowRight' || key === 'l' || code === 'KeyL') {
+                    e.preventDefault();
+                    const cur = player.currentTime() || 0;
+                    const dur = player.duration() || 999999;
+                    player.currentTime(Math.min(dur, cur + 10));
+                } else if (key === 'arrowleft' || code === 'ArrowLeft' || key === 'j' || code === 'KeyJ') {
+                    e.preventDefault();
+                    const cur = player.currentTime() || 0;
+                    player.currentTime(Math.max(0, cur - 10));
+                } else if (key === 'arrowup' || code === 'ArrowUp') {
+                    e.preventDefault();
+                    const vol = player.volume();
+                    player.volume(Math.min(1, vol + 0.1));
+                } else if (key === 'arrowdown' || code === 'ArrowDown') {
+                    e.preventDefault();
+                    const vol = player.volume();
+                    player.volume(Math.max(0, vol - 0.1));
                 }
             }, true);
+        });
     </script>
 </body>
 </html>
