@@ -92,7 +92,7 @@
             controls
             preload="auto"
             autoplay
-            data-setup='{"fill": true, "controlBar": {"skipButtons": {"forward": 10, "backward": 10}}, "userActions": {"hotkeys": true}}'
+            data-setup='{"fill": true, "controlBar": {"skipButtons": {"forward": 10, "backward": 10}}}'
         >
             <source src="{{ video_url }}" type="application/x-mpegURL">
             <p class="vjs-no-js">
@@ -131,7 +131,7 @@
 
             // Global Keyboard Shortcuts
             document.addEventListener('keydown', (e) => {
-                if (e.target.tagName.toLowerCase() === 'input') return;
+                if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'textarea') return;
                 
                 switch(e.key.toLowerCase()) {
                     case ' ':
@@ -166,7 +166,7 @@
                         player.volume(Math.max(0, player.volume() - 0.1));
                         break;
                 }
-            });
+            }, true);
     </script>
 </body>
 </html>
