@@ -57,7 +57,9 @@
     <!-- Top Overlay (Title, Controls & Server Switcher) -->
     <div id="player-overlay" class="absolute top-0 left-0 w-full p-6 z-50 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/60 to-transparent transition-opacity duration-500">
         <div class="flex items-center gap-4 sm:gap-6">
-            <a href="javascript:history.back()" class="text-white hover:text-brand-500 transition p-2 rounded-full bg-black/40 backdrop-blur-md border border-gray-700/50">
+            <a href="{% if media_type == 'movie' %}/movies/{{ tmdb_id }}/{% else %}/series/{{ tmdb_id }}/{% endif %}" 
+               class="text-white hover:text-brand-500 transition p-2 rounded-full bg-black/40 backdrop-blur-md border border-gray-700/50"
+               title="Back to Details">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
@@ -69,9 +71,9 @@
         </div>
         
         <div class="flex items-center gap-3">
-            <!-- Server Switcher Dropdown -->
+            <!-- Server Switcher Dropdown (Replaces URL in-place without cluttering history) -->
             <div class="relative group">
-                <select onchange="window.location.href='?server=' + this.value" 
+                <select onchange="window.location.replace('?server=' + this.value)" 
                         class="bg-gray-900/90 text-xs sm:text-sm text-gray-200 border border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:border-brand-500 cursor-pointer backdrop-blur-md">
                     {% for p in providers %}
                     <option value="{{ p.id }}" {% if p.id == current_server %}selected{% endif %}>
