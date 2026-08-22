@@ -75,3 +75,27 @@ class TMDBClient:
         except requests.RequestException as e:
             print(f"TMDB Error (Series): {e}")
             return self._get_mock_series()
+
+    def get_movie(self, movie_id):
+        if not self.api_key:
+            return {"id": movie_id, "title": f"Mock Movie {movie_id}"}
+        
+        try:
+            response = self.session.get(f"{self.BASE_URL}/movie/{movie_id}", params={"api_key": self.api_key}, timeout=5)
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            print(f"TMDB Error (Movie {movie_id}): {e}")
+            return {"id": movie_id, "title": f"Mock Movie {movie_id}"}
+
+    def get_tv(self, tv_id):
+        if not self.api_key:
+            return {"id": tv_id, "name": f"Mock TV {tv_id}"}
+        
+        try:
+            response = self.session.get(f"{self.BASE_URL}/tv/{tv_id}", params={"api_key": self.api_key}, timeout=5)
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            print(f"TMDB Error (TV {tv_id}): {e}")
+            return {"id": tv_id, "name": f"Mock TV {tv_id}"}
