@@ -14,10 +14,12 @@ def my_list(request):
         if item.media_type == 'movie':
             data = client.get_movie(item.tmdb_id)
             data['media_type'] = 'movie'
+            data['display_title'] = data.get('title', '')
             saved_items.append(data)
         elif item.media_type == 'tv':
             data = client.get_tv(item.tmdb_id)
             data['media_type'] = 'tv'
+            data['display_title'] = data.get('name', '')
             saved_items.append(data)
             
     return render(request, 'library/list.html', {'saved_items': saved_items})
