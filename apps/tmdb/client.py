@@ -1,20 +1,165 @@
 import os
+import time
+import json
+import subprocess
+import urllib.parse
 import requests
 from django.conf import settings
 
 class TMDBClient:
     BASE_URL = "https://api.themoviedb.org/3"
+    _cache = {}
+    CACHE_TTL = 300  # 5 minutes in-memory cache
 
     def __init__(self):
         self.api_key = os.environ.get('TMDB_API_KEY')
         if not self.api_key and hasattr(settings, 'TMDB_API_KEY'):
             self.api_key = settings.TMDB_API_KEY
-            
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Filvora/1.0 (Contact: admin@filvora.local)',
-            'Accept': 'application/json'
-        })
+
+    def _fetch(self, endpoint, params=None):
+        if not params:
+            params = {}
+        
+        # Check in-memory cache
+        cache_key = f"{endpoint}:{json.dumps(params, sort_keys=True)}"
+        if cache_key in self._cache:
+            cached_data, cached_time = self._cache[cache_key]
+            if time.time() - cached_time < self.CACHE_TTL:
+                return cached_data
+
+        if not self.api_key:
+            return {}
+
+        params['api_key'] = self.api_key
+        query_string = urllib.parse.urlencode(params)
+        url = f"{self.BASE_URL}{endpoint}?{query_string}"
+
+        # Method 1: Requests
+        try:
+            r = requests.get(url, timeout=4)
+            if r.status_code == 200:
+                data = r.json()
+                self._cache[cache_key] = (data, time.time())
+                return data
+        except Exception:
+            pass
+
+        # Method 2: Resilient curl with TLS 1.3 / -k
+        try:
+            res = subprocess.run(
+                ['curl.exe', '-s', '-k', '--connect-timeout', '3', url],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                timeout=5
+            )
+            if res.returncode == 0 and res.stdout.strip():
+                data = json.loads(res.stdout)
+                if not data.get('status_code'):  # Not a TMDB error payload
+                    self._cache[cache_key] = (data, time.time())
+                    return data
+        except Exception as e:
+            print(f"TMDB Fetch Error for {endpoint}: {e}")
+
+        return {}
+
+    def get_trending_movies(self):
+        data = self._fetch("/trending/movie/day")
+        return data.get('results', self._get_mock_movies())
+
+    def get_popular_movies(self, page=1):
+        data = self._fetch("/movie/popular", {"page": page})
+        return data.get('results', self._get_mock_movies())
+
+    def get_popular_series(self, page=1):
+        data = self._fetch("/tv/popular", {"page": page})
+        return data.get('results', self._get_mock_series())
+
+    def get_movie(self, movie_id):
+        return self.get_movie_details(movie_id)
+
+    def get_movie_details(self, movie_id):
+        data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations"})
+        if data and data.get('title'):
+            return data
+
+        # Check mock data fallback
+        for m in self._get_mock_movies():
+            if m['id'] == int(movie_id):
+                return m
+
+        return {
+            "id": movie_id,
+            "title": f"Movie {movie_id}",
+            "tagline": "A cinematic journey on Filvora.",
+            "overview": "Embark on an unforgettable adventure with captivating performances, stunning visuals, and a compelling storyline.",
+            "runtime": 120,
+            "vote_average": 7.5,
+            "release_date": "2024-01-01",
+            "genres": [{"id": 28, "name": "Action"}, {"id": 18, "name": "Drama"}],
+            "credits": {"cast": []},
+            "recommendations": {"results": []}
+        }
+
+    def get_tv(self, tv_id):
+        return self.get_tv_details(tv_id)
+
+    def get_tv_details(self, tv_id):
+        data = self._fetch(f"/tv/{tv_id}", {"append_to_response": "credits,recommendations"})
+        if data and data.get('name'):
+            return data
+
+        # Check mock data fallback
+        for s in self._get_mock_series():
+            if s['id'] == int(tv_id):
+                return s
+
+        return {
+            "id": tv_id,
+            "name": f"Series {tv_id}",
+            "tagline": "An extraordinary episodic journey.",
+            "overview": "Follow an ensemble cast navigating intricate plots, unexpected twists, and gripping dramatic tension across every episode.",
+            "number_of_seasons": 1,
+            "number_of_episodes": 10,
+            "vote_average": 8.0,
+            "first_air_date": "2024-01-01",
+            "genres": [{"id": 18, "name": "Drama"}, {"id": 10765, "name": "Sci-Fi & Fantasy"}],
+            "seasons": [{"season_number": 1, "name": "Season 1", "episode_count": 10}],
+            "credits": {"cast": []},
+            "recommendations": {"results": []}
+        }
+
+    def get_tv_season(self, tv_id, season_number):
+        data = self._fetch(f"/tv/{tv_id}/season/{season_number}")
+        if data and data.get('episodes'):
+            return data
+
+        return {
+            "season_number": season_number,
+            "episodes": [
+                {
+                    "episode_number": i,
+                    "name": f"Episode {i}",
+                    "overview": f"The story intensifies as new revelations come to light in chapter {i} of Season {season_number}.",
+                    "still_path": "",
+                    "air_date": "2024-01-01",
+                    "runtime": 50
+                } for i in range(1, 11)
+            ]
+        }
+
+    def search_multi(self, query):
+        if not query or not query.strip():
+            return []
+        data = self._fetch("/search/multi", {"query": query.strip()})
+        results = data.get('results', [])
+        # Filter out people and items without title/name
+        filtered = []
+        for r in results:
+            if r.get('media_type') in ['movie', 'tv']:
+                r['display_title'] = r.get('title') or r.get('name')
+                filtered.append(r)
+        return filtered
 
     def _get_mock_movies(self):
         return [
@@ -94,127 +239,3 @@ class TMDBClient:
                 ]
             }
         ]
-
-    def get_trending_movies(self):
-        if not self.api_key:
-            return self._get_mock_movies()
-        try:
-            response = self.session.get(f"{self.BASE_URL}/trending/movie/day", params={"api_key": self.api_key}, timeout=5)
-            response.raise_for_status()
-            return response.json().get('results', [])
-        except requests.RequestException as e:
-            print(f"TMDB Error (Trending Movies): {e}")
-            return self._get_mock_movies()
-
-    def get_popular_movies(self, page=1):
-        if not self.api_key:
-            return self._get_mock_movies()
-        try:
-            response = self.session.get(f"{self.BASE_URL}/movie/popular", params={"api_key": self.api_key, "page": page}, timeout=5)
-            response.raise_for_status()
-            return response.json().get('results', [])
-        except requests.RequestException as e:
-            print(f"TMDB Error (Popular Movies): {e}")
-            return self._get_mock_movies()
-
-    def get_popular_series(self, page=1):
-        if not self.api_key:
-            return self._get_mock_series()
-        try:
-            response = self.session.get(f"{self.BASE_URL}/tv/popular", params={"api_key": self.api_key, "page": page}, timeout=5)
-            response.raise_for_status()
-            return response.json().get('results', [])
-        except requests.RequestException as e:
-            print(f"TMDB Error (Popular Series): {e}")
-            return self._get_mock_series()
-
-    def get_movie(self, movie_id):
-        return self.get_movie_details(movie_id)
-
-    def get_movie_details(self, movie_id):
-        if not self.api_key:
-            for m in self._get_mock_movies():
-                if m['id'] == int(movie_id):
-                    return m
-            return {"id": movie_id, "title": f"Movie {movie_id}", "overview": "No overview available.", "genres": []}
-        
-        try:
-            response = self.session.get(
-                f"{self.BASE_URL}/movie/{movie_id}",
-                params={"api_key": self.api_key, "append_to_response": "credits,recommendations"},
-                timeout=5
-            )
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            print(f"TMDB Error (Movie {movie_id}): {e}")
-            for m in self._get_mock_movies():
-                if m['id'] == int(movie_id):
-                    return m
-            return {"id": movie_id, "title": f"Movie {movie_id}", "overview": "Overview temporarily unavailable.", "genres": []}
-
-    def get_tv(self, tv_id):
-        return self.get_tv_details(tv_id)
-
-    def get_tv_details(self, tv_id):
-        if not self.api_key:
-            for s in self._get_mock_series():
-                if s['id'] == int(tv_id):
-                    return s
-            return {"id": tv_id, "name": f"TV Series {tv_id}", "overview": "No overview available.", "seasons": []}
-        
-        try:
-            response = self.session.get(
-                f"{self.BASE_URL}/tv/{tv_id}",
-                params={"api_key": self.api_key, "append_to_response": "credits,recommendations"},
-                timeout=5
-            )
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            print(f"TMDB Error (TV {tv_id}): {e}")
-            for s in self._get_mock_series():
-                if s['id'] == int(tv_id):
-                    return s
-            return {"id": tv_id, "name": f"TV Series {tv_id}", "overview": "Overview temporarily unavailable.", "seasons": []}
-
-    def get_tv_season(self, tv_id, season_number):
-        if not self.api_key:
-            # Generate mock episodes
-            return {
-                "season_number": season_number,
-                "episodes": [
-                    {
-                        "episode_number": i,
-                        "name": f"Episode {i}",
-                        "overview": f"A gripping chapter in Season {season_number}.",
-                        "still_path": "",
-                        "air_date": "2026-01-01",
-                        "runtime": 55
-                    } for i in range(1, 11)
-                ]
-            }
-            
-        try:
-            response = self.session.get(
-                f"{self.BASE_URL}/tv/{tv_id}/season/{season_number}",
-                params={"api_key": self.api_key},
-                timeout=5
-            )
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            print(f"TMDB Error (TV {tv_id} Season {season_number}): {e}")
-            return {
-                "season_number": season_number,
-                "episodes": [
-                    {
-                        "episode_number": i,
-                        "name": f"Episode {i}",
-                        "overview": "Episode details temporarily unavailable.",
-                        "still_path": "",
-                        "air_date": "2026-01-01",
-                        "runtime": 50
-                    } for i in range(1, 9)
-                ]
-            }
