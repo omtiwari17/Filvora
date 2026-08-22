@@ -11,7 +11,7 @@ class BaseVideoProvider:
 
 class VidLinkProvider(BaseVideoProvider):
     id = "vidlink"
-    name = "Server 1 (VidLink)"
+    name = "Server 1 (VidLink - Fast HD)"
 
     def get_movie_url(self, tmdb_id: int) -> str:
         return f"https://vidlink.pro/movie/{tmdb_id}"
@@ -25,52 +25,40 @@ class AutoEmbedProvider(BaseVideoProvider):
     name = "Server 2 (AutoEmbed)"
 
     def get_movie_url(self, tmdb_id: int) -> str:
-        return f"https://player.autoembed.cc/embed/movie/{tmdb_id}"
+        return f"https://autoembed.co/movie/tmdb/{tmdb_id}"
 
     def get_tv_url(self, tmdb_id: int, season: int, episode: int) -> str:
-        return f"https://player.autoembed.cc/embed/tv/{tmdb_id}/{season}/{episode}"
+        return f"https://autoembed.co/tv/tmdb/{tmdb_id}-{season}-{episode}"
 
 
-class VidSrcProvider(BaseVideoProvider):
-    id = "vidsrc"
-    name = "Server 3 (VidSrc)"
+class TwoEmbedProvider(BaseVideoProvider):
+    id = "2embed"
+    name = "Server 3 (2Embed)"
 
     def get_movie_url(self, tmdb_id: int) -> str:
-        return f"https://vidsrc.xyz/embed/movie/{tmdb_id}"
+        return f"https://www.2embed.cc/embed/{tmdb_id}"
 
     def get_tv_url(self, tmdb_id: int, season: int, episode: int) -> str:
-        return f"https://vidsrc.xyz/embed/tv/{tmdb_id}/{season}/{episode}"
+        return f"https://www.2embed.cc/embedtv/{tmdb_id}&s={season}&e={episode}"
 
 
-class MultiEmbedProvider(BaseVideoProvider):
-    id = "multiembed"
-    name = "Server 4 (MultiEmbed)"
+class NontonGoProvider(BaseVideoProvider):
+    id = "nontongo"
+    name = "Server 4 (NontonGo)"
 
     def get_movie_url(self, tmdb_id: int) -> str:
-        return f"https://multiembed.mov/?video_id={tmdb_id}&tmdb=1"
+        return f"https://www.NontonGo.win/embed/movie/{tmdb_id}"
 
     def get_tv_url(self, tmdb_id: int, season: int, episode: int) -> str:
-        return f"https://multiembed.mov/?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}"
+        return f"https://www.NontonGo.win/embed/tv/{tmdb_id}/{season}/{episode}"
 
 
-class SmashyStreamProvider(BaseVideoProvider):
-    id = "smashy"
-    name = "Server 5 (Smashy)"
-
-    def get_movie_url(self, tmdb_id: int) -> str:
-        return f"https://player.smashy.stream/movie/{tmdb_id}"
-
-    def get_tv_url(self, tmdb_id: int, season: int, episode: int) -> str:
-        return f"https://player.smashy.stream/tv/{tmdb_id}?s={season}&e={episode}"
-
-
-# Registry of active providers
+# Active, verified providers
 PROVIDERS = [
     VidLinkProvider(),
     AutoEmbedProvider(),
-    VidSrcProvider(),
-    MultiEmbedProvider(),
-    SmashyStreamProvider(),
+    TwoEmbedProvider(),
+    NontonGoProvider(),
 ]
 
 def get_provider(provider_id: str = None) -> BaseVideoProvider:
