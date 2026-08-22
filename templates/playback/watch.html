@@ -137,6 +137,59 @@
                 }
             });
 
+            // Resume playback if user has previous progress
+            const initialResumePosition = {{ resume_position|default:0 }};
+            if (initialResumePosition > 0) {
+                player.one('loadedmetadata', () => {
+                    player.currentTime(initialResumePosition);
+                });
+            }
+
+            // Watch Progress Tracking
+            const csrfToken = '{{ csrf_token }}';
+            const tmdbId = {{ tmdb_id }};
+            const mediaType = '{{ media_type }}';
+
+            const sendProgress = (isBeacon = false) => {
+                if (!player) return;
+                const position = player.currentTime();
+                const duration = player.duration();
+                if (!position || isNaN(position) || position < 1) return;
+
+                const payload = JSON.stringify({
+                    tmdb_id: tmdbId,
+                    media_type: mediaType,
+                    position: position,
+                    duration: isNaN(duration) ? 0 : duration
+                });
+
+                if (isBeacon && navigator.sendBeacon) {
+                    const blob = new Blob([payload], { type: 'application/json' });
+                    navigator.sendBeacon('/progress/save/', blob);
+                } else {
+                    fetch('/progress/save/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: payload,
+                        keepalive: true
+                    }).catch(() => {});
+                }
+            };
+
+            // Periodically send progress every 10 seconds while playing
+            setInterval(() => {
+                if (player && !player.paused()) {
+                    sendProgress();
+                }
+            }, 10000);
+
+            player.on('pause', () => sendProgress());
+            window.addEventListener('beforeunload', () => sendProgress(true));
+            window.addEventListener('pagehide', () => sendProgress(true));
+
             // Global Keyboard Shortcuts
             document.addEventListener('keydown', (e) => {
                 // Ignore if user is focused on an input element

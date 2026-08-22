@@ -9,6 +9,7 @@ urlpatterns = [
     path('accounts/', include('apps.accounts.urls')),
     path('library/', include('apps.library.urls')),
     path('watch/', include('apps.playback.urls')),
+    path('progress/', include('apps.watch.urls')),
     path('', include('apps.core.urls')),
     path('__reload__/', include('django_browser_reload.urls')),
 ]

@@ -1690,6 +1690,7 @@ That gives Filvora a clean architecture, keeps the application lightweight, and 
 | **Phase 3** | User Authentication | **Completed** | Custom `register` view (`apps/accounts/views.py`), Django `LoginView`/`LogoutView` routing with Django 5.0+ POST requirements, dynamic navbar auth state (Sign In / Register vs Profile dropdown / Logout), simplified password validation for development. |
 | **Phase 4** | Library (My List) | **Completed** | `LibraryItem` model (`apps/library/models.py`) with unique constraint, `my_list` and `toggle_item` views, HTMX dynamic save/remove with visual state feedback (`Saved` button), dedicated `/library/` grid view with empty states. |
 | **Phase 5** | Playback & Video Player | **Completed** | Localized `video.js 8.10.0`, `hls.js`, and `theme-fantasy.css` in `static/` (zero external CDN dependency for playback). Fullscreen player (`templates/playback/watch.html`) at `/watch/<media_type>/<tmdb_id>/` with 10s skip controls, title overlay, and comprehensive global hotkeys (`Space`, `K`, `F`, `M`, `Arrows`, `J`, `L`). |
+| **Phase 6** | Watch Progress & Continue Watching | **Completed** | `WatchProgress` model (`apps/watch/models.py`), background beaconing (`/progress/save/`) every 10s and on pause/page unload, seamless resume playback seeking, and dynamic "Continue Watching" rail on homepage with live % progress bars. |
 | **DX Setup** | Developer Experience & Auto-reload | **Completed** | `django-browser-reload` installed and configured with middleware for instant browser refreshes on file changes. Django development server managed persistently in background. |
 
 ---
@@ -1707,7 +1708,7 @@ That gives Filvora a clean architecture, keeps the application lightweight, and 
 - `apps.tmdb`: `TMDBClient` with methods `get_trending_movies`, `get_popular_series`, `get_movie`, `get_tv`. All methods return dictionary structures with normalized `display_title` and fallback data.
 - `apps.library`: `LibraryItem` model storing user's saved list, URLs at `/library/`.
 - `apps.playback`: View `watch` rendering `templates/playback/watch.html`, URLs at `/watch/<media_type>/<tmdb_id>/`.
-- `apps.watch`: Reserved for watch progress, continue watching, and resume playback tracking.
+- `apps.watch`: `WatchProgress` model, `/progress/save/` endpoint, resume position injection, continue watching queries.
 - `apps.catalog`: Reserved for deep movie/series detail pages and season/episode hierarchy.
 
 ### 3. Static Assets & Dependencies
@@ -1725,25 +1726,16 @@ That gives Filvora a clean architecture, keeps the application lightweight, and 
 
 ## Next Steps & Roadmap
 
-### **Next Immediate Target: Phase 6 — Watch Progress & Continue Watching**
-1. **Model Creation (`apps/watch/models.py`):**
-   - Create `WatchProgress` model (`user`, `tmdb_id`, `media_type`, `season`, `episode`, `position_seconds`, `duration_seconds`, `completed`, `updated_at`).
-2. **Progress Tracking Endpoint (`apps/watch/views.py`):**
-   - Build lightweight endpoint (e.g., `/watch/progress/save/`) receiving beacon / HTMX POST every 10–15 seconds and on video pause / page unload.
-3. **Resume Playback:**
-   - On opening `/watch/<media_type>/<tmdb_id>/`, query `WatchProgress` and pass `last_position` to the player to auto-seek.
-4. **Continue Watching Rail on Homepage:**
-   - Display active in-progress titles with a percentage progress bar and quick resume button.
-
-### **Follow-up Target: Phase 7 — Catalog Detail Pages & Series Hierarchy**
-1. **Movie Detail View (`/movie/<tmdb_id>/`):**
-   - Full backdrop, cast list, runtime, release year, genres, overview, trailer, similar titles.
+### **Next Immediate Target: Phase 7 — Catalog Detail Pages & Series Hierarchy**
+1. **Movie Detail View (`/movies/<tmdb_id>/`):**
+   - Full backdrop, cast list, runtime, release year, genres, overview, trailer, similar titles, direct "Watch Now" & "+ My List" buttons.
 2. **Series Detail View (`/series/<tmdb_id>/`):**
    - Season selector with HTMX-powered episode list swapping without full page refresh.
 3. **Multi-Episode Playback (`/watch/series/<tmdb_id>/<season>/<episode>/`):**
    - Auto-advance to next episode when playback finishes.
 
-### **Final Target: Phase 8 — Search & Polish**
+### **Follow-up Target: Phase 8 — Search & Polish**
 1. Live search suggestions overlay with HTMX (`/search/?q=...`).
 2. Skeleton loading animations and edge-case error pages.
+
 
