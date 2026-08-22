@@ -34,30 +34,30 @@ class TMDBClient:
         query_string = urllib.parse.urlencode(params)
         url = f"{self.BASE_URL}{endpoint}?{query_string}"
 
-        # Method 1: Requests
+        # Method 1: Windows Schannel curl with --ssl-no-revoke and IPv4
+        try:
+            res = subprocess.run(
+                ['curl.exe', '-s', '--ssl-no-revoke', '-4', '--connect-timeout', '4', url],
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                timeout=6
+            )
+            if res.returncode == 0 and res.stdout.strip():
+                data = json.loads(res.stdout)
+                if not data.get('status_code'):  # Not an error response
+                    self._cache[cache_key] = (data, time.time())
+                    return data
+        except Exception:
+            pass
+
+        # Method 2: Requests fallback
         try:
             r = requests.get(url, timeout=4)
             if r.status_code == 200:
                 data = r.json()
                 self._cache[cache_key] = (data, time.time())
                 return data
-        except Exception:
-            pass
-
-        # Method 2: Resilient curl with TLS 1.3 / -k
-        try:
-            res = subprocess.run(
-                ['curl.exe', '-s', '-k', '--connect-timeout', '3', url],
-                capture_output=True,
-                text=True,
-                encoding='utf-8',
-                timeout=5
-            )
-            if res.returncode == 0 and res.stdout.strip():
-                data = json.loads(res.stdout)
-                if not data.get('status_code'):  # Not a TMDB error payload
-                    self._cache[cache_key] = (data, time.time())
-                    return data
         except Exception as e:
             print(f"TMDB Fetch Error for {endpoint}: {e}")
 
@@ -80,7 +80,7 @@ class TMDBClient:
 
     def get_movie_details(self, movie_id):
         data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations"})
-        if data and data.get('title'):
+        if data and (data.get('title') or data.get('poster_path')):
             return data
 
         # Check mock data fallback
@@ -93,6 +93,8 @@ class TMDBClient:
             "title": f"Movie {movie_id}",
             "tagline": "A cinematic journey on Filvora.",
             "overview": "Embark on an unforgettable adventure with captivating performances, stunning visuals, and a compelling storyline.",
+            "poster_path": "/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+            "backdrop_path": "/xJHokMbljvjADYdit5fK5VQsXEG.jpg",
             "runtime": 120,
             "vote_average": 7.5,
             "release_date": "2024-01-01",
@@ -106,7 +108,7 @@ class TMDBClient:
 
     def get_tv_details(self, tv_id):
         data = self._fetch(f"/tv/{tv_id}", {"append_to_response": "credits,recommendations"})
-        if data and data.get('name'):
+        if data and (data.get('name') or data.get('poster_path')):
             return data
 
         # Check mock data fallback
@@ -119,6 +121,8 @@ class TMDBClient:
             "name": f"Series {tv_id}",
             "tagline": "An extraordinary episodic journey.",
             "overview": "Follow an ensemble cast navigating intricate plots, unexpected twists, and gripping dramatic tension across every episode.",
+            "poster_path": "/1XS1oqL89opfnbLl8WnZY1O1uJx.jpg",
+            "backdrop_path": "/2OMB0ynKlyIenMJWI2Dy9IWT4c.jpg",
             "number_of_seasons": 1,
             "number_of_episodes": 10,
             "vote_average": 8.0,
@@ -153,7 +157,6 @@ class TMDBClient:
             return []
         data = self._fetch("/search/multi", {"query": query.strip()})
         results = data.get('results', [])
-        # Filter out people and items without title/name
         filtered = []
         for r in results:
             if r.get('media_type') in ['movie', 'tv']:
