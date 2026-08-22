@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from .models import WatchProgress
 
+@csrf_exempt
 @login_required
 def save_progress(request):
     if request.method != 'POST':
