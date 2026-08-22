@@ -10,7 +10,7 @@
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
         {% for item in saved_items %}
         <div class="flex flex-col group transform transition duration-300 hover:scale-105 hover:z-30 cursor-pointer">
-            <div class="aspect-[2/3] rounded overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+            <a href="/watch/{{ item.media_type }}/{{ item.id }}/" class="aspect-[2/3] block rounded overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
                 {% if item.poster_path %}
                 <img src="https://image.tmdb.org/t/p/w500{{ item.poster_path }}" alt="{{ item.display_title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
                 {% else %}
@@ -25,7 +25,8 @@
                         <button hx-post="/library/toggle/" 
                                 hx-vals='{"tmdb_id": "{{ item.id }}", "media_type": "{{ item.media_type|default:'movie' }}"}'
                                 hx-swap="outerHTML"
-                                class="text-white hover:text-red-500 transition-colors p-1 bg-black/50 rounded-full">
+                                onclick="event.preventDefault();"
+                                class="text-white hover:text-red-500 transition-colors p-1 bg-black/50 rounded-full z-20 relative">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                             </svg>
@@ -38,7 +39,7 @@
                     </div>
                     <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ item.display_title }}</p>
                 </div>
-            </div>
+            </a>
         </div>
         {% endfor %}
     </div>

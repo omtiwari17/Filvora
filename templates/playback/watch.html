@@ -1,0 +1,111 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="dark bg-black">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watching {{ title }} - Filvora</title>
+    
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Video.js Base CSS (Local) -->
+    <link href="{% static 'css/videojs/video-js.css' %}" rel="stylesheet" />
+    
+    <style>
+        /* Custom Cinematic Video Player Theme */
+        .video-js .vjs-big-play-button {
+            background-color: rgba(229, 9, 20, 0.8) !important;
+            border-color: transparent !important;
+            border-radius: 50% !important;
+            width: 80px !important;
+            height: 80px !important;
+            line-height: 80px !important;
+            left: 50% !important;
+            top: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            transition: all 0.3s ease !important;
+        }
+        .video-js:hover .vjs-big-play-button {
+            background-color: rgba(229, 9, 20, 1) !important;
+            transform: translate(-50%, -50%) scale(1.1) !important;
+        }
+        .vjs-control-bar {
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%) !important;
+            height: 60px !important;
+            padding: 0 20px !important;
+        }
+        .video-js {
+            font-family: inherit !important;
+        }
+    </style>
+</head>
+<body class="bg-black text-white h-screen w-screen overflow-hidden flex flex-col">
+
+    <!-- Top Overlay (Title & Back Button) -->
+    <div id="player-overlay" class="absolute top-0 left-0 w-full p-8 z-50 flex items-center justify-between bg-gradient-to-b from-black/90 to-transparent transition-opacity duration-500">
+        <div class="flex items-center gap-6">
+            <a href="javascript:history.back()" class="text-white hover:text-brand-500 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </a>
+            <h1 class="text-2xl font-bold drop-shadow">{{ title }}</h1>
+        </div>
+        
+        <button hx-post="/library/toggle/" 
+                hx-vals='{"tmdb_id": "{{ tmdb_id }}", "media_type": "{{ media_type }}"}' 
+                hx-swap="none"
+                class="bg-gray-800/80 hover:bg-gray-700 text-white px-4 py-2 rounded-full font-medium transition backdrop-blur-sm text-sm border border-gray-600">
+            + My List
+        </button>
+    </div>
+
+    <!-- Video.js Player -->
+    <div class="relative w-full h-full flex-grow">
+        <video-js
+            id="filvora-player"
+            class="video-js vjs-fill vjs-default-skin"
+            controls
+            preload="auto"
+            autoplay
+            data-setup='{"fluid": true, "fill": true}'
+        >
+            <source src="{{ video_url }}" type="application/x-mpegURL">
+            <p class="vjs-no-js">
+                To view this video please enable JavaScript, and consider upgrading to a web browser that supports HTML5 video
+            </p>
+        </video-js>
+    </div>
+
+    <!-- Video.js Core Script (Local) -->
+    <script src="{% static 'js/videojs/video.min.js' %}"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const player = videojs('filvora-player');
+            const overlay = document.getElementById('player-overlay');
+            
+            let timeout;
+            
+            // Fade out the overlay when inactive
+            const resetTimer = () => {
+                overlay.style.opacity = '1';
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    if (!player.paused()) {
+                        overlay.style.opacity = '0';
+                    }
+                }, 3000);
+            };
+
+            document.addEventListener('mousemove', resetTimer);
+            player.on('pause', () => overlay.style.opacity = '1');
+            player.on('play', resetTimer);
+            
+            // Auto play
+            player.play();
+        });
+    </script>
+</body>
+</html>
