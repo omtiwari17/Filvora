@@ -71,9 +71,29 @@ class TMDBClient:
         data = self._fetch("/movie/popular", {"page": page})
         return data.get('results', self._get_mock_movies())
 
+    def get_top_rated_movies(self):
+        data = self._fetch("/movie/top_rated")
+        return data.get('results', self._get_mock_movies())
+
     def get_popular_series(self, page=1):
         data = self._fetch("/tv/popular", {"page": page})
         return data.get('results', self._get_mock_series())
+
+    def get_top_rated_series(self):
+        data = self._fetch("/tv/top_rated")
+        return data.get('results', self._get_mock_series())
+
+    def get_action_movies(self):
+        data = self._fetch("/discover/movie", {"with_genres": "28"})
+        return data.get('results', self._get_mock_movies())
+
+    def get_scifi_movies(self):
+        data = self._fetch("/discover/movie", {"with_genres": "878"})
+        return data.get('results', self._get_mock_movies())
+
+    def get_animation_movies(self):
+        data = self._fetch("/discover/movie", {"with_genres": "16"})
+        return data.get('results', self._get_mock_movies())
 
     def get_movie(self, movie_id):
         return self.get_movie_details(movie_id)

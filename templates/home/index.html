@@ -106,18 +106,20 @@
 
     <!-- Trending Movies -->
     <section>
-        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md">Trending Movies</h2>
+        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center justify-between">
+            <span>Trending Movies</span>
+            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-semibold transition">Explore All &rarr;</a>
+        </h2>
         <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
             {% for movie in trending_movies %}
             <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
-                <a href="/movies/{{ movie.id }}/" class="aspect-[2/3] block rounded overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+                <a href="/movies/{{ movie.id }}/" class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
                     {% if movie.poster_path %}
                     <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
                     {% else %}
                     <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ movie.title }}</div>
                     {% endif %}
                     
-                    <!-- Hover Overlay -->
                     <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
                         <div class="absolute inset-0 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/90 hover:text-white transition transform hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
@@ -132,20 +134,54 @@
         </div>
     </section>
 
+    {% if popular_movies %}
+    <!-- Popular Movies -->
+    <section>
+        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center justify-between">
+            <span>Popular Movies</span>
+            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-semibold transition">Explore All &rarr;</a>
+        </h2>
+        <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
+            {% for movie in popular_movies %}
+            <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
+                <a href="/movies/{{ movie.id }}/" class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+                    {% if movie.poster_path %}
+                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    {% else %}
+                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ movie.title }}</div>
+                    {% endif %}
+                    
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/90 hover:text-white transition transform hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ movie.title }}</p>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
     <!-- Popular Series -->
     <section>
-        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md">Popular Series</h2>
+        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center justify-between">
+            <span>Popular TV Series</span>
+            <a href="/series/" class="text-xs text-brand-500 hover:text-red-400 font-semibold transition">Explore All &rarr;</a>
+        </h2>
         <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
             {% for series in popular_series %}
             <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
-                <a href="/series/{{ series.id }}/" class="aspect-[2/3] block rounded overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+                <a href="/series/{{ series.id }}/" class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
                     {% if series.poster_path %}
                     <img src="https://image.tmdb.org/t/p/w500{{ series.poster_path }}" alt="{{ series.name }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
                     {% else %}
                     <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ series.name }}</div>
                     {% endif %}
                     
-                    <!-- Hover Overlay -->
                     <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
                         <div class="absolute inset-0 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/90 hover:text-white transition transform hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
@@ -159,5 +195,133 @@
             {% endfor %}
         </div>
     </section>
+
+    {% if top_rated_movies %}
+    <!-- Top Rated Movies -->
+    <section>
+        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center justify-between">
+            <span>Top Rated Movies</span>
+            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-semibold transition">Explore All &rarr;</a>
+        </h2>
+        <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
+            {% for movie in top_rated_movies %}
+            <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
+                <a href="/movies/{{ movie.id }}/" class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+                    {% if movie.poster_path %}
+                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    {% else %}
+                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ movie.title }}</div>
+                    {% endif %}
+                    
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/90 hover:text-white transition transform hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ movie.title }}</p>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if top_rated_series %}
+    <!-- Top Rated Series -->
+    <section>
+        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center justify-between">
+            <span>Top Rated Series</span>
+            <a href="/series/" class="text-xs text-brand-500 hover:text-red-400 font-semibold transition">Explore All &rarr;</a>
+        </h2>
+        <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
+            {% for s in top_rated_series %}
+            <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
+                <a href="/series/{{ s.id }}/" class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+                    {% if s.poster_path %}
+                    <img src="https://image.tmdb.org/t/p/w500{{ s.poster_path }}" alt="{{ s.name }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    {% else %}
+                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ s.name }}</div>
+                    {% endif %}
+                    
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/90 hover:text-white transition transform hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ s.name }}</p>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if action_movies %}
+    <!-- Action Blockbusters -->
+    <section>
+        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center justify-between">
+            <span>Action Blockbusters</span>
+            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-semibold transition">Explore All &rarr;</a>
+        </h2>
+        <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
+            {% for movie in action_movies %}
+            <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
+                <a href="/movies/{{ movie.id }}/" class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+                    {% if movie.poster_path %}
+                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    {% else %}
+                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ movie.title }}</div>
+                    {% endif %}
+                    
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/90 hover:text-white transition transform hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ movie.title }}</p>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if animation_movies %}
+    <!-- Animation & Family -->
+    <section>
+        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center justify-between">
+            <span>Animation & Family Favorites</span>
+            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-semibold transition">Explore All &rarr;</a>
+        </h2>
+        <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
+            {% for movie in animation_movies %}
+            <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
+                <a href="/movies/{{ movie.id }}/" class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+                    {% if movie.poster_path %}
+                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    {% else %}
+                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ movie.title }}</div>
+                    {% endif %}
+                    
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/90 hover:text-white transition transform hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ movie.title }}</p>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
 </div>
 {% endblock %}
