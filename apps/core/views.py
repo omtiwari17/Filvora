@@ -3,6 +3,7 @@ from django.views.generic import TemplateView
 from apps.tmdb.client import TMDBClient
 
 from apps.watch.models import WatchProgress
+from apps.library.models import LibraryItem
 
 class HomeView(TemplateView):
     template_name = 'home/index.html'
@@ -28,6 +29,12 @@ class HomeView(TemplateView):
         context['action_movies'] = action_movies
         context['animation_movies'] = animation_movies
         
+        # User saved library IDs
+        if self.request.user.is_authenticated:
+            context['user_saved_ids'] = set(LibraryItem.objects.filter(user=self.request.user).values_list('tmdb_id', flat=True))
+        else:
+            context['user_saved_ids'] = set()
+
         # Continue watching for logged in user (deduplicated by media_type + tmdb_id)
         continue_watching = []
         if self.request.user.is_authenticated:
@@ -68,4 +75,5 @@ class HomeView(TemplateView):
                 
         context['continue_watching'] = continue_watching
         return context
+
 

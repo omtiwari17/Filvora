@@ -2,331 +2,946 @@
 
 {% block content %}
 {% if hero_movie %}
-<!-- Cinematic Hero Section -->
-<section class="relative h-[85vh] w-full flex items-center justify-start overflow-hidden">
-    <!-- Background Image -->
+<!-- Cinematic Hero Section (v2.0) -->
+<section class="relative min-h-[85vh] w-full flex items-center justify-start overflow-hidden pt-20 pb-16">
+    <!-- Background Image & Atmospheric Gradients -->
     <div class="absolute inset-0 z-0">
         {% if hero_movie.backdrop_path %}
-        <img src="https://image.tmdb.org/t/p/original{{ hero_movie.backdrop_path }}" alt="{{ hero_movie.title }} Backdrop" class="w-full h-full object-cover">
+        <img src="https://image.tmdb.org/t/p/original{{ hero_movie.backdrop_path }}" alt="{{ hero_movie.title }} Backdrop" class="w-full h-full object-cover scale-105 transform animate-pulse-slow">
         {% else %}
         <div class="w-full h-full bg-gray-900"></div>
         {% endif %}
-        <!-- Gradients for blending -->
+        <!-- Gradients for seamless blending -->
         <div class="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/20 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/30 to-transparent"></div>
     </div>
     
     <!-- Hero Content -->
-    <div class="relative z-10 px-8 md:px-16 lg:px-24 max-w-3xl">
-        <h1 class="text-5xl md:text-7xl font-extrabold mb-4 drop-shadow-2xl text-white">{{ hero_movie.title }}</h1>
-        <div class="flex items-center gap-4 text-sm md:text-base text-gray-300 mb-6 drop-shadow">
-            {% if hero_movie.release_date %}
-            <span>{{ hero_movie.release_date|slice:":4" }}</span>
-            {% endif %}
-            <span class="border border-gray-600 px-1 rounded text-xs">HD</span>
+    <div class="relative z-10 px-6 sm:px-12 md:px-16 lg:px-20 max-w-3xl space-y-6">
+        <!-- Spotlight Pill -->
+        <div class="flex items-center gap-2.5">
+            <span class="bg-brand-500/20 text-brand-500 border border-brand-500/40 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-ping"></span>
+                Filvora Spotlight
+            </span>
+            <span class="bg-black/60 backdrop-blur-md border border-gray-700/80 text-gray-300 text-xs font-semibold px-2.5 py-1 rounded-full">
+                4K Ultra HD • Dolby Atmos
+            </span>
         </div>
-        <p class="text-lg text-gray-200 mb-8 line-clamp-3 drop-shadow-md">
+
+        <h1 class="text-4xl sm:text-6xl md:text-7xl font-black drop-shadow-2xl text-white tracking-tight leading-none">{{ hero_movie.title }}</h1>
+        
+        <!-- Metadata Row -->
+        <div class="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-gray-300 drop-shadow">
+            {% if hero_movie.vote_average %}
+            <span class="flex items-center gap-1 bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 font-black px-2 py-0.5 rounded shadow">
+                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                </svg>
+                {{ hero_movie.vote_average|floatformat:1 }} Rating
+            </span>
+            <span>•</span>
+            {% endif %}
+            {% if hero_movie.release_date %}
+            <span class="font-medium">{{ hero_movie.release_date|slice:":4" }}</span>
+            <span>•</span>
+            {% endif %}
+            <span class="text-emerald-400 font-bold">98% Match</span>
+            <span>•</span>
+            <span class="border border-gray-600 px-1.5 py-0.5 rounded text-[10px] font-bold text-gray-300">HDR10+</span>
+        </div>
+
+        <p class="text-sm sm:text-base md:text-lg text-gray-200 line-clamp-3 drop-shadow-md leading-relaxed">
             {{ hero_movie.overview }}
         </p>
-        <div class="flex gap-4">
-            <a href="/watch/movie/{{ hero_movie.id }}/" class="bg-white text-black px-8 py-3 rounded font-bold text-lg flex items-center gap-2 hover:bg-gray-200 transition shadow-lg shadow-white/20">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+
+        <!-- CTA Actions Row -->
+        <div class="flex flex-wrap items-center gap-3 sm:gap-4 pt-2">
+            <!-- Play Button -->
+            <a href="/watch/movie/{{ hero_movie.id }}/" class="bg-white hover:bg-gray-200 text-black px-7 sm:px-9 py-3.5 rounded-full font-black text-base sm:text-lg flex items-center gap-2.5 transition transform hover:scale-105 active:scale-95 shadow-xl shadow-white/15">
+                <svg class="h-5 w-5 fill-black translate-x-0.5" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
                 </svg>
-                Play
+                <span>Play Now</span>
             </a>
-            <a href="/movies/{{ hero_movie.id }}/" class="bg-gray-500/50 text-white px-8 py-3 rounded font-bold text-lg flex items-center gap-2 hover:bg-gray-500/70 transition backdrop-blur-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                More Info
-            </a>
+
+            <!-- Watchlist Button -->
+            {% if hero_movie.id in user_saved_ids %}
             <button hx-post="/library/toggle/" 
                     hx-vals='{"tmdb_id": "{{ hero_movie.id }}", "media_type": "movie"}' 
                     hx-swap="outerHTML"
-                    class="bg-gray-500/50 text-white px-8 py-3 rounded font-bold text-lg flex items-center gap-2 hover:bg-gray-500/70 transition backdrop-blur-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    class="bg-brand-500 hover:bg-red-600 text-white px-6 sm:px-7 py-3.5 rounded-full font-bold text-sm sm:text-base flex items-center gap-2 transition shadow-lg shadow-brand-500/30 transform hover:scale-105 active:scale-95">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                 </svg>
-                My List
+                <span>In My List</span>
             </button>
+            {% else %}
+            <button hx-post="/library/toggle/" 
+                    hx-vals='{"tmdb_id": "{{ hero_movie.id }}", "media_type": "movie"}' 
+                    hx-swap="outerHTML"
+                    class="bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-700 px-6 sm:px-7 py-3.5 rounded-full font-bold text-sm sm:text-base flex items-center gap-2 transition backdrop-blur-md shadow-lg transform hover:scale-105 active:scale-95">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Add to My List</span>
+            </button>
+            {% endif %}
+
+            <!-- More Info Button -->
+            <a href="/movies/{{ hero_movie.id }}/" class="bg-gray-900/80 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700 px-5 sm:px-6 py-3.5 rounded-full font-bold text-sm sm:text-base flex items-center gap-2 transition backdrop-blur-md shadow-lg transform hover:scale-105 active:scale-95">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Details</span>
+            </a>
         </div>
     </div>
 </section>
 {% endif %}
 
 <!-- Content Rails -->
-<div class="relative z-20 -mt-24 px-4 md:px-12 space-y-12 pb-16">
+<div class="relative z-20 -mt-24 px-4 sm:px-8 md:px-12 space-y-12 pb-20">
     
     {% if continue_watching %}
     <!-- Continue Watching -->
-    <section>
-        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center gap-2">
-            <span>Continue Watching</span>
-            <span class="text-xs bg-brand-500/20 text-brand-500 border border-brand-500/30 px-2 py-0.5 rounded-full font-medium">In Progress</span>
-        </h2>
-        <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
+    <section class="relative group/rail rail-container">
+        <div class="flex items-center justify-between mb-3 px-1">
+            <h2 class="text-xl md:text-2xl font-black text-white drop-shadow-md flex items-center gap-2.5">
+                <span>Continue Watching</span>
+                <span class="text-[11px] bg-brand-500/20 text-brand-500 border border-brand-500/40 px-2.5 py-0.5 rounded-full font-bold">In Progress</span>
+            </h2>
+        </div>
+
+        <!-- Left Navigation Arrow -->
+        <button type="button" class="rail-prev-btn absolute left-0 top-0 bottom-10 z-40 w-12 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 flex items-center justify-start pl-1 cursor-pointer rounded-l-2xl focus:outline-none" aria-label="Scroll left">
+            <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                </svg>
+            </div>
+        </button>
+
+        <div class="rail-track flex gap-4 overflow-x-auto pb-4 pt-1 px-1 scrollbar-hide snap-x scroll-smooth">
             {% for item in continue_watching %}
-            <div class="flex-none w-44 md:w-56 transform transition duration-300 hover:scale-105 hover:z-30 cursor-pointer snap-start group">
-                <a href="{{ item.watch_url }}" class="block">
-                    <div class="aspect-[16/9] rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
-                        {% if item.backdrop_path %}
-                        <img src="https://image.tmdb.org/t/p/w500{{ item.backdrop_path }}" alt="{{ item.display_title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-                        {% elif item.poster_path %}
-                        <img src="https://image.tmdb.org/t/p/w500{{ item.poster_path }}" alt="{{ item.display_title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-                        {% else %}
-                        <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ item.display_title }}</div>
-                        {% endif %}
-                        
-                        <!-- Hover Overlay with Play Button -->
-                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                            <div class="p-3 bg-brand-500 rounded-full text-white shadow-lg transform group-hover:scale-110 transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+            <div class="flex-none w-52 sm:w-64 transform transition-all duration-300 hover:scale-105 hover:z-30 cursor-pointer snap-start group/card flex flex-col">
+                <div class="aspect-[16/9] rounded-2xl overflow-hidden shadow-xl bg-gray-900 ring-1 ring-gray-800 relative group-hover/card:ring-2 group-hover/card:ring-brand-500/80 group-hover/card:shadow-2xl transition-all duration-300">
+                    {% if item.backdrop_path %}
+                    <img src="https://image.tmdb.org/t/p/w500{{ item.backdrop_path }}" alt="{{ item.display_title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-105">
+                    {% elif item.poster_path %}
+                    <img src="https://image.tmdb.org/t/p/w500{{ item.poster_path }}" alt="{{ item.display_title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-105">
+                    {% else %}
+                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2 text-sm">{{ item.display_title }}</div>
+                    {% endif %}
+                    
+                    <!-- Hover Overlay with Play Button & Details -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/70 to-black/30 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3.5">
+                        <div class="flex items-center justify-between">
+                            {% if item.sub_label %}
+                            <span class="text-[10px] font-black px-2 py-0.5 rounded bg-black/80 text-white backdrop-blur-md border border-gray-700">
+                                {{ item.sub_label }}
+                            </span>
+                            {% endif %}
+                            <span class="text-[10px] text-brand-500 font-black bg-black/80 px-2 py-0.5 rounded border border-brand-500/40 ml-auto">Resume</span>
+                        </div>
+
+                        <a href="{{ item.watch_url }}" class="flex items-center justify-center my-auto group/play" title="Resume Playback">
+                            <div class="w-12 h-12 bg-brand-500 rounded-full text-white shadow-2xl shadow-brand-500/50 transform group-hover/play:scale-110 hover:bg-red-600 transition flex items-center justify-center">
+                                <svg class="w-6 h-6 fill-white translate-x-0.5" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
                                 </svg>
                             </div>
-                        </div>
+                        </a>
 
-                        {% if item.sub_label %}
-                        <span class="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/70 text-white backdrop-blur-sm border border-gray-700">
-                            {{ item.sub_label }}
-                        </span>
-                        {% endif %}
-
-                        <!-- Progress Bar Overlay at Bottom of Card -->
-                        <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-gray-800/80">
-                            <div class="h-full bg-brand-500 transition-all duration-300" style="width: {{ item.progress_percentage }}%;"></div>
+                        <div>
+                            <p class="text-xs font-bold text-white truncate drop-shadow">{{ item.display_title }}</p>
                         </div>
                     </div>
-                    
-                    <div class="mt-2 px-1 flex items-center justify-between">
-                        <p class="text-xs md:text-sm font-semibold text-white truncate">{{ item.display_title }}</p>
-                        <span class="text-[11px] text-gray-400 font-medium">{{ item.progress_percentage }}%</span>
+
+                    <!-- Progress Bar Overlay at Bottom of Card -->
+                    <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-gray-800/80">
+                        <div class="h-full bg-brand-500 transition-all duration-300" style="width: {{ item.progress_percentage }}%;"></div>
                     </div>
-                </a>
+                </div>
+                
+                <div class="mt-2 px-1 flex items-center justify-between">
+                    <p class="text-xs sm:text-sm font-bold text-white truncate group-hover/card:text-brand-500 transition">{{ item.display_title }}</p>
+                    <span class="text-[11px] text-gray-400 font-semibold">{{ item.progress_percentage }}%</span>
+                </div>
             </div>
             {% endfor %}
         </div>
+
+        <!-- Right Navigation Arrow -->
+        <button type="button" class="rail-next-btn absolute right-0 top-0 bottom-10 z-40 w-12 bg-gradient-to-l from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 flex items-center justify-end pr-1 cursor-pointer rounded-r-2xl focus:outline-none" aria-label="Scroll right">
+            <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+            </div>
+        </button>
     </section>
     {% endif %}
 
     <!-- Trending Movies -->
-    <section>
-        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center justify-between">
-            <span>Trending Movies</span>
-            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-semibold transition">Explore All &rarr;</a>
-        </h2>
-        <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
-            {% for movie in trending_movies %}
-            <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
-                <a href="/movies/{{ movie.id }}/" class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
-                    {% if movie.poster_path %}
-                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-                    {% else %}
-                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ movie.title }}</div>
-                    {% endif %}
-                    
-                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/90 hover:text-white transition transform hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ movie.title }}</p>
-                    </div>
-                </a>
-            </div>
-            {% endfor %}
+    {% if trending_movies %}
+    <section class="relative group/rail rail-container">
+        <div class="flex items-center justify-between mb-3 px-1">
+            <h2 class="text-xl md:text-2xl font-black text-white drop-shadow-md flex items-center gap-2">
+                <span>Trending Movies</span>
+            </h2>
+            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-bold transition flex items-center gap-1 group/link">
+                <span>Explore All</span>
+                <span class="transform group-hover/link:translate-x-1 transition-transform">&rarr;</span>
+            </a>
         </div>
-    </section>
 
-    {% if popular_movies %}
-    <!-- Popular Movies -->
-    <section>
-        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center justify-between">
-            <span>Popular Movies</span>
-            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-semibold transition">Explore All &rarr;</a>
-        </h2>
-        <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
-            {% for movie in popular_movies %}
-            <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
-                <a href="/movies/{{ movie.id }}/" class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+        <!-- Left Navigation Arrow -->
+        <button type="button" class="rail-prev-btn absolute left-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 flex items-center justify-start pl-1 cursor-pointer rounded-l-2xl focus:outline-none" aria-label="Scroll left">
+            <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                </svg>
+            </div>
+        </button>
+
+        <div class="rail-track flex gap-4 sm:gap-5 overflow-x-auto pb-4 pt-1 px-1 scrollbar-hide snap-x scroll-smooth">
+            {% for movie in trending_movies %}
+            <div class="flex-none w-36 sm:w-44 md:w-52 transform transition-all duration-300 hover:scale-105 md:hover:scale-108 hover:z-30 cursor-pointer snap-start group/card flex flex-col">
+                <div class="aspect-[2/3] block rounded-2xl overflow-hidden shadow-xl bg-gray-900 ring-1 ring-gray-800 relative group-hover/card:ring-2 group-hover/card:ring-brand-500/80 group-hover/card:shadow-2xl group-hover/card:shadow-brand-500/20 transition-all duration-300">
                     {% if movie.poster_path %}
-                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-105">
                     {% else %}
-                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ movie.title }}</div>
+                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2 text-sm">{{ movie.title }}</div>
                     {% endif %}
-                    
-                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/90 hover:text-white transition transform hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                            </svg>
+
+                    <!-- Hover Overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/75 to-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3.5">
+                        <div class="flex items-center justify-between z-20">
+                            {% if movie.vote_average %}
+                            <span class="flex items-center gap-1 bg-black/80 backdrop-blur-md border border-yellow-500/40 text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                                {{ movie.vote_average|floatformat:1 }}
+                            </span>
+                            {% else %}
+                            <span class="bg-black/80 backdrop-blur-md border border-gray-700 text-gray-300 text-[10px] font-bold px-1.5 py-0.5 rounded">NEW</span>
+                            {% endif %}
+                            <span class="border border-gray-600/80 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-semibold text-gray-200">HD</span>
                         </div>
-                        <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ movie.title }}</p>
+
+                        <!-- Center Play Button -->
+                        <a href="/watch/movie/{{ movie.id }}/" class="flex-grow flex items-center justify-center my-auto group/centerplay" title="Play Movie">
+                            <div class="w-12 h-12 rounded-full bg-brand-500 text-white shadow-2xl shadow-brand-500/50 flex items-center justify-center transform group-hover/centerplay:scale-110 hover:bg-red-600 transition duration-200">
+                                <svg class="w-6 h-6 fill-white translate-x-0.5" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
+                        </a>
+
+                        <!-- Bottom Section -->
+                        <div class="z-20 space-y-2">
+                            <div class="flex items-center gap-2">
+                                <a href="/watch/movie/{{ movie.id }}/" title="Play Now" class="w-8 h-8 rounded-full bg-white hover:bg-gray-200 text-black flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 active:scale-95">
+                                    <svg class="w-4 h-4 fill-black translate-x-0.5" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </a>
+
+                                {% if movie.id in user_saved_ids %}
+                                <button hx-post="/library/toggle/" 
+                                        hx-vals='{"tmdb_id": "{{ movie.id }}", "media_type": "movie", "variant": "card"}' 
+                                        hx-swap="outerHTML" 
+                                        onclick="event.preventDefault(); event.stopPropagation();" 
+                                        title="Saved in My List" 
+                                        class="w-8 h-8 rounded-full bg-brand-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition-transform transform hover:scale-110">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                                {% else %}
+                                <button hx-post="/library/toggle/" 
+                                        hx-vals='{"tmdb_id": "{{ movie.id }}", "media_type": "movie", "variant": "card"}' 
+                                        hx-swap="outerHTML" 
+                                        onclick="event.preventDefault(); event.stopPropagation();" 
+                                        title="Add to My List" 
+                                        class="w-8 h-8 rounded-full bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-600/80 flex items-center justify-center shadow-lg transition-transform transform hover:scale-110">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                </button>
+                                {% endif %}
+
+                                <a href="/movies/{{ movie.id }}/" onclick="event.stopPropagation();" title="More Info" class="w-8 h-8 rounded-full bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-600/80 flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 ml-auto">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                </a>
+                </div>
+
+                <!-- Label below card -->
+                <div class="mt-2.5 px-0.5">
+                    <a href="/movies/{{ movie.id }}/" class="text-xs sm:text-sm font-bold text-white truncate block hover:text-brand-500 transition leading-snug">{{ movie.title }}</a>
+                    <div class="flex items-center justify-between text-[11px] text-gray-400 font-medium mt-0.5">
+                        <span>{{ movie.release_date|slice:":4" }}</span>
+                        {% if movie.vote_average %}
+                        <span class="text-yellow-400 font-bold flex items-center gap-0.5">
+                            ★ {{ movie.vote_average|floatformat:1 }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
             {% endfor %}
         </div>
+
+        <!-- Right Navigation Arrow -->
+        <button type="button" class="rail-next-btn absolute right-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-l from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 flex items-center justify-end pr-1 cursor-pointer rounded-r-2xl focus:outline-none" aria-label="Scroll right">
+            <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+            </div>
+        </button>
+    </section>
+    {% endif %}
+
+    <!-- Popular Movies -->
+    {% if popular_movies %}
+    <section class="relative group/rail rail-container">
+        <div class="flex items-center justify-between mb-3 px-1">
+            <h2 class="text-xl md:text-2xl font-black text-white drop-shadow-md flex items-center gap-2">
+                <span>Popular Movies</span>
+            </h2>
+            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-bold transition flex items-center gap-1 group/link">
+                <span>Explore All</span>
+                <span class="transform group-hover/link:translate-x-1 transition-transform">&rarr;</span>
+            </a>
+        </div>
+
+        <!-- Left Navigation Arrow -->
+        <button type="button" class="rail-prev-btn absolute left-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 flex items-center justify-start pl-1 cursor-pointer rounded-l-2xl focus:outline-none" aria-label="Scroll left">
+            <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                </svg>
+            </div>
+        </button>
+
+        <div class="rail-track flex gap-4 sm:gap-5 overflow-x-auto pb-4 pt-1 px-1 scrollbar-hide snap-x scroll-smooth">
+            {% for movie in popular_movies %}
+            <div class="flex-none w-36 sm:w-44 md:w-52 transform transition-all duration-300 hover:scale-105 md:hover:scale-108 hover:z-30 cursor-pointer snap-start group/card flex flex-col">
+                <div class="aspect-[2/3] block rounded-2xl overflow-hidden shadow-xl bg-gray-900 ring-1 ring-gray-800 relative group-hover/card:ring-2 group-hover/card:ring-brand-500/80 group-hover/card:shadow-2xl group-hover/card:shadow-brand-500/20 transition-all duration-300">
+                    {% if movie.poster_path %}
+                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-105">
+                    {% else %}
+                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2 text-sm">{{ movie.title }}</div>
+                    {% endif %}
+
+                    <!-- Hover Overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/75 to-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3.5">
+                        <div class="flex items-center justify-between z-20">
+                            {% if movie.vote_average %}
+                            <span class="flex items-center gap-1 bg-black/80 backdrop-blur-md border border-yellow-500/40 text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                                {{ movie.vote_average|floatformat:1 }}
+                            </span>
+                            {% else %}
+                            <span class="bg-black/80 backdrop-blur-md border border-gray-700 text-gray-300 text-[10px] font-bold px-1.5 py-0.5 rounded">NEW</span>
+                            {% endif %}
+                            <span class="border border-gray-600/80 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-semibold text-gray-200">HD</span>
+                        </div>
+
+                        <!-- Center Play Button -->
+                        <a href="/watch/movie/{{ movie.id }}/" class="flex-grow flex items-center justify-center my-auto group/centerplay" title="Play Movie">
+                            <div class="w-12 h-12 rounded-full bg-brand-500 text-white shadow-2xl shadow-brand-500/50 flex items-center justify-center transform group-hover/centerplay:scale-110 hover:bg-red-600 transition duration-200">
+                                <svg class="w-6 h-6 fill-white translate-x-0.5" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
+                        </a>
+
+                        <!-- Bottom Section -->
+                        <div class="z-20 space-y-2">
+                            <div class="flex items-center gap-2">
+                                <a href="/watch/movie/{{ movie.id }}/" title="Play Now" class="w-8 h-8 rounded-full bg-white hover:bg-gray-200 text-black flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 active:scale-95">
+                                    <svg class="w-4 h-4 fill-black translate-x-0.5" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </a>
+
+                                {% if movie.id in user_saved_ids %}
+                                <button hx-post="/library/toggle/" 
+                                        hx-vals='{"tmdb_id": "{{ movie.id }}", "media_type": "movie", "variant": "card"}' 
+                                        hx-swap="outerHTML" 
+                                        onclick="event.preventDefault(); event.stopPropagation();" 
+                                        title="Saved in My List" 
+                                        class="w-8 h-8 rounded-full bg-brand-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition-transform transform hover:scale-110">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                                {% else %}
+                                <button hx-post="/library/toggle/" 
+                                        hx-vals='{"tmdb_id": "{{ movie.id }}", "media_type": "movie", "variant": "card"}' 
+                                        hx-swap="outerHTML" 
+                                        onclick="event.preventDefault(); event.stopPropagation();" 
+                                        title="Add to My List" 
+                                        class="w-8 h-8 rounded-full bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-600/80 flex items-center justify-center shadow-lg transition-transform transform hover:scale-110">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                </button>
+                                {% endif %}
+
+                                <a href="/movies/{{ movie.id }}/" onclick="event.stopPropagation();" title="More Info" class="w-8 h-8 rounded-full bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-600/80 flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 ml-auto">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Label below card -->
+                <div class="mt-2.5 px-0.5">
+                    <a href="/movies/{{ movie.id }}/" class="text-xs sm:text-sm font-bold text-white truncate block hover:text-brand-500 transition leading-snug">{{ movie.title }}</a>
+                    <div class="flex items-center justify-between text-[11px] text-gray-400 font-medium mt-0.5">
+                        <span>{{ movie.release_date|slice:":4" }}</span>
+                        {% if movie.vote_average %}
+                        <span class="text-yellow-400 font-bold flex items-center gap-0.5">
+                            ★ {{ movie.vote_average|floatformat:1 }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Right Navigation Arrow -->
+        <button type="button" class="rail-next-btn absolute right-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-l from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 flex items-center justify-end pr-1 cursor-pointer rounded-r-2xl focus:outline-none" aria-label="Scroll right">
+            <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+            </div>
+        </button>
     </section>
     {% endif %}
 
     <!-- Popular Series -->
-    <section>
-        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center justify-between">
-            <span>Popular TV Series</span>
-            <a href="/series/" class="text-xs text-brand-500 hover:text-red-400 font-semibold transition">Explore All &rarr;</a>
-        </h2>
-        <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
+    {% if popular_series %}
+    <section class="relative group/rail rail-container">
+        <div class="flex items-center justify-between mb-3 px-1">
+            <h2 class="text-xl md:text-2xl font-black text-white drop-shadow-md flex items-center gap-2">
+                <span>Popular TV Series</span>
+            </h2>
+            <a href="/series/" class="text-xs text-brand-500 hover:text-red-400 font-bold transition flex items-center gap-1 group/link">
+                <span>Explore All</span>
+                <span class="transform group-hover/link:translate-x-1 transition-transform">&rarr;</span>
+            </a>
+        </div>
+
+        <!-- Left Navigation Arrow -->
+        <button type="button" class="rail-prev-btn absolute left-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 flex items-center justify-start pl-1 cursor-pointer rounded-l-2xl focus:outline-none" aria-label="Scroll left">
+            <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                </svg>
+            </div>
+        </button>
+
+        <div class="rail-track flex gap-4 sm:gap-5 overflow-x-auto pb-4 pt-1 px-1 scrollbar-hide snap-x scroll-smooth">
             {% for series in popular_series %}
-            <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
-                <a href="/series/{{ series.id }}/" class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+            <div class="flex-none w-36 sm:w-44 md:w-52 transform transition-all duration-300 hover:scale-105 md:hover:scale-108 hover:z-30 cursor-pointer snap-start group/card flex flex-col">
+                <div class="aspect-[2/3] block rounded-2xl overflow-hidden shadow-xl bg-gray-900 ring-1 ring-gray-800 relative group-hover/card:ring-2 group-hover/card:ring-brand-500/80 group-hover/card:shadow-2xl group-hover/card:shadow-brand-500/20 transition-all duration-300">
                     {% if series.poster_path %}
-                    <img src="https://image.tmdb.org/t/p/w500{{ series.poster_path }}" alt="{{ series.name }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    <img src="https://image.tmdb.org/t/p/w500{{ series.poster_path }}" alt="{{ series.name }}" class="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-105">
                     {% else %}
-                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ series.name }}</div>
+                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2 text-sm">{{ series.name }}</div>
                     {% endif %}
-                    
-                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/90 hover:text-white transition transform hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                            </svg>
+
+                    <!-- Hover Overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/75 to-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3.5">
+                        <div class="flex items-center justify-between z-20">
+                            {% if series.vote_average %}
+                            <span class="flex items-center gap-1 bg-black/80 backdrop-blur-md border border-yellow-500/40 text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                                {{ series.vote_average|floatformat:1 }}
+                            </span>
+                            {% else %}
+                            <span class="bg-black/80 backdrop-blur-md border border-gray-700 text-gray-300 text-[10px] font-bold px-1.5 py-0.5 rounded">NEW</span>
+                            {% endif %}
+                            <span class="border border-gray-600/80 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-semibold text-gray-200">TV-MA</span>
                         </div>
-                        <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ series.name }}</p>
+
+                        <!-- Center Play Button -->
+                        <a href="/watch/tv/{{ series.id }}/1/1/" class="flex-grow flex items-center justify-center my-auto group/centerplay" title="Play Series">
+                            <div class="w-12 h-12 rounded-full bg-brand-500 text-white shadow-2xl shadow-brand-500/50 flex items-center justify-center transform group-hover/centerplay:scale-110 hover:bg-red-600 transition duration-200">
+                                <svg class="w-6 h-6 fill-white translate-x-0.5" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
+                        </a>
+
+                        <!-- Bottom Section -->
+                        <div class="z-20 space-y-2">
+                            <div class="flex items-center gap-2">
+                                <a href="/watch/tv/{{ series.id }}/1/1/" title="Watch S1:E1" class="w-8 h-8 rounded-full bg-white hover:bg-gray-200 text-black flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 active:scale-95">
+                                    <svg class="w-4 h-4 fill-black translate-x-0.5" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </a>
+
+                                {% if series.id in user_saved_ids %}
+                                <button hx-post="/library/toggle/" 
+                                        hx-vals='{"tmdb_id": "{{ series.id }}", "media_type": "tv", "variant": "card"}' 
+                                        hx-swap="outerHTML" 
+                                        onclick="event.preventDefault(); event.stopPropagation();" 
+                                        title="Saved in My List" 
+                                        class="w-8 h-8 rounded-full bg-brand-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition-transform transform hover:scale-110">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                                {% else %}
+                                <button hx-post="/library/toggle/" 
+                                        hx-vals='{"tmdb_id": "{{ series.id }}", "media_type": "tv", "variant": "card"}' 
+                                        hx-swap="outerHTML" 
+                                        onclick="event.preventDefault(); event.stopPropagation();" 
+                                        title="Add to My List" 
+                                        class="w-8 h-8 rounded-full bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-600/80 flex items-center justify-center shadow-lg transition-transform transform hover:scale-110">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                </button>
+                                {% endif %}
+
+                                <a href="/series/{{ series.id }}/" onclick="event.stopPropagation();" title="More Info" class="w-8 h-8 rounded-full bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-600/80 flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 ml-auto">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                </a>
+                </div>
+
+                <!-- Label below card -->
+                <div class="mt-2.5 px-0.5">
+                    <a href="/series/{{ series.id }}/" class="text-xs sm:text-sm font-bold text-white truncate block hover:text-brand-500 transition leading-snug">{{ series.name }}</a>
+                    <div class="flex items-center justify-between text-[11px] text-gray-400 font-medium mt-0.5">
+                        <span>{{ series.first_air_date|slice:":4" }}</span>
+                        {% if series.vote_average %}
+                        <span class="text-yellow-400 font-bold flex items-center gap-0.5">
+                            ★ {{ series.vote_average|floatformat:1 }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
             {% endfor %}
         </div>
-    </section>
 
-    {% if top_rated_movies %}
+        <!-- Right Navigation Arrow -->
+        <button type="button" class="rail-next-btn absolute right-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-l from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 flex items-center justify-end pr-1 cursor-pointer rounded-r-2xl focus:outline-none" aria-label="Scroll right">
+            <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+            </div>
+        </button>
+    </section>
+    {% endif %}
+
     <!-- Top Rated Movies -->
-    <section>
-        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center justify-between">
-            <span>Top Rated Movies</span>
-            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-semibold transition">Explore All &rarr;</a>
-        </h2>
-        <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
+    {% if top_rated_movies %}
+    <section class="relative group/rail rail-container">
+        <div class="flex items-center justify-between mb-3 px-1">
+            <h2 class="text-xl md:text-2xl font-black text-white drop-shadow-md flex items-center gap-2">
+                <span>Top Rated Movies</span>
+            </h2>
+            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-bold transition flex items-center gap-1 group/link">
+                <span>Explore All</span>
+                <span class="transform group-hover/link:translate-x-1 transition-transform">&rarr;</span>
+            </a>
+        </div>
+
+        <!-- Left Navigation Arrow -->
+        <button type="button" class="rail-prev-btn absolute left-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 flex items-center justify-start pl-1 cursor-pointer rounded-l-2xl focus:outline-none" aria-label="Scroll left">
+            <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                </svg>
+            </div>
+        </button>
+
+        <div class="rail-track flex gap-4 sm:gap-5 overflow-x-auto pb-4 pt-1 px-1 scrollbar-hide snap-x scroll-smooth">
             {% for movie in top_rated_movies %}
-            <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
-                <a href="/movies/{{ movie.id }}/" class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+            <div class="flex-none w-36 sm:w-44 md:w-52 transform transition-all duration-300 hover:scale-105 md:hover:scale-108 hover:z-30 cursor-pointer snap-start group/card flex flex-col">
+                <div class="aspect-[2/3] block rounded-2xl overflow-hidden shadow-xl bg-gray-900 ring-1 ring-gray-800 relative group-hover/card:ring-2 group-hover/card:ring-brand-500/80 group-hover/card:shadow-2xl group-hover/card:shadow-brand-500/20 transition-all duration-300">
                     {% if movie.poster_path %}
-                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-105">
                     {% else %}
-                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ movie.title }}</div>
+                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2 text-sm">{{ movie.title }}</div>
                     {% endif %}
-                    
-                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/90 hover:text-white transition transform hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                            </svg>
+
+                    <!-- Hover Overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/75 to-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3.5">
+                        <div class="flex items-center justify-between z-20">
+                            {% if movie.vote_average %}
+                            <span class="flex items-center gap-1 bg-black/80 backdrop-blur-md border border-yellow-500/40 text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                                {{ movie.vote_average|floatformat:1 }}
+                            </span>
+                            {% else %}
+                            <span class="bg-black/80 backdrop-blur-md border border-gray-700 text-gray-300 text-[10px] font-bold px-1.5 py-0.5 rounded">NEW</span>
+                            {% endif %}
+                            <span class="border border-gray-600/80 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-semibold text-gray-200">HD</span>
                         </div>
-                        <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ movie.title }}</p>
+
+                        <!-- Center Play Button -->
+                        <a href="/watch/movie/{{ movie.id }}/" class="flex-grow flex items-center justify-center my-auto group/centerplay" title="Play Movie">
+                            <div class="w-12 h-12 rounded-full bg-brand-500 text-white shadow-2xl shadow-brand-500/50 flex items-center justify-center transform group-hover/centerplay:scale-110 hover:bg-red-600 transition duration-200">
+                                <svg class="w-6 h-6 fill-white translate-x-0.5" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
+                        </a>
+
+                        <!-- Bottom Section -->
+                        <div class="z-20 space-y-2">
+                            <div class="flex items-center gap-2">
+                                <a href="/watch/movie/{{ movie.id }}/" title="Play Now" class="w-8 h-8 rounded-full bg-white hover:bg-gray-200 text-black flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 active:scale-95">
+                                    <svg class="w-4 h-4 fill-black translate-x-0.5" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </a>
+
+                                {% if movie.id in user_saved_ids %}
+                                <button hx-post="/library/toggle/" 
+                                        hx-vals='{"tmdb_id": "{{ movie.id }}", "media_type": "movie", "variant": "card"}' 
+                                        hx-swap="outerHTML" 
+                                        onclick="event.preventDefault(); event.stopPropagation();" 
+                                        title="Saved in My List" 
+                                        class="w-8 h-8 rounded-full bg-brand-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition-transform transform hover:scale-110">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                                {% else %}
+                                <button hx-post="/library/toggle/" 
+                                        hx-vals='{"tmdb_id": "{{ movie.id }}", "media_type": "movie", "variant": "card"}' 
+                                        hx-swap="outerHTML" 
+                                        onclick="event.preventDefault(); event.stopPropagation();" 
+                                        title="Add to My List" 
+                                        class="w-8 h-8 rounded-full bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-600/80 flex items-center justify-center shadow-lg transition-transform transform hover:scale-110">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                </button>
+                                {% endif %}
+
+                                <a href="/movies/{{ movie.id }}/" onclick="event.stopPropagation();" title="More Info" class="w-8 h-8 rounded-full bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-600/80 flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 ml-auto">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                </a>
+                </div>
+
+                <!-- Label below card -->
+                <div class="mt-2.5 px-0.5">
+                    <a href="/movies/{{ movie.id }}/" class="text-xs sm:text-sm font-bold text-white truncate block hover:text-brand-500 transition leading-snug">{{ movie.title }}</a>
+                    <div class="flex items-center justify-between text-[11px] text-gray-400 font-medium mt-0.5">
+                        <span>{{ movie.release_date|slice:":4" }}</span>
+                        {% if movie.vote_average %}
+                        <span class="text-yellow-400 font-bold flex items-center gap-0.5">
+                            ★ {{ movie.vote_average|floatformat:1 }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
             {% endfor %}
         </div>
-    </section>
-    {% endif %}
 
-    {% if top_rated_series %}
-    <!-- Top Rated Series -->
-    <section>
-        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center justify-between">
-            <span>Top Rated Series</span>
-            <a href="/series/" class="text-xs text-brand-500 hover:text-red-400 font-semibold transition">Explore All &rarr;</a>
-        </h2>
-        <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
-            {% for s in top_rated_series %}
-            <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
-                <a href="/series/{{ s.id }}/" class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
-                    {% if s.poster_path %}
-                    <img src="https://image.tmdb.org/t/p/w500{{ s.poster_path }}" alt="{{ s.name }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-                    {% else %}
-                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ s.name }}</div>
-                    {% endif %}
-                    
-                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/90 hover:text-white transition transform hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ s.name }}</p>
-                    </div>
-                </a>
+        <!-- Right Navigation Arrow -->
+        <button type="button" class="rail-next-btn absolute right-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-l from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 flex items-center justify-end pr-1 cursor-pointer rounded-r-2xl focus:outline-none" aria-label="Scroll right">
+            <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
             </div>
-            {% endfor %}
-        </div>
+        </button>
     </section>
     {% endif %}
 
-    {% if action_movies %}
     <!-- Action Blockbusters -->
-    <section>
-        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center justify-between">
-            <span>Action Blockbusters</span>
-            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-semibold transition">Explore All &rarr;</a>
-        </h2>
-        <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
+    {% if action_movies %}
+    <section class="relative group/rail rail-container">
+        <div class="flex items-center justify-between mb-3 px-1">
+            <h2 class="text-xl md:text-2xl font-black text-white drop-shadow-md flex items-center gap-2">
+                <span>Action Blockbusters</span>
+            </h2>
+            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-bold transition flex items-center gap-1 group/link">
+                <span>Explore All</span>
+                <span class="transform group-hover/link:translate-x-1 transition-transform">&rarr;</span>
+            </a>
+        </div>
+
+        <!-- Left Navigation Arrow -->
+        <button type="button" class="rail-prev-btn absolute left-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 flex items-center justify-start pl-1 cursor-pointer rounded-l-2xl focus:outline-none" aria-label="Scroll left">
+            <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                </svg>
+            </div>
+        </button>
+
+        <div class="rail-track flex gap-4 sm:gap-5 overflow-x-auto pb-4 pt-1 px-1 scrollbar-hide snap-x scroll-smooth">
             {% for movie in action_movies %}
-            <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
-                <a href="/movies/{{ movie.id }}/" class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+            <div class="flex-none w-36 sm:w-44 md:w-52 transform transition-all duration-300 hover:scale-105 md:hover:scale-108 hover:z-30 cursor-pointer snap-start group/card flex flex-col">
+                <div class="aspect-[2/3] block rounded-2xl overflow-hidden shadow-xl bg-gray-900 ring-1 ring-gray-800 relative group-hover/card:ring-2 group-hover/card:ring-brand-500/80 group-hover/card:shadow-2xl group-hover/card:shadow-brand-500/20 transition-all duration-300">
                     {% if movie.poster_path %}
-                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-105">
                     {% else %}
-                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ movie.title }}</div>
+                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2 text-sm">{{ movie.title }}</div>
                     {% endif %}
-                    
-                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/90 hover:text-white transition transform hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                            </svg>
+
+                    <!-- Hover Overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/75 to-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3.5">
+                        <div class="flex items-center justify-between z-20">
+                            {% if movie.vote_average %}
+                            <span class="flex items-center gap-1 bg-black/80 backdrop-blur-md border border-yellow-500/40 text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                                {{ movie.vote_average|floatformat:1 }}
+                            </span>
+                            {% else %}
+                            <span class="bg-black/80 backdrop-blur-md border border-gray-700 text-gray-300 text-[10px] font-bold px-1.5 py-0.5 rounded">NEW</span>
+                            {% endif %}
+                            <span class="border border-gray-600/80 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-semibold text-gray-200">HD</span>
                         </div>
-                        <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ movie.title }}</p>
+
+                        <!-- Center Play Button -->
+                        <a href="/watch/movie/{{ movie.id }}/" class="flex-grow flex items-center justify-center my-auto group/centerplay" title="Play Movie">
+                            <div class="w-12 h-12 rounded-full bg-brand-500 text-white shadow-2xl shadow-brand-500/50 flex items-center justify-center transform group-hover/centerplay:scale-110 hover:bg-red-600 transition duration-200">
+                                <svg class="w-6 h-6 fill-white translate-x-0.5" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
+                        </a>
+
+                        <!-- Bottom Section -->
+                        <div class="z-20 space-y-2">
+                            <div class="flex items-center gap-2">
+                                <a href="/watch/movie/{{ movie.id }}/" title="Play Now" class="w-8 h-8 rounded-full bg-white hover:bg-gray-200 text-black flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 active:scale-95">
+                                    <svg class="w-4 h-4 fill-black translate-x-0.5" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </a>
+
+                                {% if movie.id in user_saved_ids %}
+                                <button hx-post="/library/toggle/" 
+                                        hx-vals='{"tmdb_id": "{{ movie.id }}", "media_type": "movie", "variant": "card"}' 
+                                        hx-swap="outerHTML" 
+                                        onclick="event.preventDefault(); event.stopPropagation();" 
+                                        title="Saved in My List" 
+                                        class="w-8 h-8 rounded-full bg-brand-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition-transform transform hover:scale-110">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                                {% else %}
+                                <button hx-post="/library/toggle/" 
+                                        hx-vals='{"tmdb_id": "{{ movie.id }}", "media_type": "movie", "variant": "card"}' 
+                                        hx-swap="outerHTML" 
+                                        onclick="event.preventDefault(); event.stopPropagation();" 
+                                        title="Add to My List" 
+                                        class="w-8 h-8 rounded-full bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-600/80 flex items-center justify-center shadow-lg transition-transform transform hover:scale-110">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                </button>
+                                {% endif %}
+
+                                <a href="/movies/{{ movie.id }}/" onclick="event.stopPropagation();" title="More Info" class="w-8 h-8 rounded-full bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-600/80 flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 ml-auto">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                </a>
+                </div>
+
+                <!-- Label below card -->
+                <div class="mt-2.5 px-0.5">
+                    <a href="/movies/{{ movie.id }}/" class="text-xs sm:text-sm font-bold text-white truncate block hover:text-brand-500 transition leading-snug">{{ movie.title }}</a>
+                    <div class="flex items-center justify-between text-[11px] text-gray-400 font-medium mt-0.5">
+                        <span>{{ movie.release_date|slice:":4" }}</span>
+                        {% if movie.vote_average %}
+                        <span class="text-yellow-400 font-bold flex items-center gap-0.5">
+                            ★ {{ movie.vote_average|floatformat:1 }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
             {% endfor %}
         </div>
+
+        <!-- Right Navigation Arrow -->
+        <button type="button" class="rail-next-btn absolute right-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-l from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 flex items-center justify-end pr-1 cursor-pointer rounded-r-2xl focus:outline-none" aria-label="Scroll right">
+            <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+            </div>
+        </button>
     </section>
     {% endif %}
 
-    {% if animation_movies %}
     <!-- Animation & Family -->
-    <section>
-        <h2 class="text-2xl font-bold mb-4 px-4 text-white drop-shadow-md flex items-center justify-between">
-            <span>Animation & Family Favorites</span>
-            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-semibold transition">Explore All &rarr;</a>
-        </h2>
-        <div class="flex gap-4 overflow-x-auto pb-8 pt-4 px-4 scrollbar-hide snap-x">
+    {% if animation_movies %}
+    <section class="relative group/rail rail-container">
+        <div class="flex items-center justify-between mb-3 px-1">
+            <h2 class="text-xl md:text-2xl font-black text-white drop-shadow-md flex items-center gap-2">
+                <span>Animation & Family</span>
+            </h2>
+            <a href="/movies/" class="text-xs text-brand-500 hover:text-red-400 font-bold transition flex items-center gap-1 group/link">
+                <span>Explore All</span>
+                <span class="transform group-hover/link:translate-x-1 transition-transform">&rarr;</span>
+            </a>
+        </div>
+
+        <!-- Left Navigation Arrow -->
+        <button type="button" class="rail-prev-btn absolute left-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 flex items-center justify-start pl-1 cursor-pointer rounded-l-2xl focus:outline-none" aria-label="Scroll left">
+            <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                </svg>
+            </div>
+        </button>
+
+        <div class="rail-track flex gap-4 sm:gap-5 overflow-x-auto pb-4 pt-1 px-1 scrollbar-hide snap-x scroll-smooth">
             {% for movie in animation_movies %}
-            <div class="flex-none w-36 md:w-48 transform transition duration-300 hover:scale-110 hover:z-30 cursor-pointer snap-start group">
-                <a href="/movies/{{ movie.id }}/" class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative">
+            <div class="flex-none w-36 sm:w-44 md:w-52 transform transition-all duration-300 hover:scale-105 md:hover:scale-108 hover:z-30 cursor-pointer snap-start group/card flex flex-col">
+                <div class="aspect-[2/3] block rounded-2xl overflow-hidden shadow-xl bg-gray-900 ring-1 ring-gray-800 relative group-hover/card:ring-2 group-hover/card:ring-brand-500/80 group-hover/card:shadow-2xl group-hover/card:shadow-brand-500/20 transition-all duration-300">
                     {% if movie.poster_path %}
-                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-105">
                     {% else %}
-                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2">{{ movie.title }}</div>
+                    <div class="w-full h-full bg-gray-800 flex items-center justify-center text-center text-gray-500 p-2 text-sm">{{ movie.title }}</div>
                     {% endif %}
-                    
-                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/90 hover:text-white transition transform hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                            </svg>
+
+                    <!-- Hover Overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/75 to-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3.5">
+                        <div class="flex items-center justify-between z-20">
+                            {% if movie.vote_average %}
+                            <span class="flex items-center gap-1 bg-black/80 backdrop-blur-md border border-yellow-500/40 text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                                {{ movie.vote_average|floatformat:1 }}
+                            </span>
+                            {% else %}
+                            <span class="bg-black/80 backdrop-blur-md border border-gray-700 text-gray-300 text-[10px] font-bold px-1.5 py-0.5 rounded">NEW</span>
+                            {% endif %}
+                            <span class="border border-gray-600/80 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-semibold text-gray-200">HD</span>
                         </div>
-                        <p class="text-xs md:text-sm font-bold text-white z-10 truncate drop-shadow">{{ movie.title }}</p>
+
+                        <!-- Center Play Button -->
+                        <a href="/watch/movie/{{ movie.id }}/" class="flex-grow flex items-center justify-center my-auto group/centerplay" title="Play Movie">
+                            <div class="w-12 h-12 rounded-full bg-brand-500 text-white shadow-2xl shadow-brand-500/50 flex items-center justify-center transform group-hover/centerplay:scale-110 hover:bg-red-600 transition duration-200">
+                                <svg class="w-6 h-6 fill-white translate-x-0.5" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
+                        </a>
+
+                        <!-- Bottom Section -->
+                        <div class="z-20 space-y-2">
+                            <div class="flex items-center gap-2">
+                                <a href="/watch/movie/{{ movie.id }}/" title="Play Now" class="w-8 h-8 rounded-full bg-white hover:bg-gray-200 text-black flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 active:scale-95">
+                                    <svg class="w-4 h-4 fill-black translate-x-0.5" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </a>
+
+                                {% if movie.id in user_saved_ids %}
+                                <button hx-post="/library/toggle/" 
+                                        hx-vals='{"tmdb_id": "{{ movie.id }}", "media_type": "movie", "variant": "card"}' 
+                                        hx-swap="outerHTML" 
+                                        onclick="event.preventDefault(); event.stopPropagation();" 
+                                        title="Saved in My List" 
+                                        class="w-8 h-8 rounded-full bg-brand-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition-transform transform hover:scale-110">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                                {% else %}
+                                <button hx-post="/library/toggle/" 
+                                        hx-vals='{"tmdb_id": "{{ movie.id }}", "media_type": "movie", "variant": "card"}' 
+                                        hx-swap="outerHTML" 
+                                        onclick="event.preventDefault(); event.stopPropagation();" 
+                                        title="Add to My List" 
+                                        class="w-8 h-8 rounded-full bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-600/80 flex items-center justify-center shadow-lg transition-transform transform hover:scale-110">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                </button>
+                                {% endif %}
+
+                                <a href="/movies/{{ movie.id }}/" onclick="event.stopPropagation();" title="More Info" class="w-8 h-8 rounded-full bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-600/80 flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 ml-auto">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                </a>
+                </div>
+
+                <!-- Label below card -->
+                <div class="mt-2.5 px-0.5">
+                    <a href="/movies/{{ movie.id }}/" class="text-xs sm:text-sm font-bold text-white truncate block hover:text-brand-500 transition leading-snug">{{ movie.title }}</a>
+                    <div class="flex items-center justify-between text-[11px] text-gray-400 font-medium mt-0.5">
+                        <span>{{ movie.release_date|slice:":4" }}</span>
+                        {% if movie.vote_average %}
+                        <span class="text-yellow-400 font-bold flex items-center gap-0.5">
+                            ★ {{ movie.vote_average|floatformat:1 }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
             {% endfor %}
         </div>
+
+        <!-- Right Navigation Arrow -->
+        <button type="button" class="rail-next-btn absolute right-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-l from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 flex items-center justify-end pr-1 cursor-pointer rounded-r-2xl focus:outline-none" aria-label="Scroll right">
+            <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+            </div>
+        </button>
     </section>
     {% endif %}
 </div>

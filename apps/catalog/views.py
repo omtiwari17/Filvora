@@ -6,7 +6,10 @@ from apps.library.models import LibraryItem
 def movie_browse(request):
     client = TMDBClient()
     movies = client.get_popular_movies()
-    return render(request, 'catalog/movie_browse.html', {'movies': movies})
+    user_saved_ids = set()
+    if request.user.is_authenticated:
+        user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
+    return render(request, 'catalog/movie_browse.html', {'movies': movies, 'user_saved_ids': user_saved_ids})
 
 def movie_detail(request, tmdb_id):
     client = TMDBClient()
@@ -15,12 +18,10 @@ def movie_detail(request, tmdb_id):
 
     # Check if movie is saved in user's library
     in_library = False
+    user_saved_ids = set()
     if request.user.is_authenticated:
-        in_library = LibraryItem.objects.filter(
-            user=request.user,
-            tmdb_id=tmdb_id,
-            media_type='movie'
-        ).exists()
+        user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
+        in_library = int(tmdb_id) in user_saved_ids
 
     cast = []
     if 'credits' in movie and 'cast' in movie['credits']:
@@ -33,6 +34,7 @@ def movie_detail(request, tmdb_id):
     return render(request, 'catalog/movie_detail.html', {
         'movie': movie,
         'in_library': in_library,
+        'user_saved_ids': user_saved_ids,
         'cast': cast,
         'recommendations': recommendations,
     })
@@ -40,7 +42,11 @@ def movie_detail(request, tmdb_id):
 def series_browse(request):
     client = TMDBClient()
     series_list = client.get_popular_series()
-    return render(request, 'catalog/series_browse.html', {'series_list': series_list})
+    user_saved_ids = set()
+    if request.user.is_authenticated:
+        user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
+    return render(request, 'catalog/series_browse.html', {'series_list': series_list, 'user_saved_ids': user_saved_ids})
+
 
 def series_detail(request, tmdb_id):
     client = TMDBClient()
