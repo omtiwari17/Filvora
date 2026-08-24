@@ -56,9 +56,7 @@
                     <span>{{ movie.runtime }} min</span>
                     <span>•</span>
                     {% endif %}
-                    <span class="border border-gray-600 bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-bold text-gray-200">4K UHD</span>
-                    <span class="border border-gray-600 bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-bold text-gray-200">HDR10+</span>
-                    <span class="border border-gray-600 bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-bold text-gray-200">5.1 Audio</span>
+                    <span class="border border-gray-600/80 bg-black/60 px-2 py-0.5 rounded text-[10px] font-bold text-gray-200">HD 1080p</span>
                 </div>
 
                 <!-- Genre Tags -->
@@ -255,7 +253,7 @@
                                             <span>•</span>
                                             {% endif %}
                                             {% if rec.vote_average %}
-                                            <span class="text-emerald-400 font-semibold">{{ rec.vote_average|floatformat:0 }}0% Match</span>
+                                            <span class="text-yellow-400 font-bold">★ {{ rec.vote_average|floatformat:1 }}</span>
                                             {% endif %}
                                         </div>
                                     </div>

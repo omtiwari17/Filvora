@@ -97,7 +97,7 @@
                                 <span>•</span>
                                 {% endif %}
                                 {% if s.vote_average %}
-                                <span class="text-emerald-400 font-semibold">{{ s.vote_average|floatformat:0 }}0% Match</span>
+                                <span class="text-yellow-400 font-bold">★ {{ s.vote_average|floatformat:1 }}</span>
                                 {% endif %}
                             </div>
                         </div>
