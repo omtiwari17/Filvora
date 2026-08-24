@@ -108,7 +108,7 @@ Filvora/
 - **Horizontal Rails Carousel**:
   - Smooth left (`<`) and right (`>`) arrow scroll buttons.
   - Mouse click-and-drag horizontal grab scrolling (`.rail-track.is-dragging`).
-  - Mouse-wheel horizontal scroll translation (`deltaY` mapped to `scrollLeft`).
+  - Standard vertical page scrolling preserved during mouse-wheel scroll over rails.
 - **Card Hover Overlays**:
   - Top: TMDB Rating badge (`⭐ 8.4`), Quality badge (`HD` / `TV-MA`).
   - Center: Large red play button that starts playback immediately upon clicking.
