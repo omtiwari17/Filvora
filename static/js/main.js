@@ -290,19 +290,5 @@ function initHorizontalRails() {
                 e.stopPropagation();
             }
         }, true);
-
-        // Mouse Wheel Horizontal Scrolling
-        track.addEventListener('wheel', (e) => {
-            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-                const maxScroll = track.scrollWidth - track.clientWidth;
-                const canScrollLeft = track.scrollLeft > 0 && e.deltaY < 0;
-                const canScrollRight = track.scrollLeft < maxScroll - 1 && e.deltaY > 0;
-
-                if (canScrollLeft || canScrollRight) {
-                    e.preventDefault();
-                    track.scrollLeft += e.deltaY * 1.2;
-                }
-            }
-        }, { passive: false });
     });
 }

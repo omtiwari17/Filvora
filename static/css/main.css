@@ -53,11 +53,17 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Horizontal Rail Drag Cursor */
+/* Horizontal Rail Drag Cursor & Anti-Clipping Headroom */
 .rail-track {
     cursor: grab;
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
+    padding-top: 1.5rem !important; /* 24px top headroom prevents hover scale clipping */
+    padding-bottom: 1.5rem !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    margin-top: -0.75rem;
+    margin-bottom: -0.75rem;
 }
 
 .rail-track.is-dragging {
