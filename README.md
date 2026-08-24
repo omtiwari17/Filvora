@@ -6,35 +6,38 @@
 [![TMDB API](https://img.shields.io/badge/TMDB-API_v3-01d277?style=for-the-badge&logo=themoviedatabase&logoColor=white)](https://www.themoviedb.org/)
 [![Video.js](https://img.shields.io/badge/Video.js-Player-ff0000?style=for-the-badge&logo=video.js&logoColor=white)](https://videojs.com/)
 
-**Filvora v2.0** is a personal, cinematic movie and TV-series discovery and streaming web application. Built on **Django**, **Tailwind CSS**, and **HTMX**, Filvora offers a fast streaming experience with real-time metadata, live search, multi-server playback failover, watch progress tracking, and interactive watchlists without the complexity of a heavy SPA framework.
+**Filvora v2.0** is a personal, cinematic movie and TV-series discovery and streaming web application. Built on **Django**, **Tailwind CSS**, and **HTMX**, Filvora delivers a fast streaming experience with real-time metadata, official age ratings, live search, multi-server playback failover, watch progress tracking, and interactive watchlists without the complexity of a heavy SPA framework.
 
 ---
 
 ## ✨ Features & Highlights
 
 ### 🌟 1. Cinematic Hero Billboard & Dynamic Rails
-- **Spotlight Hero**: Atmospheric backdrop banner, rating score, `4K Ultra HD`, `Dolby Atmos`, and `HDR10+` quality tags.
-- **One-Click Playback**: Play immediately from the hero banner or any card hover overlay.
-- **Horizontal Carousel Rails**: Smooth left/right navigation arrows, drag-to-scroll, mouse-wheel horizontal panning, and touch gestures.
-- **Continue Watching Rail**: Resumes playback from where you left off with accurate progress percentages.
+- **Spotlight Hero**: Atmospheric backdrop banner, rating score, official age certification, and HD quality tags.
+- **One-Click Playback**: Instant playback from the hero banner or any card hover overlay.
+- **Horizontal Carousel Rails**: Smooth left/right navigation arrows, drag-to-scroll, and anti-clipping card headroom.
+- **Continue Watching Rail**: Resumes playback with real-time percentage bars and one-click in-place removal (`×`).
 
-### 🔍 2. Live Instant Search & Auto-Suggestions
-- **Debounced HTMX Search**: Real-time dropdown suggestions with thumbnails, release year, TMDB score, and category badges.
-- **Keyboard Shortcut (`/`)**: Press `/` anywhere to instantly focus and search across the entire catalog.
+### 🏷️ 2. Official Age Ratings & Certifications
+- **Automated Certification Engine**: TMDB `release_dates` and `content_ratings` extraction delivering authentic badges (`PG-13`, `R`, `TV-MA`, `TV-14`, `PG`, `G`, `18+`) across hero billboards, browse grids, search suggestions, and detail views.
+
+### 🔍 3. Live Instant Search & Auto-Suggestions
+- **Debounced HTMX Search**: Real-time dropdown suggestions with thumbnails, release year, TMDB score, and age rating badges.
+- **Keyboard Shortcut (<kbd>/</kbd>)**: Press `/` anywhere to instantly focus and search across the entire catalog.
 - **Full Search Results**: Dedicated search results page with filterable movie and series grids.
 
-### 📺 3. Robust Multi-Server Playback Engine
-- **Multi-Server Provider Failover**: Switch between streaming servers on the fly without refreshing or breaking browser history (`Server Vidsrc`, `Server SuperEmbed`, `Server 2Embed`, `Server EmbedSoap`, etc.).
-- **Adaptive Video.js Player**: Integrated local Video.js with fantasy theme, HLS support, and iframe embed fallback.
-- **Beacon API Watch Progress**: Background heartbeat saving playback timestamps every 15 seconds to calculate progress without database strain.
+### 📺 4. Robust Multi-Server Playback Engine
+- **Multi-Server Provider Failover**: Switch between streaming nodes on the fly without refreshing or cluttering browser history (`Vidsrc`, `SuperEmbed`, `2Embed`, `EmbedSoap`, etc.).
+- **Adaptive Video.js Player**: Integrated local Video.js with fantasy theme, HLS support, and responsive iframe sandbox.
+- **Beacon API Watch Progress**: Background heartbeat saving playback timestamps every 15 seconds.
 - **Keyboard Player Controls**: Global shortcuts (<kbd>Space</kbd>/<kbd>K</kbd> to Play/Pause, <kbd>F</kbd> for Fullscreen, <kbd>M</kbd> to Mute, <kbd>←</kbd>/<kbd>→</kbd> to Seek 10s).
 
-### 📑 4. Interactive Watchlist (My List)
+### 📑 5. Interactive Watchlist (My List)
 - **Async HTMX Toggles**: Add or remove titles from cards, hero banners, or detail pages without page reloads.
 - **Watchlist Tabs**: Quick filter by **All**, **Movies**, or **TV Series** with a live item counter.
 - **Toast Feedback**: Non-intrusive slide-in notifications (`✓ Updated your Watchlist`).
 
-### 📱 5. Native App-Style Mobile Navigation
+### 📱 6. Native App-Style Mobile Navigation
 - **Glassmorphic Bottom Navigation**: Fixed bottom bar on mobile screens for effortless one-thumb navigation between Home, Movies, Series, My List, and Search.
 
 ---
@@ -43,11 +46,11 @@
 
 | Layer | Technology | Description |
 |---|---|---|
-| **Backend** | **Django 5.2 (Python 3.12)** | Core application, ORM, authentication, routing, and caching. |
+| **Backend** | **Django 5.2 (Python 3.10+)** | Core application, ORM, authentication, routing, and caching. |
 | **Frontend Rendering** | **Django Templates** | Server-rendered HTML with modular template partials. |
 | **Styling & Design** | **Tailwind CSS + Plus Jakarta Sans** | Modern dark-mode streaming UI with glassmorphism and animations. |
-| **Dynamic Interactivity**| **HTMX 1.9.10** | Asynchronous DOM swapping for live search, watchlists, and seasons. |
-| **Metadata Source** | **The Movie Database (TMDB) API** | Real-time movie/series metadata, cast, crew, backdrops, and recommendations. |
+| **Dynamic Interactivity**| **HTMX 1.9.10** | Asynchronous DOM swapping for live search, watchlists, and progress removal. |
+| **Metadata Source** | **The Movie Database (TMDB) API** | Real-time movie/series metadata, age ratings, cast, backdrops, and recommendations. |
 | **Video Playback** | **Video.js + Embed Stream Providers** | Local video player with HLS streaming and multi-server embed fallbacks. |
 | **Database** | **SQLite (Dev) / PostgreSQL (Prod)** | Stores user accounts, watch history, playback progress, and watchlist items. |
 
@@ -58,43 +61,45 @@
 ```text
 Filvora/
 ├── apps/
-│   ├── core/                  # Homepage views, global search, and utility helpers
+│   ├── core/                  # Homepage views, global search, and continue watching context
 │   ├── catalog/               # Movie/Series browse, detail, and season/episode endpoints
 │   ├── playback/              # Video player view, provider registry, and server switching
+│   ├── watch/                 # WatchProgress model and progress save/remove beacon endpoints
+│   ├── tmdb/                  # TMDB API client with curl/requests fallback, caching & age ratings
 │   ├── library/               # Watchlist models, HTMX toggle views, and My List
 │   └── accounts/              # User authentication (Login, Register, Logout)
 ├── config/
 │   ├── settings.py            # Django configuration and environment variables
 │   ├── urls.py                # Main URL routing definitions
-│   ├── wsgi.py / asgi.py      # WSGI/ASGI application gateways
-│   └── tmdb.py                # TMDB API client with memory/file caching
+│   └── wsgi.py / asgi.py      # WSGI/ASGI application gateways
 ├── static/
 │   ├── css/
-│   │   ├── main.css           # Glassmorphism, animations, and rail scroll styles
+│   │   ├── main.css           # Glassmorphism, animations, rail scroll styles & anti-clipping headroom
 │   │   └── videojs/           # Video.js player themes and stylesheets
 │   └── js/
-│       ├── main.js            # Rail drag-scroll, keyboard shortcuts, and toast engine
+│       ├── main.js            # Rail drag-scroll, keyboard shortcuts, and toast feedback engine
 │       └── videojs/           # Video.js core and HLS libraries
 ├── templates/
-│   ├── base.html              # Base layout with Plus Jakarta Sans & mobile bottom nav
+│   ├── base.html              # Base layout with Plus Jakarta Sans, navbar, footer & mobile bottom nav
 │   ├── includes/
-│   │   └── navbar.html        # Glassmorphic top bar with v2.0 branding & live search
+│   │   └── navbar.html        # Glassmorphic top bar with v2.0 branding, search & keyboard hint
 │   ├── home/
 │   │   └── index.html         # Homepage with Hero billboard and category rails
 │   ├── catalog/
-│   │   ├── movie_browse.html  # Movies grid with v2.0 hover overlays
+│   │   ├── movie_browse.html  # Movies grid with v2.0 hover overlays & age ratings
 │   │   ├── movie_detail.html  # Movie synopsis, cast, and recommendations
 │   │   ├── series_browse.html # TV series grid
 │   │   ├── series_detail.html # Series synopsis, seasons, and episode list
-│   │   ├── search_results.html# Full search results grid
+│   │   ├── search_results.html# Full search results grid with age ratings
 │   │   └── partials/          # HTMX search suggestions and episode list partials
 │   ├── playback/
-│   │   └── watch.html         # Fullscreen video player with server switcher
+│   │   └── watch.html         # Fullscreen video player with multi-server switcher
 │   ├── library/
 │   │   └── list.html          # My List watchlist with category filter tabs
 │   └── accounts/
 │       ├── login.html         # User sign in form
 │       └── register.html      # User registration form
+├── .env.example
 ├── manage.py
 ├── requirements.txt
 └── README.md
@@ -105,47 +110,82 @@ Filvora/
 ## 🚀 Quick Start Guide
 
 ### 1. Prerequisites
-- **Python 3.10+** (Python 3.12 recommended)
+- **Python 3.10+** (Python 3.11 / 3.12 recommended)
 - **Git**
 - A free **TMDB API Key** ([Get one here](https://www.themoviedb.org/settings/api))
 
+---
+
 ### 2. Clone the Repository
 ```bash
-git clone https://github.com/your-username/Filvora.git
+git clone https://github.com/omtiwari17/Filvora.git
 cd Filvora
 ```
 
+---
+
 ### 3. Create and Activate Virtual Environment
-```bash
-# Windows PowerShell
+
+**On Windows (PowerShell):**
+```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
+```
 
-# Linux / macOS
+**On Linux / macOS:**
+```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
+
+---
 
 ### 4. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
+---
+
 ### 5. Configure Environment Variables
-Create a `.env` file in the project root:
-```env
-DEBUG=True
-SECRET_KEY=your-super-secret-django-key
-TMDB_API_KEY=your_tmdb_api_key_here
-TMDB_READ_ACCESS_TOKEN=your_tmdb_bearer_token_here
+Copy the example `.env` file and insert your TMDB API key:
+
+**On Windows (PowerShell):**
+```powershell
+Copy-Item .env.example .env
 ```
 
+**On Linux / macOS:**
+```bash
+cp .env.example .env
+```
+
+Open `.env` and configure your settings:
+```env
+DEBUG=True
+SECRET_KEY=django-insecure-filvora-dev-secret-key-change-in-prod
+TMDB_API_KEY=your_actual_tmdb_api_key_here
+```
+
+---
+
 ### 6. Run Database Migrations
+Create your local database tables:
 ```bash
 python manage.py migrate
 ```
 
-### 7. Start the Development Server
+---
+
+### 7. (Optional) Create an Admin Account
+```bash
+python manage.py createsuperuser
+```
+*(You can also register regular accounts directly on the `/accounts/register/` page)*
+
+---
+
+### 8. Start the Development Server
 ```bash
 python manage.py runserver
 ```
@@ -186,8 +226,10 @@ Open your browser and navigate to:
 | `/library/` | `library_list` | User's personal Watchlist with category filter tabs |
 | `/library/toggle/` | `toggle_item` | HTMX endpoint to add/remove title from watchlist |
 | `/progress/save/` | `save_progress` | Beacon API endpoint to store playback progress timestamps |
+| `/progress/remove/` | `remove_progress` | HTMX endpoint to delete item from Continue Watching |
 | `/accounts/login/` | `login_view` | User login |
 | `/accounts/register/` | `register_view` | User registration |
+| `/accounts/logout/` | `logout_view` | User logout |
 
 ---
 
