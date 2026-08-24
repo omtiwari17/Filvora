@@ -32,7 +32,10 @@
                         {% else %}
                         <span class="bg-black/80 backdrop-blur-md border border-gray-700 text-gray-300 text-[10px] font-bold px-1.5 py-0.5 rounded">NEW</span>
                         {% endif %}
-                        <span class="border border-gray-600/80 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-semibold text-gray-200">HD</span>
+                        <div class="flex items-center gap-1">
+                            <span class="border border-gray-600/80 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-bold text-gray-200">{{ movie.age_rating|default:'PG-13' }}</span>
+                            <span class="border border-gray-600/80 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-semibold text-gray-200">HD</span>
+                        </div>
                     </div>
 
                     <!-- Center Play Button (Click to Play) -->

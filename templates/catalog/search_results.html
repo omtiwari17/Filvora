@@ -44,7 +44,10 @@
                         <span class="text-[9px] uppercase font-black px-1.5 py-0.5 rounded {% if item.media_type == 'movie' %}bg-blue-500/30 text-blue-400 border border-blue-500/40{% else %}bg-purple-500/30 text-purple-400 border border-purple-500/40{% endif %}">
                             {{ item.media_type }}
                         </span>
-                        <span class="border border-gray-600/80 bg-black/80 px-1.5 py-0.5 rounded text-[9px] font-semibold text-gray-200">HD</span>
+                        <div class="flex items-center gap-1">
+                            <span class="border border-gray-600/80 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-bold text-gray-200">{{ item.age_rating|default:'PG-13' }}</span>
+                            <span class="border border-gray-600/80 bg-black/80 px-1.5 py-0.5 rounded text-[9px] font-semibold text-gray-200">HD</span>
+                        </div>
                     </div>
 
                     <!-- Center Play Button -->

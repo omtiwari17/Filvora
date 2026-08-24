@@ -63,49 +63,138 @@ class TMDBClient:
 
         return {}
 
+    def _extract_movie_rating(self, data):
+        releases = data.get('release_dates', {}).get('results', [])
+        # Priority 1: US certification
+        for r in releases:
+            if r.get('iso_3166_1') == 'US':
+                for d in r.get('release_dates', []):
+                    cert = d.get('certification')
+                    if cert and cert.strip():
+                        return cert.strip()
+        # Priority 2: Any available certification
+        for r in releases:
+            for d in r.get('release_dates', []):
+                cert = d.get('certification')
+                if cert and cert.strip():
+                    return cert.strip()
+        # Fallback based on adult / genres
+        if data.get('adult'):
+            return '18+'
+        genre_ids = [g.get('id') if isinstance(g, dict) else g for g in data.get('genres', [])]
+        if any(gid in [16, 10751] for gid in genre_ids):
+            return 'PG'
+        if any(gid in [27, 80] for gid in genre_ids):
+            return 'R'
+        return 'PG-13'
+
+    def _extract_tv_rating(self, data):
+        ratings = data.get('content_ratings', {}).get('results', [])
+        for r in ratings:
+            if r.get('iso_3166_1') == 'US':
+                rating = r.get('rating')
+                if rating and rating.strip():
+                    return rating.strip()
+        for r in ratings:
+            rating = r.get('rating')
+            if rating and rating.strip():
+                return rating.strip()
+        if data.get('adult'):
+            return 'TV-MA'
+        genre_ids = [g.get('id') if isinstance(g, dict) else g for g in data.get('genres', [])]
+        if any(gid in [16, 10762] for gid in genre_ids):
+            return 'TV-PG'
+        if any(gid in [18, 80, 10768] for gid in genre_ids):
+            return 'TV-MA'
+        return 'TV-14'
+
+    def _attach_age_rating(self, item, media_type='movie'):
+        if not item:
+            return item
+        if item.get('age_rating'):
+            return item
+
+        if media_type == 'movie':
+            if item.get('adult'):
+                item['age_rating'] = '18+'
+            else:
+                genre_ids = item.get('genre_ids', [])
+                if any(gid in [16, 10751] for gid in genre_ids):
+                    item['age_rating'] = 'PG'
+                elif any(gid in [27, 80] for gid in genre_ids):
+                    item['age_rating'] = 'R'
+                else:
+                    item['age_rating'] = 'PG-13'
+        else:
+            if item.get('adult'):
+                item['age_rating'] = 'TV-MA'
+            else:
+                genre_ids = item.get('genre_ids', [])
+                if any(gid in [16, 10762] for gid in genre_ids):
+                    item['age_rating'] = 'TV-PG'
+                elif any(gid in [18, 80, 10768] for gid in genre_ids):
+                    item['age_rating'] = 'TV-MA'
+                else:
+                    item['age_rating'] = 'TV-14'
+        return item
+
     def get_trending_movies(self):
         data = self._fetch("/trending/movie/day")
-        return data.get('results', self._get_mock_movies())
+        results = data.get('results', self._get_mock_movies())
+        return [self._attach_age_rating(m, 'movie') for m in results]
 
     def get_popular_movies(self, page=1):
         data = self._fetch("/movie/popular", {"page": page})
-        return data.get('results', self._get_mock_movies())
+        results = data.get('results', self._get_mock_movies())
+        return [self._attach_age_rating(m, 'movie') for m in results]
 
     def get_top_rated_movies(self):
         data = self._fetch("/movie/top_rated")
-        return data.get('results', self._get_mock_movies())
+        results = data.get('results', self._get_mock_movies())
+        return [self._attach_age_rating(m, 'movie') for m in results]
 
     def get_popular_series(self, page=1):
         data = self._fetch("/tv/popular", {"page": page})
-        return data.get('results', self._get_mock_series())
+        results = data.get('results', self._get_mock_series())
+        return [self._attach_age_rating(s, 'tv') for s in results]
 
     def get_top_rated_series(self):
         data = self._fetch("/tv/top_rated")
-        return data.get('results', self._get_mock_series())
+        results = data.get('results', self._get_mock_series())
+        return [self._attach_age_rating(s, 'tv') for s in results]
 
     def get_action_movies(self):
         data = self._fetch("/discover/movie", {"with_genres": "28"})
-        return data.get('results', self._get_mock_movies())
+        results = data.get('results', self._get_mock_movies())
+        return [self._attach_age_rating(m, 'movie') for m in results]
 
     def get_scifi_movies(self):
         data = self._fetch("/discover/movie", {"with_genres": "878"})
-        return data.get('results', self._get_mock_movies())
+        results = data.get('results', self._get_mock_movies())
+        return [self._attach_age_rating(m, 'movie') for m in results]
 
     def get_animation_movies(self):
         data = self._fetch("/discover/movie", {"with_genres": "16"})
-        return data.get('results', self._get_mock_movies())
+        results = data.get('results', self._get_mock_movies())
+        return [self._attach_age_rating(m, 'movie') for m in results]
 
     def get_movie(self, movie_id):
         return self.get_movie_details(movie_id)
 
     def get_movie_details(self, movie_id):
-        data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations"})
+        data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates"})
         if data and (data.get('title') or data.get('poster_path')):
+            data['age_rating'] = self._extract_movie_rating(data)
+            if 'recommendations' in data and 'results' in data['recommendations']:
+                data['recommendations']['results'] = [
+                    self._attach_age_rating(r, 'movie') for r in data['recommendations']['results']
+                ]
             return data
 
         # Check mock data fallback
         for m in self._get_mock_movies():
             if m['id'] == int(movie_id):
+                m['age_rating'] = m.get('age_rating', 'PG-13')
                 return m
 
         return {
@@ -118,6 +207,7 @@ class TMDBClient:
             "runtime": 120,
             "vote_average": 7.5,
             "release_date": "2024-01-01",
+            "age_rating": "PG-13",
             "genres": [{"id": 28, "name": "Action"}, {"id": 18, "name": "Drama"}],
             "credits": {"cast": []},
             "recommendations": {"results": []}
@@ -127,13 +217,19 @@ class TMDBClient:
         return self.get_tv_details(tv_id)
 
     def get_tv_details(self, tv_id):
-        data = self._fetch(f"/tv/{tv_id}", {"append_to_response": "credits,recommendations"})
+        data = self._fetch(f"/tv/{tv_id}", {"append_to_response": "credits,recommendations,content_ratings"})
         if data and (data.get('name') or data.get('poster_path')):
+            data['age_rating'] = self._extract_tv_rating(data)
+            if 'recommendations' in data and 'results' in data['recommendations']:
+                data['recommendations']['results'] = [
+                    self._attach_age_rating(r, 'tv') for r in data['recommendations']['results']
+                ]
             return data
 
         # Check mock data fallback
         for s in self._get_mock_series():
             if s['id'] == int(tv_id):
+                s['age_rating'] = s.get('age_rating', 'TV-MA')
                 return s
 
         return {
@@ -147,6 +243,7 @@ class TMDBClient:
             "number_of_episodes": 10,
             "vote_average": 8.0,
             "first_air_date": "2024-01-01",
+            "age_rating": "TV-MA",
             "genres": [{"id": 18, "name": "Drama"}, {"id": 10765, "name": "Sci-Fi & Fantasy"}],
             "seasons": [{"season_number": 1, "name": "Season 1", "episode_count": 10}],
             "credits": {"cast": []},
@@ -182,6 +279,7 @@ class TMDBClient:
             if r.get('media_type') in ['movie', 'tv']:
                 r['display_title'] = r.get('title') or r.get('name')
                 r['release_year'] = (r.get('release_date') or r.get('first_air_date') or '')[:4]
+                self._attach_age_rating(r, r.get('media_type'))
                 filtered.append(r)
         return filtered
 

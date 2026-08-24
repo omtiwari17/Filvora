@@ -40,9 +40,14 @@
                 <!-- Hover Overlay -->
                 <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/75 to-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3.5">
                     <div class="flex items-center justify-between z-20">
-                        <span class="text-[10px] uppercase font-black px-2 py-0.5 rounded shadow {% if item.media_type == 'movie' %}bg-blue-500/30 text-blue-400 border border-blue-500/40{% else %}bg-purple-500/30 text-purple-400 border border-purple-500/40{% endif %}">
-                            {{ item.media_type|default:'movie' }}
-                        </span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[10px] uppercase font-black px-2 py-0.5 rounded shadow {% if item.media_type == 'movie' %}bg-blue-500/30 text-blue-400 border border-blue-500/40{% else %}bg-purple-500/30 text-purple-400 border border-purple-500/40{% endif %}">
+                                {{ item.media_type|default:'movie' }}
+                            </span>
+                            <span class="border border-gray-600/80 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-bold text-gray-200">
+                                {{ item.age_rating|default:'PG-13' }}
+                            </span>
+                        </div>
                         
                         <!-- Remove button -->
                         <button hx-post="/library/toggle/" 
