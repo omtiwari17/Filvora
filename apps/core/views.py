@@ -65,6 +65,8 @@ class HomeView(TemplateView):
                     data['sub_label'] = f"S{s_num}:E{ep_num}"
                     data['watch_url'] = f"/watch/tv/{p.tmdb_id}/{s_num}/{ep_num}/"
                 
+                data['id'] = p.tmdb_id
+                data['tmdb_id'] = p.tmdb_id
                 data['media_type'] = p.media_type
                 data['progress_percentage'] = p.progress_percentage
                 data['position_seconds'] = p.position_seconds

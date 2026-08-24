@@ -177,6 +177,9 @@ function initHtmxFeedback() {
                 showToast('Removed from Watchlist', 'info');
             }
         }
+        if (event.detail.target && event.detail.target.classList.contains('continue-watching-card')) {
+            showToast('Removed from Continue Watching', 'info');
+        }
     });
 }
 

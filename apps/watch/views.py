@@ -49,3 +49,34 @@ def save_progress(request):
         })
     except (ValueError, TypeError, KeyError) as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+@login_required
+def remove_progress(request):
+    if request.method != 'POST':
+        return HttpResponseBadRequest("POST required")
+
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
+        tmdb_id = int(data.get('tmdb_id'))
+        media_type = data.get('media_type', 'movie')
+
+        WatchProgress.objects.filter(
+            user=request.user,
+            tmdb_id=tmdb_id,
+            media_type=media_type
+        ).delete()
+
+        # If it was an HTMX request, returning an empty response removes the target card
+        if request.headers.get('HX-Request'):
+            from django.http import HttpResponse
+            return HttpResponse("", status=200)
+
+        return JsonResponse({'status': 'ok', 'message': 'Removed from continue watching'})
+    except (ValueError, TypeError, KeyError) as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
