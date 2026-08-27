@@ -64,3 +64,10 @@ class TMDBTestCase(TestCase):
         )
         self.assertGreater(len(results), 0)
 
+    def test_get_content_rating_and_cache(self):
+        # Call Me by Your Name (id: 398818)
+        item = {'id': 398818, 'title': 'Call Me by Your Name', 'genre_ids': [10749, 18]}
+        rated = self.client._attach_age_rating(item, 'movie')
+        self.assertEqual(rated['age_rating'], 'R')
+        self.assertEqual(self.client._RATING_CACHE.get('movie:398818'), 'R')
+

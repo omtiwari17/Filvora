@@ -69,21 +69,29 @@ class TMDBClient:
 
         return {}
 
+    _RATING_CACHE = {}
+
     def _extract_movie_rating(self, data):
+        if not data:
+            return None
         releases = data.get('release_dates', {}).get('results', [])
+        if not releases and isinstance(data.get('results'), list):
+            releases = data.get('results', [])
+
         # Priority 1: US certification
         for r in releases:
-            if r.get('iso_3166_1') == 'US':
+            if isinstance(r, dict) and r.get('iso_3166_1') == 'US':
                 for d in r.get('release_dates', []):
                     cert = d.get('certification')
                     if cert and cert.strip():
                         return cert.strip()
         # Priority 2: Any available certification
         for r in releases:
-            for d in r.get('release_dates', []):
-                cert = d.get('certification')
-                if cert and cert.strip():
-                    return cert.strip()
+            if isinstance(r, dict):
+                for d in r.get('release_dates', []):
+                    cert = d.get('certification')
+                    if cert and cert.strip():
+                        return cert.strip()
         # Fallback based on adult / genres
         if data.get('adult'):
             return '18+'
@@ -95,16 +103,22 @@ class TMDBClient:
         return 'PG-13'
 
     def _extract_tv_rating(self, data):
+        if not data:
+            return None
         ratings = data.get('content_ratings', {}).get('results', [])
+        if not ratings and isinstance(data.get('results'), list):
+            ratings = data.get('results', [])
+
         for r in ratings:
-            if r.get('iso_3166_1') == 'US':
+            if isinstance(r, dict) and r.get('iso_3166_1') == 'US':
                 rating = r.get('rating')
                 if rating and rating.strip():
                     return rating.strip()
         for r in ratings:
-            rating = r.get('rating')
-            if rating and rating.strip():
-                return rating.strip()
+            if isinstance(r, dict):
+                rating = r.get('rating')
+                if rating and rating.strip():
+                    return rating.strip()
         if data.get('adult'):
             return 'TV-MA'
         genre_ids = [g.get('id') if isinstance(g, dict) else g for g in data.get('genres', [])]
@@ -114,11 +128,47 @@ class TMDBClient:
             return 'TV-MA'
         return 'TV-14'
 
+    def get_content_rating(self, tmdb_id, media_type='movie'):
+        if not tmdb_id:
+            return None
+        cache_key = f"{media_type}:{tmdb_id}"
+        if cache_key in self._RATING_CACHE:
+            return self._RATING_CACHE[cache_key]
+
+        try:
+            if media_type == 'movie':
+                data = self._fetch(f"/movie/{tmdb_id}/release_dates")
+                rating = self._extract_movie_rating(data) if data else None
+            else:
+                data = self._fetch(f"/tv/{tmdb_id}/content_ratings")
+                rating = self._extract_tv_rating(data) if data else None
+
+            if rating and rating in ['G', 'PG', 'PG-13', 'R', 'NC-17', '18+', 'TV-Y', 'TV-Y7', 'TV-G', 'TV-PG', 'TV-14', 'TV-MA']:
+                self._RATING_CACHE[cache_key] = rating
+                return rating
+        except Exception:
+            pass
+
+        return None
+
     def _attach_age_rating(self, item, media_type='movie'):
         if not item:
             return item
         if item.get('age_rating'):
             return item
+
+        item_id = item.get('id')
+        if item_id:
+            cache_key = f"{media_type}:{item_id}"
+            if cache_key in self._RATING_CACHE:
+                item['age_rating'] = self._RATING_CACHE[cache_key]
+                return item
+
+            # Query official certification from TMDB
+            real_rating = self.get_content_rating(item_id, media_type)
+            if real_rating:
+                item['age_rating'] = real_rating
+                return item
 
         if media_type == 'movie':
             if item.get('adult'):
@@ -142,6 +192,10 @@ class TMDBClient:
                     item['age_rating'] = 'TV-MA'
                 else:
                     item['age_rating'] = 'TV-14'
+
+        if item_id and item.get('age_rating'):
+            self._RATING_CACHE[f"{media_type}:{item_id}"] = item['age_rating']
+
         return item
 
     def get_trending_movies(self):
@@ -273,6 +327,8 @@ class TMDBClient:
         data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates"})
         if data and (data.get('title') or data.get('poster_path')):
             data['age_rating'] = self._extract_movie_rating(data)
+            if data['age_rating']:
+                self._RATING_CACHE[f"movie:{movie_id}"] = data['age_rating']
             if 'recommendations' in data and 'results' in data['recommendations']:
                 data['recommendations']['results'] = [
                     self._attach_age_rating(r, 'movie') for r in data['recommendations']['results']
@@ -283,6 +339,7 @@ class TMDBClient:
         for m in self._get_mock_movies():
             if m['id'] == int(movie_id):
                 m['age_rating'] = m.get('age_rating', 'PG-13')
+                self._RATING_CACHE[f"movie:{movie_id}"] = m['age_rating']
                 return m
 
         return {
@@ -308,6 +365,8 @@ class TMDBClient:
         data = self._fetch(f"/tv/{tv_id}", {"append_to_response": "credits,recommendations,content_ratings"})
         if data and (data.get('name') or data.get('poster_path')):
             data['age_rating'] = self._extract_tv_rating(data)
+            if data['age_rating']:
+                self._RATING_CACHE[f"tv:{tv_id}"] = data['age_rating']
             if 'recommendations' in data and 'results' in data['recommendations']:
                 data['recommendations']['results'] = [
                     self._attach_age_rating(r, 'tv') for r in data['recommendations']['results']
@@ -318,6 +377,7 @@ class TMDBClient:
         for s in self._get_mock_series():
             if s['id'] == int(tv_id):
                 s['age_rating'] = s.get('age_rating', 'TV-MA')
+                self._RATING_CACHE[f"tv:{tv_id}"] = s['age_rating']
                 return s
 
         return {
