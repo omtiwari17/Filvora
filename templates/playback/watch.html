@@ -67,6 +67,40 @@
         .video-js .vjs-big-play-button {
             transition: opacity 0.4s ease !important;
         }
+        /* Fullscreen support for overlays */
+        #player-overlay,
+        #quick-server-container {
+            z-index: 2147483647 !important;
+        }
+        #top-sensor {
+            z-index: 2147483646 !important;
+        }
+        :fullscreen #player-overlay,
+        :-webkit-full-screen #player-overlay,
+        .video-js.vjs-fullscreen #player-overlay {
+            z-index: 2147483647 !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+        }
+        :fullscreen #quick-server-container,
+        :-webkit-full-screen #quick-server-container,
+        .video-js.vjs-fullscreen #quick-server-container {
+            z-index: 2147483647 !important;
+            position: fixed !important;
+            top: 1rem !important;
+            right: 1rem !important;
+        }
+        :fullscreen #top-sensor,
+        :-webkit-full-screen #top-sensor,
+        .video-js.vjs-fullscreen #top-sensor {
+            z-index: 2147483646 !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+        }
         /* Ripple seek animations */
         @keyframes ripple-seek {
             0% { opacity: 1; transform: scale(0.85); }
@@ -77,6 +111,7 @@
         }
     </style>
 </head>
+<body id="player-wrapper" class="bg-black text-white h-screen w-screen overflow-hidden select-none relative">
     <!-- Top Invisible Hover Detection Sensor -->
     <div id="top-sensor" class="fixed top-0 left-0 w-full h-24 z-40 pointer-events-auto"></div>
 
@@ -196,6 +231,16 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
                 </svg>
                 <span class="hidden sm:inline">My List</span>
+            </button>
+
+            <!-- Fullscreen Toggle Button -->
+            <button onclick="toggleFullscreen()" 
+                    title="Toggle Fullscreen (F)" 
+                    class="bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+                <span class="hidden md:inline">Fullscreen</span>
             </button>
         </div>
     </div>
@@ -374,6 +419,35 @@
             if (autoplayTimer) clearInterval(autoplayTimer);
             const modal = document.getElementById('autoplay-modal');
             if (modal) modal.classList.add('hidden');
+        }
+
+        function toggleFullscreen() {
+            const videoEl = document.getElementById('filvora-player');
+            if (videoEl && typeof videojs !== 'undefined') {
+                try {
+                    const player = videojs('filvora-player');
+                    if (player.isFullscreen()) {
+                        player.exitFullscreen();
+                    } else {
+                        player.requestFullscreen();
+                    }
+                    return;
+                } catch (e) {}
+            }
+            const target = document.getElementById('player-wrapper') || document.documentElement;
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (target.requestFullscreen) {
+                    target.requestFullscreen().catch(() => {});
+                } else if (target.webkitRequestFullscreen) {
+                    target.webkitRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
         }
 
         let hideTimeout = null;
@@ -595,11 +669,44 @@
                 // Auto-seek if no prompt or prompt dismissed
                 const initialResumePosition = {{ resume_position|default:0 }};
                 player.ready(() => {
+                    // Mount overlay elements inside player DOM so they are visible in fullscreen mode
+                    const pEl = player.el();
+                    if (pEl) {
+                        const topSensor = document.getElementById('top-sensor');
+                        const quickContainer = document.getElementById('quick-server-container');
+                        const overlay = document.getElementById('player-overlay');
+                        const resumePrompt = document.getElementById('resume-prompt');
+                        const autoplayModal = document.getElementById('autoplay-modal');
+                        const fallbackModal = document.getElementById('fallback-modal');
+                        const seekLeft = document.getElementById('seek-ripple-left');
+                        const seekRight = document.getElementById('seek-ripple-right');
+
+                        if (topSensor && !pEl.contains(topSensor)) pEl.appendChild(topSensor);
+                        if (quickContainer && !pEl.contains(quickContainer)) pEl.appendChild(quickContainer);
+                        if (overlay && !pEl.contains(overlay)) pEl.appendChild(overlay);
+                        if (resumePrompt && !pEl.contains(resumePrompt)) pEl.appendChild(resumePrompt);
+                        if (autoplayModal && !pEl.contains(autoplayModal)) pEl.appendChild(autoplayModal);
+                        if (fallbackModal && !pEl.contains(fallbackModal)) pEl.appendChild(fallbackModal);
+                        if (seekLeft && !pEl.contains(seekLeft)) pEl.appendChild(seekLeft);
+                        if (seekRight && !pEl.contains(seekRight)) pEl.appendChild(seekRight);
+                    }
+
                     if (initialResumePosition > 0 && !document.getElementById('resume-prompt')) {
                         player.currentTime(initialResumePosition);
                     }
                     const p = player.play();
                     if (p !== undefined) p.catch(() => {});
+                });
+
+                // Show top overlay and server switcher on fullscreen changes
+                player.on('fullscreenchange', () => {
+                    showOverlay();
+                    scheduleHide(3500);
+                });
+
+                document.addEventListener('fullscreenchange', () => {
+                    showOverlay();
+                    scheduleHide(3500);
                 });
 
                 // When paused, auto-hide player controls after 3.5s of inactivity
