@@ -1,9 +1,9 @@
 from django.shortcuts import render
 from django.views.generic import TemplateView
 from apps.tmdb.client import TMDBClient
-
+from apps.core.recommendations import RecommendationEngine
 from apps.watch.models import WatchProgress
-from apps.library.models import LibraryItem
+from apps.library.models import LibraryItem, CustomCollection
 
 class HomeView(TemplateView):
     template_name = 'home/index.html'
@@ -11,6 +11,7 @@ class HomeView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         client = TMDBClient()
+        engine = RecommendationEngine()
         
         trending_movies = client.get_trending_movies()
         popular_movies = client.get_popular_movies()
@@ -33,6 +34,7 @@ class HomeView(TemplateView):
         
         # User saved library IDs & My List quick preview rail
         my_list_preview = []
+        custom_collections = []
         if self.request.user.is_authenticated:
             context['user_saved_ids'] = set(LibraryItem.objects.filter(user=self.request.user).values_list('tmdb_id', flat=True))
             library_items = LibraryItem.objects.filter(user=self.request.user).order_by('-added_at')[:10]
@@ -45,14 +47,15 @@ class HomeView(TemplateView):
                     d = dict(client.get_tv(item.tmdb_id))
                     d['media_type'] = 'tv'
                     my_list_preview.append(d)
+            
+            custom_collections = list(CustomCollection.objects.filter(user=self.request.user).prefetch_related('items'))
         else:
             context['user_saved_ids'] = set()
         context['my_list_preview'] = my_list_preview
+        context['custom_collections'] = custom_collections
 
         # Continue watching for logged in user (deduplicated by media_type + tmdb_id)
         continue_watching = []
-        because_title = None
-        because_items = []
         if self.request.user.is_authenticated:
             progress_items = WatchProgress.objects.filter(
                 user=self.request.user,
@@ -72,10 +75,6 @@ class HomeView(TemplateView):
                     data['display_title'] = data.get('title', f"Movie {p.tmdb_id}")
                     data['sub_label'] = "Movie"
                     data['watch_url'] = f"/watch/movie/{p.tmdb_id}/"
-                    if not because_title:
-                        because_title = data['display_title']
-                        rec_data = client.get_movie_details(p.tmdb_id)
-                        because_items = rec_data.get('recommendations', {}).get('results', [])[:10]
                 else:
                     data = dict(client.get_tv(p.tmdb_id))
                     s_num = p.season or 1
@@ -84,10 +83,6 @@ class HomeView(TemplateView):
                     data['display_title'] = series_name
                     data['sub_label'] = f"S{s_num}:E{ep_num}"
                     data['watch_url'] = f"/watch/tv/{p.tmdb_id}/{s_num}/{ep_num}/"
-                    if not because_title:
-                        because_title = series_name
-                        rec_data = client.get_tv_details(p.tmdb_id)
-                        because_items = rec_data.get('recommendations', {}).get('results', [])[:10]
                 
                 data['id'] = p.tmdb_id
                 data['tmdb_id'] = p.tmdb_id
@@ -100,8 +95,17 @@ class HomeView(TemplateView):
                     break
                 
         context['continue_watching'] = continue_watching
-        context['because_title'] = because_title
-        context['because_items'] = because_items
+
+        # Personalized recommendations & Explainable "Because You Watched"
+        context['recommended_for_you'] = engine.get_personalized_recommendations(self.request.user)
+        because_data = engine.get_because_you_watched(self.request.user)
+        if because_data:
+            context['because_title'] = because_data['title']
+            context['because_items'] = because_data['items']
+        else:
+            context['because_title'] = None
+            context['because_items'] = []
+            
         return context
 
 

@@ -38,4 +38,25 @@ class CoreViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['my_list_preview']), 1)
         self.assertIn('scifi_movies', response.context)
+        self.assertIn('recommended_for_you', response.context)
+
+    def test_recommendation_engine_affinity(self):
+        from apps.core.recommendations import RecommendationEngine
+        engine = RecommendationEngine()
+        WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=157336,
+            media_type='movie',
+            position_seconds=3600,
+            duration_seconds=7200,
+            completed=True
+        )
+        recs = engine.get_personalized_recommendations(self.user)
+        self.assertIsNotNone(recs)
+        self.assertGreater(len(recs), 0)
+
+        because = engine.get_because_you_watched(self.user)
+        self.assertIsNotNone(because)
+        self.assertEqual(because['title'], 'Interstellar')
+
 

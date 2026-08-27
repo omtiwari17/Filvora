@@ -1,31 +1,71 @@
 {% extends 'base.html' %}
 
-{% block title %}My Watchlist - Filvora v2.0{% endblock %}
+{% block title %}My Library & Collections — Filvora{% endblock %}
 
 {% block content %}
-<div class="pt-24 px-4 sm:px-8 md:px-12 pb-20 min-h-screen">
-    <!-- Header with Stats -->
+<div class="pt-24 px-4 sm:px-8 md:px-12 pb-24 min-h-screen">
+    <!-- Header with Stats & Collection Creation -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
             <div class="flex items-center gap-3">
-                <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-md">My Watchlist</h1>
+                <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-md">My Library</h1>
                 <span class="bg-brand-500/20 text-brand-500 border border-brand-500/30 text-xs font-bold px-2.5 py-1 rounded-full">
                     {{ saved_items|length }} Saved
                 </span>
             </div>
-            <p class="text-xs sm:text-sm text-gray-400 mt-1">Your personal collection of saved movies and series.</p>
+            <p class="text-xs sm:text-sm text-gray-400 mt-1">Your personal collection of saved movies, series, and custom lists.</p>
         </div>
 
-        {% if saved_items %}
-        <!-- Quick Filter Buttons -->
-        <div class="flex items-center gap-2 bg-gray-900/80 p-1 rounded-xl border border-gray-800 backdrop-blur-md self-start">
-            <button onclick="filterWatchlist('all')" class="filter-tab active px-3 py-1 rounded-lg text-xs font-bold text-white bg-brand-500 transition shadow-sm" data-filter="all">All</button>
-            <button onclick="filterWatchlist('movie')" class="filter-tab px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition" data-filter="movie">Movies</button>
-            <button onclick="filterWatchlist('tv')" class="filter-tab px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition" data-filter="tv">Series</button>
+        <div class="flex items-center gap-3">
+            <!-- New Collection Button -->
+            <button onclick="document.getElementById('new-collection-modal').classList.remove('hidden')" 
+                    class="px-4 py-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-lg">
+                <svg class="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                <span>New Collection</span>
+            </button>
+
+            {% if saved_items %}
+            <!-- Quick Filter Tabs -->
+            <div class="flex items-center gap-1 bg-gray-900/80 p-1 rounded-xl border border-gray-800 backdrop-blur-md">
+                <button onclick="filterWatchlist('all')" class="filter-tab active px-3 py-1 rounded-lg text-xs font-bold text-white bg-brand-500 transition shadow-sm" data-filter="all">All</button>
+                <button onclick="filterWatchlist('movie')" class="filter-tab px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition" data-filter="movie">Movies</button>
+                <button onclick="filterWatchlist('tv')" class="filter-tab px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition" data-filter="tv">Series</button>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
+
+    <!-- Custom Collections Section (If Any) -->
+    {% if custom_collections %}
+    <div class="mb-10">
+        <h2 class="text-lg font-black text-white mb-3 flex items-center gap-2">
+            <span>Custom Collections</span>
+            <span class="text-xs text-gray-500 font-medium">({{ custom_collections|length }})</span>
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for col in custom_collections %}
+            <div class="p-4 rounded-2xl bg-gray-900/70 border border-gray-800 hover:border-gray-700 transition flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-white">{{ col.name }}</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ col.description|default:"No description" }} • {{ col.items.count }} titles</p>
+                </div>
+                <form method="post" action="/library/collection/{{ col.id }}/delete/" onsubmit="return confirm('Delete collection {{ col.name }}?');">
+                    {% csrf_token %}
+                    <button type="submit" class="w-7 h-7 rounded-lg bg-black/60 hover:bg-red-600/80 text-gray-400 hover:text-white transition flex items-center justify-center" title="Delete collection">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
     
+    <!-- Saved Items Grid -->
     {% if saved_items %}
     <div id="watchlist-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 sm:gap-6">
         {% for item in saved_items %}
@@ -100,24 +140,37 @@
         {% endfor %}
     </div>
     {% else %}
-    <div class="flex flex-col items-center justify-center py-24 text-center max-w-lg mx-auto">
-        <div class="w-20 h-20 rounded-full bg-gray-900/80 border border-gray-800 flex items-center justify-center mb-6 shadow-xl">
-            <svg class="w-10 h-10 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-            </svg>
-        </div>
-        <h2 class="text-2xl font-black text-white mb-2">Your Watchlist is Empty</h2>
-        <p class="text-gray-400 text-sm leading-relaxed mb-8">Save movies and series to your personal watchlist to easily track and watch your favorite titles anytime.</p>
-        <div class="flex flex-wrap items-center justify-center gap-3">
-            <a href="/movies/" class="px-6 py-3 bg-brand-500 hover:bg-red-600 text-white rounded-full font-bold text-sm transition-all shadow-lg shadow-brand-500/25 hover:scale-105">
-                Browse Movies
-            </a>
-            <a href="/series/" class="px-6 py-3 bg-gray-900 hover:bg-gray-800 border border-gray-700 text-white rounded-full font-bold text-sm transition-all hover:scale-105">
-                Browse TV Series
-            </a>
-        </div>
-    </div>
+        {% include 'components/empty_state.html' with icon="watchlist" title="Your Watchlist is Empty" message="Save movies and series to your personal watchlist to easily track and watch your favorite titles anytime." cta_url="/movies/" cta_text="Explore Movies" %}
     {% endif %}
+</div>
+
+<!-- Modal: New Collection -->
+<div id="new-collection-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
+        <div class="flex items-center justify-between">
+            <h3 class="text-xl font-black text-white">Create New Collection</h3>
+            <button onclick="document.getElementById('new-collection-modal').classList.add('hidden')" class="text-gray-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form method="post" action="/library/collection/create/" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-bold text-gray-300 uppercase mb-1">Collection Name</label>
+                <input type="text" name="name" required placeholder="e.g. Weekend Sci-Fi Marathon" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-300 uppercase mb-1">Description (Optional)</label>
+                <textarea name="description" rows="2" placeholder="e.g. Best mind-bending films to binge" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500"></textarea>
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="button" onclick="document.getElementById('new-collection-modal').classList.add('hidden')" class="px-5 py-2.5 text-xs font-bold text-gray-400 hover:text-white">Cancel</button>
+                <button type="submit" class="px-6 py-2.5 bg-brand-500 hover:bg-red-600 text-white rounded-full font-bold text-xs shadow-lg shadow-brand-500/25">Create List</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
