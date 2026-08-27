@@ -158,25 +158,55 @@ def season_episodes(request, tmdb_id, season_number):
         'episodes': episodes,
     })
 
-def search_suggest(request):
-    raw_q = request.GET.get('q', '').strip()
-    rating_filter = request.GET.get('rating', '').strip().upper()
+KNOWN_RATINGS = {'G', 'PG', 'PG-13', 'R', 'NC-17', '18+', 'TV-MA', 'TV-14', 'TV-PG', 'TV-G', 'TV-Y7', 'TV-Y'}
+
+def parse_search_query(raw_q, explicit_rating=None):
+    raw_q = (raw_q or '').strip()
+    rating = (explicit_rating or '').strip().upper()
     clean_q = raw_q
 
-    match = re.search(r'(?:rating|cert):([a-zA-Z0-9\-+]+)', raw_q, re.IGNORECASE)
+    # Check for formats like "rating:PG-13", "cert:R", "t=rating", "rating=R", "cert=PG-13", "rate:18+", "t=R"
+    match = re.search(r'(?:rating|cert|rate|t)[=:]([a-zA-Z0-9\-+]+)', clean_q, re.IGNORECASE)
     if match:
-        rating_filter = match.group(1).upper()
-        clean_q = re.sub(r'(?:rating|cert):[a-zA-Z0-9\-+]+', '', raw_q, flags=re.IGNORECASE).strip()
+        found_rating = match.group(1).upper()
+        if found_rating in KNOWN_RATINGS or found_rating in ['R', 'PG13', 'TVMA', 'TV14', 'PG', 'G', '18+']:
+            if found_rating == 'PG13': found_rating = 'PG-13'
+            elif found_rating == 'TVMA': found_rating = 'TV-MA'
+            elif found_rating == 'TV14': found_rating = 'TV-14'
+            rating = found_rating
+        clean_q = re.sub(r'(?:rating|cert|rate|t)[=:][a-zA-Z0-9\-+]+', '', clean_q, flags=re.IGNORECASE).strip()
 
-    if len(clean_q) < 2:
-        return HttpResponse('')
-    
+    # Check if query itself is an age rating (e.g. "PG-13", "R", "TV-MA", "18+", "PG", "G")
+    upper_q = clean_q.upper()
+    if upper_q in KNOWN_RATINGS or upper_q in ['PG13', 'TVMA', 'TV14', 'R-RATED', 'ADULT']:
+        if upper_q in ['PG13', 'PG-13']: rating = 'PG-13'
+        elif upper_q in ['TVMA', 'TV-MA']: rating = 'TV-MA'
+        elif upper_q in ['TV14', 'TV-14']: rating = 'TV-14'
+        elif upper_q in ['R', 'R-RATED']: rating = 'R'
+        elif upper_q in ['18+', 'ADULT']: rating = '18+'
+        elif upper_q in ['PG', 'G', 'NC-17', 'TV-PG', 'TV-G', 'TV-Y7', 'TV-Y']: rating = upper_q
+        clean_q = ''
+
+    return clean_q, rating
+
+def search_suggest(request):
+    raw_q = request.GET.get('q', '').strip()
+    explicit_rating = request.GET.get('rating') or request.GET.get('cert')
+    clean_q, rating_filter = parse_search_query(raw_q, explicit_rating)
+
     client = TMDBClient()
-    categorized = client.search_categorized(clean_q)
-
-    if rating_filter:
-        categorized['movies'] = [m for m in categorized['movies'] if m.get('age_rating', '').upper() == rating_filter or rating_filter in m.get('age_rating', '').upper()]
-        categorized['series'] = [s for s in categorized['series'] if s.get('age_rating', '').upper() == rating_filter or rating_filter in s.get('age_rating', '').upper()]
+    
+    if clean_q and len(clean_q) >= 2:
+        categorized = client.search_categorized(clean_q)
+        if rating_filter:
+            categorized['movies'] = [m for m in categorized['movies'] if m.get('age_rating', '').upper() == rating_filter or rating_filter in m.get('age_rating', '').upper()]
+            categorized['series'] = [s for s in categorized['series'] if s.get('age_rating', '').upper() == rating_filter or rating_filter in s.get('age_rating', '').upper()]
+    elif rating_filter:
+        movies = client.discover_content(media_type='movie', certification=rating_filter)[:4]
+        series = client.discover_content(media_type='tv', certification=rating_filter)[:4]
+        categorized = {'movies': movies, 'series': series, 'people': []}
+    else:
+        return HttpResponse('')
 
     return render(request, 'catalog/partials/search_suggestions.html', {
         'categorized': categorized,
@@ -184,24 +214,25 @@ def search_suggest(request):
         'series': categorized['series'][:4],
         'people': categorized['people'][:3],
         'has_results': bool(categorized['movies'] or categorized['series'] or categorized['people']),
-        'query': clean_q,
+        'query': raw_q,
     })
 
 def search_results(request):
     raw_q = request.GET.get('q', '').strip()
-    rating_filter = request.GET.get('rating', '').strip().upper()
-    clean_q = raw_q
-
-    match = re.search(r'(?:rating|cert):([a-zA-Z0-9\-+]+)', raw_q, re.IGNORECASE)
-    if match:
-        rating_filter = match.group(1).upper()
-        clean_q = re.sub(r'(?:rating|cert):[a-zA-Z0-9\-+]+', '', raw_q, flags=re.IGNORECASE).strip()
+    explicit_rating = request.GET.get('rating') or request.GET.get('cert')
+    clean_q, rating_filter = parse_search_query(raw_q, explicit_rating)
 
     client = TMDBClient()
-    results = client.search_multi(clean_q) if clean_q else []
+    results = []
 
-    if rating_filter:
-        results = [r for r in results if r.get('age_rating', '').upper() == rating_filter or rating_filter in r.get('age_rating', '').upper()]
+    if clean_q:
+        results = client.search_multi(clean_q)
+        if rating_filter:
+            results = [r for r in results if r.get('age_rating', '').upper() == rating_filter or rating_filter in r.get('age_rating', '').upper()]
+    elif rating_filter:
+        movie_results = client.discover_content(media_type='movie', certification=rating_filter)
+        tv_results = client.discover_content(media_type='tv', certification=rating_filter)
+        results = movie_results + tv_results
 
     user_saved_ids = set()
     if request.user.is_authenticated:
@@ -209,7 +240,8 @@ def search_results(request):
 
     return render(request, 'catalog/search_results.html', {
         'results': results,
-        'query': clean_q,
+        'query': raw_q,
+        'clean_query': clean_q,
         'selected_rating': rating_filter,
         'user_saved_ids': user_saved_ids,
     })

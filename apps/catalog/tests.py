@@ -50,6 +50,17 @@ class CatalogViewsTestCase(TestCase):
         self.assertIn('results', response.context)
         self.assertEqual(response.context['selected_rating'], 'PG-13')
 
+    def test_search_standalone_rating_query(self):
+        response = self.client.get('/search/?q=PG-13')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('results', response.context)
+        self.assertEqual(response.context['selected_rating'], 'PG-13')
+
+        response2 = self.client.get('/search/?q=t=R')
+        self.assertEqual(response2.status_code, 200)
+        self.assertIn('results', response2.context)
+        self.assertEqual(response2.context['selected_rating'], 'R')
+
     def test_search_suggest(self):
         response = self.client.get('/search/suggest/?q=Dune')
         self.assertEqual(response.status_code, 200)
