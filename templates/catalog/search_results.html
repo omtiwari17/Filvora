@@ -34,9 +34,9 @@
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4 md:gap-6 mb-12">
         {% for item in results %}
             {% if item.media_type == 'tv' %}
-                {% include 'components/series_card.html' with item=item user_saved_ids=user_saved_ids %}
+                {% include 'components/series_card.html' with series=item user_saved_ids=user_saved_ids %}
             {% else %}
-                {% include 'components/movie_card.html' with item=item user_saved_ids=user_saved_ids %}
+                {% include 'components/movie_card.html' with movie=item user_saved_ids=user_saved_ids %}
             {% endif %}
         {% endfor %}
     </div>
