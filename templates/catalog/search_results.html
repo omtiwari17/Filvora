@@ -19,7 +19,7 @@
             <input type="text" 
                    name="q" 
                    value="{{ query }}" 
-                   placeholder="Search movies, TV shows, actors, genres, or age ratings (e.g. PG-13, R)..." 
+                   placeholder="Search movies, TV shows, actors, genres..." 
                    class="w-full bg-gray-900/90 border border-gray-700/80 rounded-2xl px-5 py-3.5 pl-12 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/40 shadow-2xl transition backdrop-blur-md">
             <svg class="h-5 w-5 text-gray-400 absolute left-4 top-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -28,24 +28,6 @@
             <input type="hidden" name="rating" value="{{ selected_rating }}">
             {% endif %}
         </form>
-
-        <!-- Subtle Age Rating Filters Rail -->
-        <div class="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none pt-1">
-            <span class="text-[10px] uppercase font-bold text-gray-500 mr-1 flex-none">Filter:</span>
-            <a href="/search/?q={{ clean_query }}" 
-               class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex-none {% if not selected_rating %}bg-gray-800 text-white border border-gray-600{% else %}bg-gray-950/80 text-gray-400 hover:text-white border border-gray-800{% endif %}">
-                All
-            </a>
-            {% for r_code in "G,PG,PG-13,R,NC-17,TV-MA,TV-14,18+"|make_list %}
-            {% endfor %}
-            <a href="/search/?q={{ clean_query }}&rating=G" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex-none {% if selected_rating == 'G' %}bg-brand-500 text-white shadow{% else %}bg-gray-950/80 text-gray-400 hover:text-white border border-gray-800{% endif %}">G</a>
-            <a href="/search/?q={{ clean_query }}&rating=PG" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex-none {% if selected_rating == 'PG' %}bg-brand-500 text-white shadow{% else %}bg-gray-950/80 text-gray-400 hover:text-white border border-gray-800{% endif %}">PG</a>
-            <a href="/search/?q={{ clean_query }}&rating=PG-13" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex-none {% if selected_rating == 'PG-13' %}bg-brand-500 text-white shadow{% else %}bg-gray-950/80 text-gray-400 hover:text-white border border-gray-800{% endif %}">PG-13</a>
-            <a href="/search/?q={{ clean_query }}&rating=R" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex-none {% if selected_rating == 'R' %}bg-brand-500 text-white shadow{% else %}bg-gray-950/80 text-gray-400 hover:text-white border border-gray-800{% endif %}">R</a>
-            <a href="/search/?q={{ clean_query }}&rating=TV-14" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex-none {% if selected_rating == 'TV-14' %}bg-brand-500 text-white shadow{% else %}bg-gray-950/80 text-gray-400 hover:text-white border border-gray-800{% endif %}">TV-14</a>
-            <a href="/search/?q={{ clean_query }}&rating=TV-MA" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex-none {% if selected_rating == 'TV-MA' %}bg-brand-500 text-white shadow{% else %}bg-gray-950/80 text-gray-400 hover:text-white border border-gray-800{% endif %}">TV-MA</a>
-            <a href="/search/?q={{ clean_query }}&rating=18+" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex-none {% if selected_rating == '18+' %}bg-brand-500 text-white shadow{% else %}bg-gray-950/80 text-gray-400 hover:text-white border border-gray-800{% endif %}">18+</a>
-        </div>
     </div>
 
     {% if results %}
@@ -59,10 +41,10 @@
         {% endfor %}
     </div>
     {% else %}
-        {% if query or selected_rating %}
-            {% include 'components/empty_state.html' with icon="search" title="No Results Found" message="We couldn't find any movies or TV series matching your criteria. Try searching for a different keyword or selecting another rating." cta_url="/movies/" cta_text="Explore Catalog" %}
+        {% if query %}
+            {% include 'components/empty_state.html' with icon="search" title="No Results Found" message="We couldn't find any movies or TV series matching your query. Try searching for a different keyword or browse our catalog." cta_url="/movies/" cta_text="Explore Movies" %}
         {% else %}
-            {% include 'components/empty_state.html' with icon="search" title="Search Filvora" message="Type a title, actor, genre, or age rating (e.g. PG-13, R, TV-MA) in the search box above." cta_url="/movies/" cta_text="Browse Movies" %}
+            {% include 'components/empty_state.html' with icon="search" title="Search Filvora" message="Type a movie or TV show title in the search box above to discover content." cta_url="/movies/" cta_text="Browse Movies" %}
         {% endif %}
     {% endif %}
 </div>

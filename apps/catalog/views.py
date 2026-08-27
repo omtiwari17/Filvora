@@ -186,6 +186,13 @@ def parse_search_query(raw_q, explicit_rating=None):
         elif upper_q in ['18+', 'ADULT']: rating = '18+'
         elif upper_q in ['PG', 'G', 'NC-17', 'TV-PG', 'TV-G', 'TV-Y7', 'TV-Y']: rating = upper_q
         clean_q = ''
+    elif not rating and len(clean_q.split()) > 1:
+        # Check if the last word in a multi-word search is a rating code (e.g. "Batman PG-13", "Deadpool R")
+        words = clean_q.split()
+        last_word = words[-1].upper()
+        if last_word in KNOWN_RATINGS:
+            rating = last_word
+            clean_q = " ".join(words[:-1]).strip()
 
     return clean_q, rating
 
