@@ -17,7 +17,7 @@
   - Django Development Server is active on **`http://127.0.0.1:8000/`** & **`http://192.168.1.5:8000/`**
   - Command: `.\venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000`
   - All routes (`/`, `/movies/`, `/series/`, `/discover/`, `/genres/`, `/history/`, `/analytics/`, `/downloads/`, `/library/`, `/search/`, `/watch/`) return `200 OK`.
-- **Automated Test Suite**: **60 tests** across all 8 apps (`apps.core`, `apps.catalog`, `apps.playback`, `apps.library`, `apps.watch`, `apps.tmdb`, `apps.accounts`, `apps.downloads`), 100% passing.
+- **Automated Test Suite**: **89 tests** across all 8 apps (`apps.core`, `apps.catalog`, `apps.playback`, `apps.library`, `apps.watch`, `apps.tmdb`, `apps.accounts`, `apps.downloads`), 100% passing.
 
 ---
 
@@ -109,10 +109,26 @@ Filvora/
 - Suppressed native browser horizontal scrollbars on carousels, genre pills, mood tabs, and cast rails across Chrome, Safari, Firefox, and Edge.
 
 ### 3.7 Standalone Video Download Subsystem (`apps/downloads/`)
-- **DownloadJob Model**: Tracks user downloads with statuses: `QUEUED`, `DOWNLOADING`, `PROCESSING`, `READY`, `FAILED`, `CANCELLED`.
+- **DownloadJob Model**: Tracks user downloads with UUID PK and statuses: `QUEUED`, `DOWNLOADING`, `PROCESSING`, `READY`, `FAILED`, `CANCELLED`.
+- **Provider Abstraction Layer** (`apps/downloads/providers/`):
+  - `base.py`: Defines `DownloadProvider` abstract interface separating playback capability from authorized download capability.
+  - `registry.py`: Provider registry with priority resolution and dynamic available quality querying.
 - **Deterministic Filename Service** (`apps/downloads/services/filename.py`):
   - Movies: `Movie Name (Year) [Quality].mp4` (e.g. `Interstellar (2014) [1080p].mp4`)
-  - Episodes: `Series Name S01E01 [Quality].mp4` (e.g. `Breaking Bad S02E03 [720p].mp4`)
+  - Episodes: `Series Name S01E01 [Quality].mp4` (e.g. `Breaking Bad S02E03 [720p].mp4`, strictly omitting episode title).
+  - Sanitization of all Windows-illegal filesystem characters (`\/*?:"<>|`).
+- **Complete Pipeline Services** (`apps/downloads/services/`):
+  - `storage.py`: Per-job temporary directory isolation (`media/downloads/temp/job_<id>/{source,processing,output}`), disk space pre-flight estimation checks, and human-readable size formatting.
+  - `downloader.py`: Dual-mode download engine (Windows Schannel `curl.exe` with `--ssl-no-revoke` and `requests` fallback with streaming chunks).
+  - `processor.py`: FFmpeg processing engine preferring fast, zero-quality-loss remuxing (stream copy) with H.264/AAC re-encoding fallback.
+  - `validator.py`: Strict post-processing validation verifying file existence, non-zero size, container readability, and video/audio stream integrity (via `ffprobe` or file inspection).
+  - `cleanup.py`: Immediate per-job temp data removal, orphan directory cleanup for crash/power loss recovery, and age-based eviction.
+  - `manager.py`: Complete lifecycle orchestrator handling job creation, worker dispatch, state transitions, retry of failed/cancelled jobs, and concurrency safety.
+- **Celery-Ready Background Tasks** (`apps/downloads/tasks.py`):
+  - Thread-based background workers structured with a clean Celery-compatible interface.
+- **Interactive HTMX UI**:
+  - Glassmorphic Quality Selection Modal (`/downloads/dialog/`) dynamically loaded onto movie and series detail pages.
+  - Auto-polling Dashboard (`/downloads/`) with live progress bars, retry buttons, error diagnostics, file sizes, and cancel/delete controls.
 
 ### 3.8 User Profiles & Kids Safety Mode (`apps/accounts/`)
 - **UserProfile Model**: Supports multiple user profiles with custom avatars and `is_kids` boolean flag.
@@ -146,7 +162,7 @@ Filvora/
 # Run Development Server (accessible locally and on LAN)
 .\venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000
 
-# Run Automated Test Suite (60 tests across 8 apps)
+# Run Automated Test Suite (89 tests across 8 apps)
 .\venv\Scripts\python.exe manage.py test apps.core apps.catalog apps.playback apps.library apps.watch apps.tmdb apps.accounts apps.downloads
 
 # Backup Local Database
