@@ -77,10 +77,12 @@ class CatalogViewsTestCase(TestCase):
         self.assertEqual(detail_resp.context['movie']['title'], "Grand Theft Auto VI: An Extended Look")
 
     def test_discover_view(self):
-        response = self.client.get('/discover/?type=movie&genre=28&rating=7.0')
+        response = self.client.get('/discover/?type=movie&genre=28&rating=7.0&page=2')
         self.assertEqual(response.status_code, 200)
         self.assertIn('results', response.context)
         self.assertIn('genres', response.context)
+        self.assertIn('pagination', response.context)
+        self.assertEqual(response.context['pagination']['current_page'], 2)
         self.assertEqual(response.context['media_type'], 'movie')
 
     def test_surprise_me_redirect(self):

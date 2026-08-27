@@ -179,6 +179,32 @@
             {% endif %}
         {% endfor %}
     </div>
+
+    <!-- Pagination Controls -->
+    {% if pagination.total_pages > 1 %}
+    <div class="flex items-center justify-center gap-2 pt-10 border-t border-gray-800/80 mt-12">
+        {% if pagination.has_prev %}
+        <a href="?page={{ pagination.prev_page }}{% if media_type %}&type={{ media_type }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_mood %}&mood={{ selected_mood }}{% endif %}{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_rating %}&rating={{ selected_rating }}{% endif %}{% if selected_language %}&language={{ selected_language }}{% endif %}{% if selected_certification %}&certification={{ selected_certification }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+           class="px-4 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-xs font-bold text-gray-300 hover:text-white border border-gray-800 transition">
+            &larr; Previous
+        </a>
+        {% endif %}
+
+        {% for p_num in pagination.page_numbers %}
+        <a href="?page={{ p_num }}{% if media_type %}&type={{ media_type }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_mood %}&mood={{ selected_mood }}{% endif %}{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_rating %}&rating={{ selected_rating }}{% endif %}{% if selected_language %}&language={{ selected_language }}{% endif %}{% if selected_certification %}&certification={{ selected_certification }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+           class="w-9 h-9 flex items-center justify-center rounded-xl text-xs font-bold transition {% if pagination.current_page == p_num %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-800{% endif %}">
+            {{ p_num }}
+        </a>
+        {% endfor %}
+
+        {% if pagination.has_next %}
+        <a href="?page={{ pagination.next_page }}{% if media_type %}&type={{ media_type }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_mood %}&mood={{ selected_mood }}{% endif %}{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_rating %}&rating={{ selected_rating }}{% endif %}{% if selected_language %}&language={{ selected_language }}{% endif %}{% if selected_certification %}&certification={{ selected_certification }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+           class="px-4 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-xs font-bold text-gray-300 hover:text-white border border-gray-800 transition">
+            Next &rarr;
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
     {% else %}
         {% include 'components/empty_state.html' with icon="search" title="No Matching Titles" message="No movies or series matched your exact filter combination. Try adjusting the score or genre filter." cta_url="/discover/" cta_text="Reset Filters" %}
     {% endif %}

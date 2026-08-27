@@ -337,6 +337,7 @@ def discover(request):
     language = request.GET.get('language')
     certification = request.GET.get('certification')
     sort_by = request.GET.get('sort', 'popularity.desc')
+    page = request.GET.get('page', '1')
     kids_mode = is_kids_profile(request)
 
     results = client.discover_content(
@@ -348,13 +349,17 @@ def discover(request):
         language=language,
         certification=certification,
         kids_only=kids_mode,
-        sort_by=sort_by
+        sort_by=sort_by,
+        page=page
     )
 
     genres = client.get_genres_list()
     user_saved_ids = set()
     if request.user.is_authenticated:
         user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
+
+    total_pages = 1 if len(results) < 20 and str(page).strip() in ['1', ''] else 500
+    pagination = get_pagination_context(page, total_pages=total_pages)
 
     return render(request, 'catalog/discover.html', {
         'results': results,
@@ -369,6 +374,7 @@ def discover(request):
         'selected_sort': sort_by,
         'is_kids_mode': kids_mode,
         'user_saved_ids': user_saved_ids,
+        'pagination': pagination,
     })
 
 def surprise_me(request):
