@@ -120,8 +120,11 @@
                             hx-target="#episodes-container"
                             hx-swap="innerHTML"
                             onclick="document.querySelectorAll('.season-btn').forEach(b => b.classList.remove('bg-brand-500', 'text-white')); this.classList.add('bg-brand-500', 'text-white');"
-                            class="season-btn px-4 py-1.5 rounded-lg text-sm font-semibold transition border border-gray-700 {% if s.season_number == current_season %}bg-brand-500 text-white{% else %}bg-gray-900 text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">
-                        Season {{ s.season_number }}
+                            class="season-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition border border-gray-700/80 shadow-md {% if s.season_number == current_season %}bg-brand-500 text-white shadow-brand-500/25{% else %}bg-gray-900 text-gray-300 hover:text-white hover:bg-gray-800{% endif %}">
+                        <span>Season {{ s.season_number }}</span>
+                        {% if s.play_time_formatted %}
+                        <span class="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-mono font-bold">{{ s.play_time_formatted }}</span>
+                        {% endif %}
                     </button>
                     {% endfor %}
                 </div>

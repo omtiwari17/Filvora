@@ -152,6 +152,34 @@ def series_detail(request, tmdb_id):
 
     # Fetch initial Season 1 episodes
     seasons = [s for s in series.get('seasons', []) if s.get('season_number', 0) > 0]
+    
+    # Compute season-wise watch time if user is logged in
+    if request.user.is_authenticated:
+        from apps.watch.models import WatchProgress
+        user_progress = WatchProgress.objects.filter(
+            user=request.user,
+            tmdb_id=tmdb_id,
+            media_type='tv'
+        )
+        season_stats = {}
+        for p in user_progress:
+            s_num = p.season or 1
+            if s_num not in season_stats:
+                season_stats[s_num] = 0
+            season_stats[s_num] += p.position_seconds
+
+        for s in seasons:
+            s_num = s.get('season_number', 1)
+            sec = season_stats.get(s_num, 0)
+            if sec >= 3600:
+                s['play_time_formatted'] = f"{round(sec / 3600.0, 1)} hrs"
+            elif sec >= 60:
+                s['play_time_formatted'] = f"{int(sec // 60)} mins"
+            elif sec > 0:
+                s['play_time_formatted'] = f"{int(sec)}s"
+            else:
+                s['play_time_formatted'] = None
+
     initial_season_num = seasons[0]['season_number'] if seasons else 1
     season_data = client.get_tv_season(tmdb_id, initial_season_num)
     episodes = season_data.get('episodes', [])

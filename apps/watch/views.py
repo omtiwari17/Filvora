@@ -195,6 +195,70 @@ def analytics_view(request):
 
     favorite_genre = top_genres[0]['name'] if top_genres else "Cinematic Variety"
 
+    # Season-wise play time breakdown for TV series
+    series_season_breakdown = {}
+    for p in tv_items:
+        series_id = p.tmdb_id
+        season_num = p.season or 1
+        if series_id not in series_season_breakdown:
+            series_season_breakdown[series_id] = {
+                'id': series_id,
+                'title': '',
+                'total_seconds': 0,
+                'total_episodes': 0,
+                'seasons': {}
+            }
+        
+        series_season_breakdown[series_id]['total_seconds'] += p.position_seconds
+        series_season_breakdown[series_id]['total_episodes'] += 1
+
+        if season_num not in series_season_breakdown[series_id]['seasons']:
+            series_season_breakdown[series_id]['seasons'][season_num] = {
+                'season_number': season_num,
+                'total_seconds': 0,
+                'episodes_count': 0,
+                'completed_count': 0,
+            }
+        
+        s_data = series_season_breakdown[series_id]['seasons'][season_num]
+        s_data['total_seconds'] += p.position_seconds
+        s_data['episodes_count'] += 1
+        if p.completed:
+            s_data['completed_count'] += 1
+
+    series_season_list = []
+    for s_id, s_info in series_season_breakdown.items():
+        tv_details = client.get_tv(s_id)
+        s_info['title'] = tv_details.get('name') or tv_details.get('title') or f"Series {s_id}"
+        s_info['poster_path'] = tv_details.get('poster_path')
+        s_info['total_hours'] = round(s_info['total_seconds'] / 3600.0, 1)
+        s_info['total_hours_formatted'] = f"{s_info['total_hours']} hrs" if s_info['total_hours'] >= 1.0 else f"{max(1, int(s_info['total_seconds'] // 60))} mins"
+        
+        formatted_seasons = []
+        for s_num in sorted(s_info['seasons'].keys()):
+            s_data = s_info['seasons'][s_num]
+            hrs = round(s_data['total_seconds'] / 3600.0, 1)
+            mins = int((s_data['total_seconds'] % 3600) // 60)
+            if hrs >= 1.0:
+                play_time_str = f"{hrs} hrs"
+            elif s_data['total_seconds'] >= 60:
+                play_time_str = f"{mins} mins"
+            else:
+                play_time_str = f"{int(s_data['total_seconds'])}s"
+            
+            formatted_seasons.append({
+                'season_number': s_num,
+                'play_time_str': play_time_str,
+                'play_time_hours': hrs,
+                'episodes_watched': s_data['episodes_count'],
+                'episodes_completed': s_data['completed_count'],
+            })
+        
+        s_info['formatted_seasons'] = formatted_seasons
+        series_season_list.append(s_info)
+    
+    series_season_list.sort(key=lambda x: x['total_seconds'], reverse=True)
+
     # Most watched item
     most_watched_title = "None yet"
     if items:
@@ -214,7 +278,8 @@ def analytics_view(request):
         'top_genres': top_genres,
         'favorite_genre': favorite_genre,
         'most_watched_title': most_watched_title,
-        'total_titles': len(items)
+        'total_titles': len(items),
+        'series_season_list': series_season_list
     })
 
 

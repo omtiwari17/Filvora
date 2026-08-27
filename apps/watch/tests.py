@@ -109,4 +109,41 @@ class WatchTestCase(TestCase):
         self.assertEqual(response.context['total_hours'], 1.0)
         self.assertEqual(response.context['completed_count'], 1)
 
+    def test_analytics_view_season_breakdown(self):
+        self.client.login(username='watchuser', password='password123')
+        # S1 E1: 3600s
+        WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=1399,
+            media_type='tv',
+            season=1,
+            episode=1,
+            position_seconds=3600,
+            duration_seconds=3600,
+            completed=True
+        )
+        # S2 E1: 1800s
+        WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=1399,
+            media_type='tv',
+            season=2,
+            episode=1,
+            position_seconds=1800,
+            duration_seconds=3600,
+            completed=False
+        )
+        response = self.client.get('/analytics/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('series_season_list', response.context)
+        self.assertTrue(len(response.context['series_season_list']) >= 1)
+        series_item = response.context['series_season_list'][0]
+        self.assertEqual(series_item['id'], 1399)
+        self.assertEqual(len(series_item['formatted_seasons']), 2)
+        self.assertEqual(series_item['formatted_seasons'][0]['season_number'], 1)
+        self.assertEqual(series_item['formatted_seasons'][0]['play_time_str'], '1.0 hrs')
+        self.assertEqual(series_item['formatted_seasons'][1]['season_number'], 2)
+        self.assertEqual(series_item['formatted_seasons'][1]['play_time_str'], '30 mins')
+
+
 
