@@ -3,7 +3,13 @@
 <html lang="en" class="dark scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#e50914">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Filvora">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
     <title>{% block title %}Filvora v2.0 - Next-Gen Cinema Platform{% endblock %}</title>
     
     <!-- Google Fonts -->
@@ -164,6 +170,15 @@
 
     <!-- Custom JS -->
     <script src="{% static 'js/main.js' %}"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then((reg) => console.log('PWA ServiceWorker registered'))
+                    .catch((err) => console.log('PWA ServiceWorker registration failed: ', err));
+            });
+        }
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -59,4 +59,23 @@ class CoreViewsTestCase(TestCase):
         self.assertIsNotNone(because)
         self.assertEqual(because['title'], 'Interstellar')
 
+    def test_pwa_assets_and_manifest(self):
+        import os, json
+        from django.conf import settings
+        manifest_path = os.path.join(settings.BASE_DIR, 'static', 'manifest.json')
+        self.assertTrue(os.path.exists(manifest_path))
+        with open(manifest_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            self.assertEqual(data['short_name'], 'Filvora')
+            self.assertEqual(data['display'], 'standalone')
+
+        sw_path = os.path.join(settings.BASE_DIR, 'static', 'sw.js')
+        self.assertTrue(os.path.exists(sw_path))
+
+        # Check manifest linked in base HTML
+        response = self.client.get('/')
+        self.assertIn('manifest.json', response.content.decode('utf-8'))
+
+
+
 
