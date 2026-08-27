@@ -18,6 +18,7 @@ class WatchProgress(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        app_label = 'watch'
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'tmdb_id', 'media_type', 'season', 'episode'],

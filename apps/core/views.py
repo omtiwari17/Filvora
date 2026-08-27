@@ -18,6 +18,7 @@ class HomeView(TemplateView):
         popular_series = client.get_popular_series()
         top_rated_series = client.get_top_rated_series()
         action_movies = client.get_action_movies()
+        scifi_movies = client.get_scifi_movies()
         animation_movies = client.get_animation_movies()
         
         context['hero_movie'] = trending_movies[0] if trending_movies else (popular_movies[0] if popular_movies else None)
@@ -27,16 +28,31 @@ class HomeView(TemplateView):
         context['popular_series'] = popular_series
         context['top_rated_series'] = top_rated_series
         context['action_movies'] = action_movies
+        context['scifi_movies'] = scifi_movies
         context['animation_movies'] = animation_movies
         
-        # User saved library IDs
+        # User saved library IDs & My List quick preview rail
+        my_list_preview = []
         if self.request.user.is_authenticated:
             context['user_saved_ids'] = set(LibraryItem.objects.filter(user=self.request.user).values_list('tmdb_id', flat=True))
+            library_items = LibraryItem.objects.filter(user=self.request.user).order_by('-added_at')[:10]
+            for item in library_items:
+                if item.media_type == 'movie':
+                    d = dict(client.get_movie(item.tmdb_id))
+                    d['media_type'] = 'movie'
+                    my_list_preview.append(d)
+                else:
+                    d = dict(client.get_tv(item.tmdb_id))
+                    d['media_type'] = 'tv'
+                    my_list_preview.append(d)
         else:
             context['user_saved_ids'] = set()
+        context['my_list_preview'] = my_list_preview
 
         # Continue watching for logged in user (deduplicated by media_type + tmdb_id)
         continue_watching = []
+        because_title = None
+        because_items = []
         if self.request.user.is_authenticated:
             progress_items = WatchProgress.objects.filter(
                 user=self.request.user,
@@ -56,6 +72,10 @@ class HomeView(TemplateView):
                     data['display_title'] = data.get('title', f"Movie {p.tmdb_id}")
                     data['sub_label'] = "Movie"
                     data['watch_url'] = f"/watch/movie/{p.tmdb_id}/"
+                    if not because_title:
+                        because_title = data['display_title']
+                        rec_data = client.get_movie_details(p.tmdb_id)
+                        because_items = rec_data.get('recommendations', {}).get('results', [])[:10]
                 else:
                     data = dict(client.get_tv(p.tmdb_id))
                     s_num = p.season or 1
@@ -64,6 +84,10 @@ class HomeView(TemplateView):
                     data['display_title'] = series_name
                     data['sub_label'] = f"S{s_num}:E{ep_num}"
                     data['watch_url'] = f"/watch/tv/{p.tmdb_id}/{s_num}/{ep_num}/"
+                    if not because_title:
+                        because_title = series_name
+                        rec_data = client.get_tv_details(p.tmdb_id)
+                        because_items = rec_data.get('recommendations', {}).get('results', [])[:10]
                 
                 data['id'] = p.tmdb_id
                 data['tmdb_id'] = p.tmdb_id
@@ -76,6 +100,8 @@ class HomeView(TemplateView):
                     break
                 
         context['continue_watching'] = continue_watching
+        context['because_title'] = because_title
+        context['because_items'] = because_items
         return context
 
 

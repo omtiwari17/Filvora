@@ -10,6 +10,7 @@ class LibraryItem(models.Model):
     added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        app_label = 'library'
         constraints = [
             models.UniqueConstraint(fields=['user', 'tmdb_id', 'media_type'], name='unique_library_item')
         ]

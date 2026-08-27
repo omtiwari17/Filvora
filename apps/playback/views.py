@@ -1,31 +1,66 @@
+import json
 from django.shortcuts import render
+from django.http import JsonResponse, HttpResponseBadRequest
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from apps.tmdb.client import TMDBClient
-
 from apps.watch.models import WatchProgress
+from apps.playback.models import PlaybackServerPreference
+from apps.playback.providers import registry, get_provider
 
-from apps.playback.providers import PROVIDERS, get_provider
+def format_time(seconds: float) -> str:
+    secs = int(seconds)
+    hours = secs // 3600
+    minutes = (secs % 3600) // 60
+    remaining_seconds = secs % 60
+    if hours > 0:
+        return f"{hours}:{minutes:02d}:{remaining_seconds:02d}"
+    return f"{minutes:02d}:{remaining_seconds:02d}"
 
 @login_required
 def watch(request, media_type, tmdb_id, season=None, episode=None):
     client = TMDBClient()
     server_id = request.GET.get('server')
-    provider = get_provider(server_id)
+    s_num = season if season is not None else (1 if media_type == 'tv' else None)
+    ep_num = episode if episode is not None else (1 if media_type == 'tv' else None)
 
+    # If no server specified, check user's saved preferred server for this title
+    if not server_id and request.user.is_authenticated:
+        pref = PlaybackServerPreference.objects.filter(
+            user=request.user,
+            tmdb_id=tmdb_id,
+            media_type=media_type,
+            season=s_num,
+            episode=ep_num
+        ).first()
+        if pref:
+            server_id = pref.provider_id
+
+    provider = get_provider(server_id)
+    ordered_providers = registry.get_ordered_providers(preferred_id=provider.id)
+    next_provider = registry.get_next_provider(provider.id)
+
+    previous_episode = None
     if media_type == 'movie':
         media = client.get_movie(tmdb_id)
         title = media.get('title', 'Unknown Movie')
-        video_url = provider.get_movie_url(tmdb_id)
+        source = provider.get_movie_source(tmdb_id)
+        video_url = source.url
         next_episode = None
     else:
         media = client.get_tv(tmdb_id)
         series_name = media.get('name', 'Unknown Series')
-        s_num = season or 1
-        ep_num = episode or 1
         title = f"{series_name} — S{s_num}:E{ep_num}"
-        video_url = provider.get_tv_url(tmdb_id, s_num, ep_num)
+        source = provider.get_episode_source(tmdb_id, s_num, ep_num)
+        video_url = source.url
         
-        # Calculate next episode
+        # Calculate next & previous episode
+        if ep_num > 1:
+            previous_episode = {
+                'season': s_num,
+                'episode': ep_num - 1,
+                'url': f"/watch/tv/{tmdb_id}/{s_num}/{ep_num - 1}/"
+            }
         next_episode = {
             'season': s_num,
             'episode': ep_num + 1,
@@ -34,6 +69,7 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
     
     # Check if user has saved watch progress to resume
     resume_position = 0
+    resume_formatted = ""
     progress = WatchProgress.objects.filter(
         user=request.user,
         tmdb_id=tmdb_id,
@@ -44,17 +80,66 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
     
     if progress and not progress.completed and progress.position_seconds > 5:
         resume_position = round(progress.position_seconds, 1)
+        resume_formatted = format_time(progress.position_seconds)
 
     return render(request, 'playback/watch.html', {
         'media': media,
         'title': title,
+        'source': source,
         'video_url': video_url,
         'media_type': media_type,
         'tmdb_id': tmdb_id,
-        'season': season or (1 if media_type == 'tv' else ''),
-        'episode': episode or (1 if media_type == 'tv' else ''),
+        'season': s_num or '',
+        'episode': ep_num or '',
         'resume_position': resume_position,
-        'providers': PROVIDERS,
+        'resume_formatted': resume_formatted,
+        'providers': ordered_providers,
         'current_server': provider.id,
+        'current_provider': provider,
+        'next_provider': next_provider,
+        'previous_episode': previous_episode,
         'next_episode': next_episode,
     })
+
+
+@csrf_exempt
+@login_required
+def report_server_success(request):
+    """Saves the working server provider for this user & title for future instant load."""
+    if request.method != 'POST':
+        return HttpResponseBadRequest("POST required")
+
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
+        tmdb_id = int(data.get('tmdb_id'))
+        media_type = data.get('media_type', 'movie')
+        provider_id = data.get('provider_id')
+        season = int(data.get('season')) if data.get('season') else None
+        episode = int(data.get('episode')) if data.get('episode') else None
+
+        if provider_id:
+            PlaybackServerPreference.objects.update_or_create(
+                user=request.user,
+                tmdb_id=tmdb_id,
+                media_type=media_type,
+                season=season,
+                episode=episode,
+                defaults={'provider_id': provider_id}
+            )
+
+        return JsonResponse({'status': 'ok', 'saved_provider': provider_id})
+    except (ValueError, TypeError, KeyError) as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@login_required
+def diagnostics(request):
+    """Returns diagnostics for all registered playback providers."""
+    results = registry.run_diagnostics()
+    if request.headers.get('Accept') == 'application/json' or request.GET.get('format') == 'json':
+        return JsonResponse({'providers': results})
+    return render(request, 'playback/diagnostics.html', {'diagnostics': results})

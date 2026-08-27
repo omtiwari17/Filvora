@@ -12,5 +12,4 @@ urlpatterns = [
     path('progress/', include('apps.watch.urls')),
     path('', include('apps.catalog.urls')),
     path('', include('apps.core.urls')),
-    path('__reload__/', include('django_browser_reload.urls')),
 ]

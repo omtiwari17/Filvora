@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Watching {{ title }} - Filvora</title>
+    <title>Watching {{ title }} — Filvora</title>
     
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -50,12 +50,20 @@
             align-items: center !important;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
         }
+        /* Ripple seek animations */
+        @keyframes ripple-seek {
+            0% { opacity: 1; transform: scale(0.85); }
+            100% { opacity: 0; transform: scale(1.3); }
+        }
+        .animate-ripple {
+            animation: ripple-seek 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
     </style>
 </head>
 <body class="bg-black text-white h-screen w-screen overflow-hidden flex flex-col relative select-none font-sans">
 
-    <!-- Top Overlay (Title, Controls & Server Switcher) -->
-    <div id="player-overlay" class="absolute top-0 left-0 w-full p-4 sm:p-6 z-50 flex items-center justify-between bg-gradient-to-b from-black/95 via-black/70 to-transparent transition-opacity duration-500">
+    <!-- Top Overlay (Title, Navigation & Server Switcher) -->
+    <div id="player-overlay" class="absolute top-0 left-0 w-full p-4 sm:p-6 z-40 flex items-center justify-between bg-gradient-to-b from-black/95 via-black/70 to-transparent transition-opacity duration-500">
         <div class="flex items-center gap-3 sm:gap-5">
             <a href="{% if media_type == 'movie' %}/movies/{{ tmdb_id }}/{% else %}/series/{{ tmdb_id }}/{% endif %}" 
                class="text-white hover:text-brand-500 transition p-2.5 rounded-full bg-black/60 backdrop-blur-xl border border-gray-700/60 shadow-lg hover:scale-105 active:scale-95"
@@ -66,13 +74,15 @@
             </a>
             <div>
                 <div class="flex items-center gap-2">
-                    <h1 class="text-base sm:text-xl md:text-2xl font-black drop-shadow text-white truncate max-w-[200px] sm:max-w-md md:max-w-lg">{{ title }}</h1>
+                    <h1 class="text-base sm:text-xl md:text-2xl font-black drop-shadow text-white truncate max-w-[180px] sm:max-w-md md:max-w-lg">{{ title }}</h1>
                     <span class="hidden sm:inline-block bg-brand-500/20 border border-brand-500/40 text-brand-500 text-[10px] font-black px-1.5 py-0.5 rounded">v2.0</span>
                 </div>
-                <p class="text-[11px] sm:text-xs text-gray-400 flex items-center gap-1.5 mt-0.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    <span>Streaming via Server {{ current_server|upper }}</span>
-                </p>
+                <div class="flex items-center gap-2 text-[11px] sm:text-xs text-gray-400 mt-0.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Server {{ current_server|upper }}</span>
+                    <span class="text-gray-600">•</span>
+                    <a href="/watch/diagnostics/" target="_blank" class="text-gray-400 hover:text-white underline decoration-gray-600">Diagnostics</a>
+                </div>
             </div>
         </div>
         
@@ -83,11 +93,34 @@
                         class="bg-gray-900/90 text-xs text-gray-200 border border-gray-700/80 rounded-xl px-3 py-2 focus:outline-none focus:border-brand-500 cursor-pointer backdrop-blur-xl shadow-lg">
                     {% for p in providers %}
                     <option value="{{ p.id }}" {% if p.id == current_server %}selected{% endif %}>
-                        ⚡ Server {{ p.name }}
+                        ⚡ {{ p.name }}
                     </option>
                     {% endfor %}
                 </select>
             </div>
+
+            <!-- Fast Fallback Button -->
+            {% if next_provider and next_provider.id != current_server %}
+            <button onclick="window.location.replace('?server={{ next_provider.id }}')" 
+                    title="Switch to next fallback server (Alt + S)" 
+                    class="hidden md:inline-flex items-center gap-1.5 bg-gray-800/80 hover:bg-gray-700 text-gray-300 hover:text-white px-3 py-2 rounded-xl text-xs font-semibold border border-gray-700/60 backdrop-blur-xl transition">
+                <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Server {{ next_provider.priority }}</span>
+            </button>
+            {% endif %}
+
+            <!-- Previous Episode Button (For TV Series) -->
+            {% if previous_episode %}
+            <a href="{{ previous_episode.url }}{% if current_server %}?server={{ current_server }}{% endif %}" 
+               class="hidden sm:inline-flex items-center gap-1.5 bg-gray-900/90 hover:bg-gray-800 text-white text-xs font-bold px-3 py-2 rounded-xl transition border border-gray-700/80 shadow-lg hover:scale-105 active:scale-95">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+                <span>E{{ previous_episode.episode }}</span>
+            </a>
+            {% endif %}
 
             <!-- Next Episode Button (For TV Series) -->
             {% if next_episode %}
@@ -112,6 +145,58 @@
             </button>
         </div>
     </div>
+
+    <!-- Interactive Resume Prompt Banner (Shown when user has past progress) -->
+    {% if resume_position > 5 and resume_formatted %}
+    <div id="resume-prompt" class="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 bg-black/95 border border-gray-700/90 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-2xl max-w-md w-[92%] transition-all duration-300 flex flex-col items-center text-center">
+        <div class="flex items-center gap-2 mb-1.5 text-brand-500 font-bold text-xs uppercase tracking-wider">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Resume Playback</span>
+        </div>
+        <p class="text-sm font-semibold text-white">You were watching at <span class="text-brand-500 font-bold">{{ resume_formatted }}</span></p>
+        <p class="text-[11px] text-gray-400 mt-0.5">Would you like to pick up where you left off?</p>
+        <div class="flex items-center gap-2.5 w-full mt-4">
+            <button onclick="resumePlayback({{ resume_position }})" 
+                    class="flex-1 bg-brand-500 hover:bg-red-600 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition shadow-lg shadow-brand-500/25 flex items-center justify-center gap-1.5">
+                <svg class="w-4 h-4 fill-white translate-x-0.5" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+                <span>Resume ({{ resume_formatted }})</span>
+            </button>
+            <button onclick="startOverPlayback()" 
+                    class="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-xl text-xs transition border border-gray-700 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Start Over</span>
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Autoplay Next Episode Countdown Overlay -->
+    {% if next_episode %}
+    <div id="autoplay-modal" class="hidden fixed bottom-12 right-6 z-50 bg-gray-950/95 border border-brand-500/40 rounded-2xl p-5 shadow-2xl backdrop-blur-2xl max-w-sm w-[90%] sm:w-full transition-all duration-300">
+        <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-xs font-black uppercase text-brand-500 tracking-wider">Up Next</span>
+            <span id="autoplay-countdown" class="text-xs font-bold text-gray-400">Starting in 8s</span>
+        </div>
+        <h4 class="text-sm font-bold text-white truncate">{{ title }}</h4>
+        <p class="text-xs text-gray-400 mt-0.5">Season {{ next_episode.season }} • Episode {{ next_episode.episode }}</p>
+        <div class="flex items-center gap-2.5 mt-3.5">
+            <a id="autoplay-play-now" href="{{ next_episode.url }}{% if current_server %}?server={{ current_server }}{% endif %}" 
+               class="flex-1 bg-brand-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-xl text-xs text-center transition shadow-lg shadow-brand-500/25">
+                Play Now
+            </a>
+            <button onclick="cancelAutoplay()" 
+                    class="px-3.5 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-xl text-xs transition border border-gray-700">
+                Cancel
+            </button>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Active Video Player Container -->
     <div class="absolute inset-0 w-full h-full bg-black z-0">
@@ -140,13 +225,108 @@
         {% endif %}
     </div>
 
+    <!-- Mobile Double Tap Seek Indicator Overlays -->
+    <div id="seek-ripple-left" class="hidden absolute top-1/2 left-10 -translate-y-1/2 z-30 pointer-events-none flex flex-col items-center justify-center w-24 h-24 rounded-full bg-black/70 border border-white/20 text-white shadow-2xl animate-ripple">
+        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" />
+        </svg>
+        <span class="text-[11px] font-black mt-1">-10s</span>
+    </div>
+
+    <div id="seek-ripple-right" class="hidden absolute top-1/2 right-10 -translate-y-1/2 z-30 pointer-events-none flex flex-col items-center justify-center w-24 h-24 rounded-full bg-black/70 border border-white/20 text-white shadow-2xl animate-ripple">
+        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z" />
+        </svg>
+        <span class="text-[11px] font-black mt-1">+10s</span>
+    </div>
+
+    <!-- Fallback Recovery Dialog (Hidden by Default) -->
+    <div id="fallback-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl text-center">
+            <div class="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 mx-auto flex items-center justify-center mb-4">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-black text-white">Playback Interrupted</h3>
+            <p class="text-xs text-gray-300 mt-2 leading-relaxed">
+                We encountered an issue loading from <strong>Server {{ current_server|upper }}</strong>. Would you like to switch to the next server?
+            </p>
+            <div class="flex items-center gap-3 mt-6">
+                {% if next_provider %}
+                <button onclick="window.location.replace('?server={{ next_provider.id }}')" 
+                        class="flex-1 bg-brand-500 hover:bg-red-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow-lg shadow-brand-500/30">
+                    Switch to {{ next_provider.name }}
+                </button>
+                {% endif %}
+                <button onclick="window.location.reload()" 
+                        class="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-xl text-xs transition border border-gray-700">
+                    Retry
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Video.js Core Script (Local) -->
     <script src="{% static 'js/videojs/video.min.js' %}"></script>
     
     <script>
+        // Global functions for resume prompt
+        function resumePlayback(pos) {
+            const prompt = document.getElementById('resume-prompt');
+            if (prompt) prompt.style.display = 'none';
+            const videoEl = document.getElementById('filvora-player');
+            if (videoEl && typeof videojs !== 'undefined') {
+                const player = videojs('filvora-player');
+                player.currentTime(pos);
+                player.play().catch(() => {});
+            }
+        }
+
+        function startOverPlayback() {
+            const prompt = document.getElementById('resume-prompt');
+            if (prompt) prompt.style.display = 'none';
+            const videoEl = document.getElementById('filvora-player');
+            if (videoEl && typeof videojs !== 'undefined') {
+                const player = videojs('filvora-player');
+                player.currentTime(0);
+                player.play().catch(() => {});
+            }
+        }
+
+        let autoplayTimer = null;
+        function triggerAutoplayCountdown() {
+            const modal = document.getElementById('autoplay-modal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+
+            let countdown = 8;
+            const countdownEl = document.getElementById('autoplay-countdown');
+            const playNowLink = document.getElementById('autoplay-play-now');
+
+            autoplayTimer = setInterval(() => {
+                countdown--;
+                if (countdownEl) countdownEl.innerText = `Starting in ${countdown}s`;
+                if (countdown <= 0) {
+                    clearInterval(autoplayTimer);
+                    if (playNowLink && playNowLink.href) {
+                        window.location.href = playNowLink.href;
+                    }
+                }
+            }, 1000);
+        }
+
+        function cancelAutoplay() {
+            if (autoplayTimer) clearInterval(autoplayTimer);
+            const modal = document.getElementById('autoplay-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('player-overlay');
             const videoEl = document.getElementById('filvora-player');
+            const currentServerId = '{{ current_server }}';
+            const nextServerId = '{% if next_provider %}{{ next_provider.id }}{% else %}{% endif %}';
             
             let timeout;
             const resetTimer = () => {
@@ -163,22 +343,24 @@
             document.addEventListener('touchstart', resetTimer);
             resetTimer();
 
-            // Progress tracking
-            const csrfToken = '{{ csrf_token }}';
+            // Progress tracking & sticky server recording
             const tmdbId = {{ tmdb_id }};
             const mediaType = '{{ media_type }}';
             const seasonNum = {% if season %}{{ season }}{% else %}null{% endif %};
             const episodeNum = {% if episode %}{{ episode }}{% else %}null{% endif %};
 
             let watchSeconds = 0;
+            let successRecorded = false;
+
             setInterval(() => {
                 watchSeconds += 10;
-                // Periodic beacon
+                
+                // Periodic beacon for watch progress
                 const payload = JSON.stringify({
                     tmdb_id: tmdbId,
                     media_type: mediaType,
                     position: watchSeconds,
-                    duration: 7200, // standard duration estimated for embed
+                    duration: 7200,
                     season: seasonNum,
                     episode: episodeNum
                 });
@@ -187,25 +369,108 @@
                     const blob = new Blob([payload], { type: 'application/json' });
                     navigator.sendBeacon('/progress/save/', blob);
                 }
+
+                // After 10 seconds of verified playback, record this server as preferred successful provider
+                if (watchSeconds >= 10 && !successRecorded) {
+                    successRecorded = true;
+                    const serverPayload = JSON.stringify({
+                        tmdb_id: tmdbId,
+                        media_type: mediaType,
+                        provider_id: currentServerId,
+                        season: seasonNum,
+                        episode: episodeNum
+                    });
+                    if (navigator.sendBeacon) {
+                        const blob = new Blob([serverPayload], { type: 'application/json' });
+                        navigator.sendBeacon('/watch/server-success/', blob);
+                    }
+                }
             }, 15000);
+
+            // Alt + S Shortcut to quickly switch to next server
+            document.addEventListener('keydown', (e) => {
+                if (e.altKey && (e.key === 's' || e.key === 'S')) {
+                    e.preventDefault();
+                    if (nextServerId) {
+                        window.location.replace('?server=' + nextServerId);
+                    }
+                }
+            });
+
+            // Double Tap Left / Right Seek Detection
+            let lastTap = 0;
+            document.addEventListener('touchend', (e) => {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                if (tapLength < 350 && tapLength > 0) {
+                    const touchX = e.changedTouches[0].clientX;
+                    const screenWidth = window.innerWidth;
+                    if (touchX < screenWidth * 0.4) {
+                        // Left double-tap: Seek backward 10s
+                        showSeekIndicator('seek-ripple-left');
+                        if (videoEl && typeof videojs !== 'undefined') {
+                            const p = videojs('filvora-player');
+                            p.currentTime(Math.max(0, p.currentTime() - 10));
+                        }
+                    } else if (touchX > screenWidth * 0.6) {
+                        // Right double-tap: Seek forward 10s
+                        showSeekIndicator('seek-ripple-right');
+                        if (videoEl && typeof videojs !== 'undefined') {
+                            const p = videojs('filvora-player');
+                            p.currentTime(Math.min(p.duration() || 99999, p.currentTime() + 10));
+                        }
+                    }
+                }
+                lastTap = currentTime;
+            });
+
+            function showSeekIndicator(id) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.classList.remove('hidden');
+                setTimeout(() => el.classList.add('hidden'), 600);
+            }
 
             // If Video.js is active on this page
             if (videoEl && typeof videojs !== 'undefined') {
                 const player = videojs('filvora-player');
-                const initialResumePosition = {{ resume_position|default:0 }};
                 
+                // Restore saved volume preference
+                const savedVol = localStorage.getItem('filvora_volume');
+                if (savedVol !== null) {
+                    player.volume(parseFloat(savedVol));
+                }
+                player.on('volumechange', () => {
+                    localStorage.setItem('filvora_volume', player.volume());
+                });
+
+                // Auto-seek if no prompt or prompt dismissed
+                const initialResumePosition = {{ resume_position|default:0 }};
                 player.ready(() => {
-                    if (initialResumePosition > 0) {
+                    if (initialResumePosition > 0 && !document.getElementById('resume-prompt')) {
                         player.currentTime(initialResumePosition);
                     }
                     const p = player.play();
                     if (p !== undefined) p.catch(() => {});
                 });
 
+                // Detect ended event for TV Series Autoplay
+                player.on('ended', () => {
+                    {% if next_episode %}
+                    triggerAutoplayCountdown();
+                    {% endif %}
+                });
+
+                // Detect playback error in direct video player
+                player.on('error', () => {
+                    const modal = document.getElementById('fallback-modal');
+                    if (modal) modal.classList.remove('hidden');
+                });
+
                 // Global Keyboard Shortcuts
                 document.addEventListener('keydown', (e) => {
                     const active = document.activeElement;
-                    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+                    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
                     
                     const key = e.key ? e.key.toLowerCase() : '';
                     if (key === ' ' || key === 'k') {
@@ -220,9 +485,11 @@
                     } else if (key === 'arrowright' || key === 'l') {
                         e.preventDefault();
                         player.currentTime(Math.min(player.duration() || 99999, player.currentTime() + 10));
+                        showSeekIndicator('seek-ripple-right');
                     } else if (key === 'arrowleft' || key === 'j') {
                         e.preventDefault();
                         player.currentTime(Math.max(0, player.currentTime() - 10));
+                        showSeekIndicator('seek-ripple-left');
                     }
                 }, true);
             }
