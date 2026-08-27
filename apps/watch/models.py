@@ -25,6 +25,9 @@ class WatchProgress(models.Model):
                 name='unique_user_content_watch_progress'
             )
         ]
+        indexes = [
+            models.Index(fields=['user', '-updated_at']),
+        ]
         ordering = ['-updated_at']
 
     def __str__(self):

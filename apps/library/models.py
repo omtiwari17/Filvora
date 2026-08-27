@@ -14,6 +14,9 @@ class LibraryItem(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['user', 'tmdb_id', 'media_type'], name='unique_library_item')
         ]
+        indexes = [
+            models.Index(fields=['user', '-added_at']),
+        ]
 
     def __str__(self):
         return f"{self.user.username} - {self.media_type} - {self.tmdb_id}"
