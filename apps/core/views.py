@@ -22,8 +22,14 @@ class HomeView(TemplateView):
         scifi_movies = client.get_scifi_movies()
         animation_movies = client.get_animation_movies()
         
+        upcoming_releases = client.get_movies_catalog(category='upcoming')
+        gta = client._get_gta_vi_special()
+        if not any(m.get('id') == 1222222 for m in upcoming_releases):
+            upcoming_releases.insert(0, gta)
+
         context['hero_movie'] = trending_movies[0] if trending_movies else (popular_movies[0] if popular_movies else None)
         context['trending_movies'] = trending_movies
+        context['upcoming_releases'] = upcoming_releases
         context['popular_movies'] = popular_movies
         context['top_rated_movies'] = top_rated_movies
         context['popular_series'] = popular_series

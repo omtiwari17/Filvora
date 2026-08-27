@@ -13,6 +13,7 @@ class CoreViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('trending_movies', response.context)
         self.assertIn('popular_movies', response.context)
+        self.assertIn('upcoming_releases', response.context)
         self.assertEqual(len(response.context['continue_watching']), 0)
 
     def test_home_view_authenticated_with_continue_watching(self):
