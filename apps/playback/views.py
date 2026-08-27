@@ -74,11 +74,11 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
         user=request.user,
         tmdb_id=tmdb_id,
         media_type=media_type,
-        season=season,
-        episode=episode
+        season=s_num if media_type == 'tv' else None,
+        episode=ep_num if media_type == 'tv' else None
     ).first()
     
-    if progress and not progress.completed and progress.position_seconds > 5:
+    if progress and not progress.completed and progress.position_seconds >= 30:
         resume_position = round(progress.position_seconds, 1)
         resume_formatted = format_time(progress.position_seconds)
 

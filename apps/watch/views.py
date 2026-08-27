@@ -23,6 +23,10 @@ def save_progress(request):
         season = int(data.get('season')) if data.get('season') else None
         episode = int(data.get('episode')) if data.get('episode') else None
 
+        # Ignore negligible positions (< 15s) that occur during page load or failed streams
+        if position_seconds < 15 and not completed:
+            return JsonResponse({'status': 'ignored', 'message': 'Position below threshold'})
+
         # Determine if video is completed (e.g. >90% watched or <=30s remaining)
         completed = False
         if duration_seconds > 0:

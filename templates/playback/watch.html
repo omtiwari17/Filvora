@@ -565,24 +565,26 @@
             // Initial display on load
             showOverlay();
 
-            // Progress tracking & sticky server recording
+            // Progress tracking & server recording
             const tmdbId = {{ tmdb_id }};
             const mediaType = '{{ media_type }}';
             const seasonNum = {% if season %}{{ season }}{% else %}null{% endif %};
             const episodeNum = {% if episode %}{{ episode }}{% else %}null{% endif %};
 
-            let watchSeconds = 0;
             let successRecorded = false;
+            let lastBeaconTime = 0;
 
-            setInterval(() => {
-                watchSeconds += 10;
-                
-                // Periodic beacon for watch progress
+            function sendProgressBeacon(currentSecs, totalSecs) {
+                if (currentSecs < 15) return;
+                const now = Date.now();
+                if (now - lastBeaconTime < 8000) return;
+                lastBeaconTime = now;
+
                 const payload = JSON.stringify({
                     tmdb_id: tmdbId,
                     media_type: mediaType,
-                    position: watchSeconds,
-                    duration: 7200,
+                    position: Math.round(currentSecs),
+                    duration: Math.round(totalSecs || 7200),
                     season: seasonNum,
                     episode: episodeNum
                 });
@@ -592,8 +594,7 @@
                     navigator.sendBeacon('/progress/save/', blob);
                 }
 
-                // After 10 seconds of verified playback, record this server as preferred successful provider
-                if (watchSeconds >= 10 && !successRecorded) {
+                if (currentSecs >= 15 && !successRecorded) {
                     successRecorded = true;
                     const serverPayload = JSON.stringify({
                         tmdb_id: tmdbId,
@@ -607,7 +608,23 @@
                         navigator.sendBeacon('/watch/server-success/', blob);
                     }
                 }
-            }, 15000);
+            }
+
+            // Listen for postMessage progress updates from supported embed players
+            window.addEventListener('message', (e) => {
+                if (!e.data) return;
+                try {
+                    let d = e.data;
+                    if (typeof d === 'string' && (d.startsWith('{') || d.startsWith('['))) {
+                        d = JSON.parse(d);
+                    }
+                    const pos = d.currentTime || d.time || d.position || (d.data && d.data.currentTime);
+                    const dur = d.duration || (d.data && d.data.duration);
+                    if (typeof pos === 'number' && pos >= 15) {
+                        sendProgressBeacon(pos, dur);
+                    }
+                } catch (err) {}
+            });
 
             // Alt + S Shortcut to quickly switch to next server
             document.addEventListener('keydown', (e) => {
@@ -723,6 +740,16 @@
                 player.on('play', () => {
                     showOverlay();
                     scheduleHide(3500);
+                });
+
+                player.on('timeupdate', () => {
+                    if (!player.paused()) {
+                        const cur = player.currentTime();
+                        const dur = player.duration();
+                        if (cur >= 15) {
+                            sendProgressBeacon(cur, dur);
+                        }
+                    }
                 });
 
                 player.on('userinactive', () => {
