@@ -37,20 +37,17 @@
             <div class="flex items-center justify-between mt-3 text-[11px] text-gray-400 pt-1">
                 <span>{{ ep.air_date|default:"" }}</span>
                 <div class="flex items-center gap-3">
-                    <form method="post" action="/downloads/start/">
-                        {% csrf_token %}
-                        <input type="hidden" name="tmdb_id" value="{{ tmdb_id }}">
-                        <input type="hidden" name="media_type" value="tv">
-                        <input type="hidden" name="season" value="{{ season_number }}">
-                        <input type="hidden" name="episode" value="{{ ep.episode_number }}">
-                        <input type="hidden" name="quality" value="1080p">
-                        <button type="submit" title="Download S{{ season_number }}E{{ ep.episode_number }} Offline" class="text-gray-400 hover:text-emerald-400 transition p-1 flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                            </svg>
-                            <span class="text-[10px] font-bold">Download</span>
-                        </button>
-                    </form>
+                    <button hx-get="/downloads/dialog/?tmdb_id={{ tmdb_id }}&media_type=tv&season={{ season_number }}&episode={{ ep.episode_number }}"
+                            hx-target="body"
+                            hx-swap="beforeend"
+                            onclick="event.preventDefault(); event.stopPropagation();"
+                            title="Download S{{ season_number }}E{{ ep.episode_number }} Offline" 
+                            class="text-gray-400 hover:text-emerald-400 transition p-1 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        <span class="text-[10px] font-bold">Download</span>
+                    </button>
                     <a href="/watch/tv/{{ tmdb_id }}/{{ season_number }}/{{ ep.episode_number }}/" class="text-xs font-bold text-brand-500 hover:text-red-400 inline-flex items-center gap-1">
                         <span>Play Ep {{ ep.episode_number }}</span>
                         <span>&rarr;</span>

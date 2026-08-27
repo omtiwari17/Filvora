@@ -1,0 +1,105 @@
+<!-- Download Quality Selection Dialog (HTMX Partial) -->
+<div id="download-dialog-overlay" 
+     class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+     onclick="if(event.target===this) this.remove()">
+    
+    <div class="bg-gray-900 border border-gray-700/80 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-fade-in">
+        <!-- Dialog Header -->
+        <div class="px-6 pt-6 pb-4 border-b border-gray-800/80">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">Download</h3>
+                        <p class="text-xs text-gray-400 truncate max-w-[250px]">{{ title }}</p>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('download-dialog-overlay').remove()" 
+                        class="p-1.5 text-gray-500 hover:text-white transition rounded-lg hover:bg-gray-800">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Dialog Body -->
+        <form method="post" action="/downloads/start/">
+            {% csrf_token %}
+            <input type="hidden" name="tmdb_id" value="{{ tmdb_id }}">
+            <input type="hidden" name="media_type" value="{{ media_type }}">
+            {% if season %}<input type="hidden" name="season" value="{{ season }}">{% endif %}
+            {% if episode %}<input type="hidden" name="episode" value="{{ episode }}">{% endif %}
+
+            <div class="px-6 py-5 space-y-5">
+                <!-- Quality Selection -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-300 mb-2.5 uppercase tracking-wider">Quality</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        {% for q in qualities %}
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="quality" value="{{ q }}" {% if q == default_quality %}checked{% endif %} class="peer sr-only">
+                            <div class="px-4 py-2.5 text-center rounded-xl border text-sm font-bold transition-all
+                                        peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500/50 peer-checked:text-emerald-400
+                                        border-gray-700/80 text-gray-400 hover:text-white hover:border-gray-600 bg-gray-800/50">
+                                {{ q }}
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Format -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-300 mb-2.5 uppercase tracking-wider">Format</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="format" value="mp4" checked class="peer sr-only">
+                            <div class="px-4 py-2.5 text-center rounded-xl border text-sm font-bold transition-all
+                                        peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500/50 peer-checked:text-emerald-400
+                                        border-gray-700/80 text-gray-400 hover:text-white hover:border-gray-600 bg-gray-800/50">
+                                MP4
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer opacity-50 pointer-events-none">
+                            <input type="radio" name="format" value="mkv" disabled class="peer sr-only">
+                            <div class="px-4 py-2.5 text-center rounded-xl border text-sm font-bold
+                                        border-gray-700/80 text-gray-500 bg-gray-800/50">
+                                MKV <span class="text-[9px] text-gray-600">(Soon)</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Info Note -->
+                <div class="bg-gray-800/50 border border-gray-700/60 rounded-xl px-4 py-3 flex items-start gap-2.5">
+                    <svg class="w-4 h-4 text-gray-500 mt-0.5 flex-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-[11px] text-gray-400 leading-relaxed">
+                        Downloads create standalone video files that work in VLC, any media player, TVs, and mobile devices. No Filvora required after download.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Dialog Footer -->
+            <div class="px-6 pb-6 flex items-center gap-3">
+                <button type="submit" 
+                        class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-500/20 transform hover:scale-[1.02] active:scale-95">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    <span>Start Download</span>
+                </button>
+                <button type="button" onclick="document.getElementById('download-dialog-overlay').remove()" 
+                        class="px-5 py-3 rounded-xl font-bold text-sm text-gray-400 hover:text-white border border-gray-700 hover:border-gray-600 bg-gray-800/50 transition">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
