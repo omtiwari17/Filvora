@@ -49,6 +49,23 @@
             display: flex !important;
             align-items: center !important;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+            transition: opacity 0.4s ease, transform 0.4s ease !important;
+        }
+        /* Auto-hide controls and big play/pause button when paused and inactive */
+        .video-js.vjs-user-inactive .vjs-control-bar,
+        .video-js.vjs-user-inactive.vjs-paused .vjs-control-bar {
+            opacity: 0 !important;
+            transform: translateY(20px) !important;
+            pointer-events: none !important;
+        }
+        .video-js.vjs-user-inactive .vjs-big-play-button,
+        .video-js.vjs-user-inactive.vjs-paused .vjs-big-play-button {
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transition: opacity 0.4s ease !important;
+        }
+        .video-js .vjs-big-play-button {
+            transition: opacity 0.4s ease !important;
         }
         /* Ripple seek animations */
         @keyframes ripple-seek {
@@ -390,8 +407,8 @@
                 overlay.style.transform = 'translateY(-10px)';
             }
             if (quickContainer) {
-                quickContainer.style.opacity = '0.9';
-                quickContainer.style.pointerEvents = 'auto';
+                quickContainer.style.opacity = '0';
+                quickContainer.style.pointerEvents = 'none';
             }
         }
 
@@ -583,6 +600,32 @@
                     }
                     const p = player.play();
                     if (p !== undefined) p.catch(() => {});
+                });
+
+                // When paused, auto-hide player controls after 3.5s of inactivity
+                player.on('pause', () => {
+                    scheduleHide(3500);
+                    setTimeout(() => {
+                        if (player.paused() && !isHoveredOverTop) {
+                            player.userActive(false);
+                            hideOverlay();
+                        }
+                    }, 3500);
+                });
+
+                player.on('play', () => {
+                    showOverlay();
+                    scheduleHide(3500);
+                });
+
+                player.on('userinactive', () => {
+                    if (!isHoveredOverTop) {
+                        hideOverlay();
+                    }
+                });
+
+                player.on('useractive', () => {
+                    showOverlay();
                 });
 
                 // Detect ended event for TV Series Autoplay
