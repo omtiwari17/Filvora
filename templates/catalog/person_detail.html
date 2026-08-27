@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ person.name }} — Filvora Filmography{% endblock %}
+
+{% block content %}
+<div class="pt-24 px-4 sm:px-8 md:px-12 pb-24 min-h-screen">
+    <!-- Artist Profile Header -->
+    <div class="flex flex-col md:flex-row gap-8 items-start mb-12 bg-gray-900/60 border border-gray-800/80 rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl">
+        <!-- Photo -->
+        <div class="flex-none w-36 sm:w-48 aspect-[2/3] rounded-2xl overflow-hidden bg-gray-950 shadow-xl border border-gray-800">
+            {% if person.profile_path %}
+            <img src="https://image.tmdb.org/t/p/w300{{ person.profile_path }}" alt="{{ person.name }}" class="w-full h-full object-cover">
+            {% else %}
+            <div class="w-full h-full flex items-center justify-center text-4xl bg-gray-900">🎭</div>
+            {% endif %}
+        </div>
+
+        <!-- Bio & Info -->
+        <div class="flex-grow space-y-3 min-w-0">
+            <div class="flex items-center gap-3 flex-wrap">
+                <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight">{{ person.name }}</h1>
+                <span class="bg-brand-500/20 text-brand-400 border border-brand-500/30 text-xs font-bold px-3 py-1 rounded-full">
+                    {{ person.known_for_department|default:"Acting" }}
+                </span>
+            </div>
+            
+            {% if person.birthday %}
+            <p class="text-xs text-gray-400">
+                Born: <span class="text-gray-200 font-medium">{{ person.birthday }}</span> {% if person.place_of_birth %}in <span class="text-gray-200">{{ person.place_of_birth }}</span>{% endif %}
+            </p>
+            {% endif %}
+
+            <div class="pt-2">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Biography</h3>
+                <p class="text-xs sm:text-sm text-gray-300 leading-relaxed line-clamp-6">
+                    {{ person.biography|default:"No biography available for this artist." }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Known For / Filmography Rail & Grid -->
+    <div>
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
+                <span>Featured Filmography</span>
+                <span class="text-xs font-bold text-gray-500">({{ credits|length }} titles)</span>
+            </h2>
+        </div>
+
+        {% if credits %}
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-4 md:gap-6">
+            {% for item in credits %}
+                {% if item.media_type == 'tv' %}
+                    {% include 'components/series_card.html' with item=item %}
+                {% else %}
+                    {% include 'components/movie_card.html' with item=item %}
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% else %}
+            {% include 'components/empty_state.html' with title="No titles found" message="Filmography records for this artist are currently unavailable." cta_url="/movies/" cta_text="Explore Catalog" %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

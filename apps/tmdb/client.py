@@ -393,6 +393,21 @@ class TMDBClient:
         fallback['media_type'] = 'movie'
         return fallback
 
+    def get_person(self, person_id):
+        endpoint = f"/person/{person_id}"
+        params = {"append_to_response": "combined_credits"}
+        data = self._fetch(endpoint, params)
+        if not data or 'name' not in data:
+            return {
+                "id": person_id,
+                "name": "Featured Artist",
+                "biography": "Information and filmography for this artist.",
+                "profile_path": None,
+                "known_for_department": "Acting",
+                "combined_credits": {"cast": self._get_mock_movies()}
+            }
+        return data
+
     def _get_mock_movies(self):
         return [
             {

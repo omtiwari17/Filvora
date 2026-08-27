@@ -79,3 +79,10 @@ class CatalogViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['is_kids_mode'])
 
+    def test_person_detail_view(self):
+        response = self.client.get('/person/10297/') # Matthew McConaughey / actor mock
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('person', response.context)
+        self.assertIn('credits', response.context)
+
+

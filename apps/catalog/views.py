@@ -193,3 +193,26 @@ def genres_view(request):
     genres = client.get_genres_list()
     return render(request, 'catalog/genres.html', {'genres': genres})
 
+def person_detail(request, person_id):
+    client = TMDBClient()
+    person = client.get_person(person_id)
+    credits = person.get('combined_credits', {}).get('cast', [])
+    
+    # Sort credits by popularity or vote_count
+    credits = sorted(credits, key=lambda x: x.get('vote_count', 0), reverse=True)[:24]
+    for c in credits:
+        c['display_title'] = c.get('title') or c.get('name') or 'Unknown Title'
+        c['media_type'] = c.get('media_type', 'movie')
+        client._attach_age_rating(c, c['media_type'])
+
+    user_saved_ids = set()
+    if request.user.is_authenticated:
+        user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
+
+    return render(request, 'catalog/person_detail.html', {
+        'person': person,
+        'credits': credits,
+        'user_saved_ids': user_saved_ids
+    })
+
+
