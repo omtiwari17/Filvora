@@ -238,6 +238,18 @@ class TMDBClient:
         results = data.get('results', self._get_mock_movies())
         return [self._attach_age_rating(m, 'movie') for m in results]
 
+    def get_movie_videos(self, movie_id):
+        """Fetch official videos (trailers, teasers, featurettes) for a movie."""
+        return self._fetch(f"/movie/{movie_id}/videos")
+
+    def get_tv_videos(self, tv_id, season=None, episode=None):
+        """Fetch official videos for a TV series or episode."""
+        if season is not None and episode is not None:
+            return self._fetch(f"/tv/{tv_id}/season/{season}/episode/{episode}/videos")
+        elif season is not None:
+            return self._fetch(f"/tv/{tv_id}/season/{season}/videos")
+        return self._fetch(f"/tv/{tv_id}/videos")
+
     def _fetch_paginated_24(self, endpoint, base_params, page=1, media_type='movie', kids_only=False):
         try:
             curr_page = max(1, int(page or 1))

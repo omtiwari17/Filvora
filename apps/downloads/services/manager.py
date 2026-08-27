@@ -133,7 +133,7 @@ class DownloadManager:
 
         Pipeline stages:
         1. Provider resolution & pre-flight space check
-        2. Stream download with progressive increments
+        2. Real stream extraction / download with live byte progress
         3. FFmpeg remuxing / container processing
         4. Output validation
         5. Finalization to READY state
@@ -159,50 +159,32 @@ class DownloadManager:
                 )
 
             # Pre-flight disk space check
-            estimated_size = source_info.get('estimated_size', 1024 * 1024 * 30)
+            estimated_size = source_info.get('estimated_size', 1024 * 1024 * 50)
             space_check = storage.check_disk_space(estimated_size)
             if not space_check['sufficient']:
                 cls._fail_job(job, space_check['message'])
                 return
 
-            paths = storage.create_job_directory(str(job.id))
-            source_filepath = os.path.join(paths['source'], job.filename)
+            def on_download_progress(percent, bytes_downloaded):
+                try:
+                    curr_job = DownloadJob.objects.get(id=job_id)
+                    if curr_job.status == 'DOWNLOADING':
+                        curr_job.progress = min(90.0, max(5.0, percent))
+                        curr_job.file_size = bytes_downloaded
+                        curr_job.save(update_fields=['progress', 'file_size'])
+                except Exception:
+                    pass
 
-            # Download actual source if URL provided, or stream sample payload
-            url = source_info.get('url', '')
-            if url:
-                dl_result = downloader.download_source(str(job.id), source_info, job.filename)
-                if not dl_result['success']:
-                    cls._fail_job(job, dl_result['error'])
-                    return
-                source_filepath = dl_result['filepath']
-            else:
-                # Progressive chunk streaming simulation (gives realistic live progress in UI)
-                chunk_steps = [15.0, 32.0, 52.0, 71.0, 88.0]
-                chunk_size = estimated_size // len(chunk_steps)
+            # Download actual source stream
+            dl_result = downloader.download_source(
+                str(job.id), source_info, job.filename, progress_callback=on_download_progress
+            )
 
-                with open(source_filepath, 'wb') as f:
-                    # Write valid MP4 header box (ftyp)
-                    f.write(b'\x00\x00\x00\x1cftypisom\x00\x00\x02\x00isomiso2mp41')
-                    f.write(b'\x00\x00\x00\x08free')
-                    
-                    for p in chunk_steps:
-                        time.sleep(0.6)  # ~0.6s per chunk = ~3.5s total download time
-                        # Check if user cancelled during download
-                        job.refresh_from_db()
-                        if job.status == 'CANCELLED':
-                            cleanup.cleanup_job(str(job.id))
-                            return
+            if not dl_result['success']:
+                cls._fail_job(job, dl_result['error'])
+                return
 
-                        # Write chunk data
-                        f.write(b'\x00' * min(chunk_size, 512 * 1024))
-                        job.progress = p
-                        job.save(update_fields=['progress'])
-
-                    # Final padding to reach target estimated size or 2MB min
-                    final_pad = max(1024 * 1024 * 2, chunk_size)
-                    f.write(b'\x00' * min(final_pad, 1024 * 1024 * 5))
-                    f.write(f"\nFILVORA_DRM_FREE_MEDIA::{job.filename}::{job.quality}".encode('utf-8'))
+            source_filepath = dl_result['filepath']
 
             # --- Stage 2: PROCESSING ---
             job.refresh_from_db()
@@ -213,7 +195,6 @@ class DownloadManager:
             job.status = 'PROCESSING'
             job.progress = 92.0
             job.save(update_fields=['status', 'progress'])
-            time.sleep(0.5)
 
             output_filepath = storage.get_output_filepath(str(job.id), job.filename)
 
@@ -224,7 +205,7 @@ class DownloadManager:
                 cls._fail_job(job, f"Processing failed: {proc_result['error']}")
                 return
 
-            job.progress = 97.0
+            job.progress = 98.0
             job.save(update_fields=['progress'])
 
             # --- Stage 3: VALIDATION ---
