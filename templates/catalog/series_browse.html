@@ -18,9 +18,9 @@
             <label class="text-xs font-bold text-gray-400 uppercase tracking-wider hidden sm:inline">Sort By:</label>
             <select name="sort" onchange="this.form.submit()" 
                     class="bg-gray-900/90 border border-gray-800 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-brand-500 shadow-md">
-                <option value="popularity.desc" {% if selected_sort == 'popularity.desc' %}selected{% endif %}>🔥 Most Popular</option>
-                <option value="vote_average.desc" {% if selected_sort == 'vote_average.desc' %}selected{% endif %}>⭐ Highest Rated</option>
-                <option value="first_air_date.desc" {% if selected_sort == 'first_air_date.desc' %}selected{% endif %}>🆕 Newest Airing</option>
+                <option value="popularity.desc" {% if selected_sort == 'popularity.desc' %}selected{% endif %}>Most Popular</option>
+                <option value="vote_average.desc" {% if selected_sort == 'vote_average.desc' %}selected{% endif %}>Highest Rated</option>
+                <option value="first_air_date.desc" {% if selected_sort == 'first_air_date.desc' %}selected{% endif %}>Newest Airing</option>
             </select>
         </form>
     </div>
@@ -28,24 +28,40 @@
     <!-- Category Tabs Rail -->
     <div class="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-none mb-6">
         <a href="/series/?category=popular{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
-           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'popular' and not selected_genre %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
-            🔥 Popular
+           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'popular' and not selected_genre %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"/>
+            </svg>
+            <span>Popular</span>
         </a>
         <a href="/series/?category=trending{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
-           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'trending' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
-            ⚡ Trending Today
+           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'trending' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            <span>Trending Today</span>
         </a>
         <a href="/series/?category=top_rated{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
-           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'top_rated' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
-            ⭐ Top Rated
+           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'top_rated' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            <svg class="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" viewBox="0 0 24 24">
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+            </svg>
+            <span>Top Rated</span>
         </a>
         <a href="/series/?category=on_the_air{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
-           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'on_the_air' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
-            📡 On The Air
+           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'on_the_air' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.828a5 5 0 010-7.072m7.072 0a5 5 0 010 7.072M13 12a1 1 0 11-2 0 1 1 0 012 0z"/>
+            </svg>
+            <span>On The Air</span>
         </a>
         <a href="/series/?category=airing_today{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
-           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'airing_today' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
-            📺 Airing Today
+           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'airing_today' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <span>Airing Today</span>
         </a>
     </div>
 
@@ -57,8 +73,9 @@
         </a>
         {% for g in genres %}
         <a href="/series/?genre={{ g.id }}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
-           class="px-3 py-1.5 rounded-xl text-[11px] font-bold transition flex-none {% if selected_genre == g.id|stringformat:'i' %}bg-brand-500/20 text-brand-400 border border-brand-500/40{% else %}bg-gray-950 text-gray-400 hover:text-white border border-gray-800/80{% endif %}">
-            {{ g.icon }} {{ g.name }}
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition flex-none {% if selected_genre == g.id|stringformat:'i' %}bg-brand-500/20 text-brand-400 border border-brand-500/40{% else %}bg-gray-950 text-gray-400 hover:text-white border border-gray-800/80{% endif %}">
+            {% include 'components/genre_icon.html' with name=g.name id=g.id class="w-3.5 h-3.5" %}
+            <span>{{ g.name }}</span>
         </a>
         {% endfor %}
     </div>

@@ -63,17 +63,41 @@
     <!-- Top Invisible Hover Detection Sensor -->
     <div id="top-sensor" class="fixed top-0 left-0 w-full h-24 z-40 pointer-events-auto"></div>
 
-    <!-- Floating Quick Server Switcher Pill (Always accessible even when player hides) -->
-    <button id="quick-server-trigger" 
-            onclick="showOverlay()" 
-            title="Click to Switch Server & Open Controls (Alt + S)" 
-            class="fixed top-4 right-4 z-40 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gray-950/85 hover:bg-gray-900 border border-gray-700/80 backdrop-blur-2xl shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 text-xs text-gray-200 cursor-pointer">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span class="font-bold">Server {{ current_server|upper }}</span>
-        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
-        </svg>
-    </button>
+    <!-- Floating Quick Server Switcher & Direct Dropdown Menu on Hover -->
+    <div id="quick-server-container" class="fixed top-4 right-4 z-50 group">
+        <button id="quick-server-trigger" 
+                type="button"
+                onclick="showOverlay()" 
+                title="Hover or Click to Switch Video Server (Alt + S)" 
+                class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gray-950/90 hover:bg-gray-900 border border-gray-700/90 backdrop-blur-2xl shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 text-xs text-gray-200 cursor-pointer">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="font-bold">Server {{ current_server|upper }}</span>
+            <svg class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200 group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+            </svg>
+        </button>
+
+        <!-- Direct Server Dropdown Menu on Hover -->
+        <div id="quick-server-menu" class="absolute right-0 mt-2 w-56 bg-gray-950/95 border border-gray-800/90 rounded-2xl shadow-2xl backdrop-blur-2xl p-1.5 space-y-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50">
+            <div class="px-3 py-1.5 border-b border-gray-800/80 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                Select Video Server
+            </div>
+            {% for p in providers %}
+            <a href="?server={{ p.id }}" 
+               class="flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-xl transition {% if p.id == current_server %}bg-brand-500 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full {% if p.id == current_server %}bg-white{% else %}bg-gray-500{% endif %}"></span>
+                    <span>{{ p.name }}</span>
+                </div>
+                {% if p.id == current_server %}
+                <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
 
     <!-- Top Overlay (Title, Navigation & Server Switcher) -->
     <div id="player-overlay" class="fixed top-0 left-0 w-full p-4 sm:p-6 z-50 flex items-center justify-between bg-gradient-to-b from-black/95 via-black/80 to-transparent transition-all duration-300 transform">
@@ -106,7 +130,7 @@
                         class="bg-gray-900/90 text-xs text-gray-200 border border-gray-700/80 rounded-xl px-3 py-2 focus:outline-none focus:border-brand-500 cursor-pointer backdrop-blur-xl shadow-lg">
                     {% for p in providers %}
                     <option value="{{ p.id }}" {% if p.id == current_server %}selected{% endif %}>
-                        ⚡ {{ p.name }}
+                        {{ p.name }}
                     </option>
                     {% endfor %}
                 </select>
@@ -340,15 +364,15 @@
 
         function showOverlay() {
             const overlay = document.getElementById('player-overlay');
-            const quickTrigger = document.getElementById('quick-server-trigger');
+            const quickContainer = document.getElementById('quick-server-container');
             if (overlay) {
                 overlay.style.opacity = '1';
                 overlay.style.pointerEvents = 'auto';
                 overlay.style.transform = 'translateY(0)';
             }
-            if (quickTrigger) {
-                quickTrigger.style.opacity = '0';
-                quickTrigger.style.pointerEvents = 'none';
+            if (quickContainer) {
+                quickContainer.style.opacity = '0';
+                quickContainer.style.pointerEvents = 'none';
             }
             clearTimeout(hideTimeout);
             if (!isHoveredOverTop) {
@@ -359,15 +383,15 @@
         function hideOverlay() {
             if (isHoveredOverTop) return;
             const overlay = document.getElementById('player-overlay');
-            const quickTrigger = document.getElementById('quick-server-trigger');
+            const quickContainer = document.getElementById('quick-server-container');
             if (overlay) {
                 overlay.style.opacity = '0';
                 overlay.style.pointerEvents = 'none';
                 overlay.style.transform = 'translateY(-10px)';
             }
-            if (quickTrigger) {
-                quickTrigger.style.opacity = '0.85';
-                quickTrigger.style.pointerEvents = 'auto';
+            if (quickContainer) {
+                quickContainer.style.opacity = '0.9';
+                quickContainer.style.pointerEvents = 'auto';
             }
         }
 
@@ -390,7 +414,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('player-overlay');
             const topSensor = document.getElementById('top-sensor');
-            const quickTrigger = document.getElementById('quick-server-trigger');
+            const quickContainer = document.getElementById('quick-server-container');
             const videoEl = document.getElementById('filvora-player');
             const currentServerId = '{{ current_server }}';
             const nextServerId = '{% if next_provider %}{{ next_provider.id }}{% else %}{% endif %}';
@@ -411,6 +435,18 @@
                 });
             }
 
+            // Quick server container hover keep-alive
+            if (quickContainer) {
+                quickContainer.addEventListener('mouseenter', () => {
+                    isHoveredOverTop = true;
+                    clearTimeout(hideTimeout);
+                });
+                quickContainer.addEventListener('mouseleave', () => {
+                    isHoveredOverTop = false;
+                    scheduleHide(3000);
+                });
+            }
+
             // Overlay hover keep-alive
             if (overlay) {
                 overlay.addEventListener('mouseenter', () => {
@@ -423,17 +459,11 @@
                 });
             }
 
-            if (quickTrigger) {
-                quickTrigger.addEventListener('mouseenter', () => {
-                    showOverlay();
-                });
-            }
-
             document.addEventListener('mousemove', (e) => {
                 if (e.clientY <= 120) {
                     showOverlay();
                 } else if (!isHoveredOverTop) {
-                    scheduleHide(4000);
+                    showOverlay();
                 }
             });
 
