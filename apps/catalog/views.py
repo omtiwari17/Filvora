@@ -9,11 +9,28 @@ def get_pagination_context(page, total_pages=500):
         current = max(1, int(page or 1))
     except (ValueError, TypeError):
         current = 1
+    
+    total_pages = max(1, int(total_pages or 1))
+    if current > total_pages:
+        current = total_pages
+
+    if total_pages <= 1:
+        return {
+            'current_page': 1,
+            'total_pages': 1,
+            'has_prev': False,
+            'prev_page': 1,
+            'has_next': False,
+            'next_page': 1,
+            'page_numbers': [],
+        }
+
     start_p = max(1, current - 2)
     end_p = min(total_pages, current + 2)
     page_numbers = list(range(start_p, end_p + 1))
     return {
         'current_page': current,
+        'total_pages': total_pages,
         'has_prev': current > 1,
         'prev_page': current - 1,
         'has_next': current < total_pages,
@@ -238,29 +255,27 @@ def search_results(request):
     except (ValueError, TypeError):
         p_num = 1
 
+    total_pages = 1
+
     if clean_q:
-        results = client.search_multi(clean_q, page=p_num)
-        
-        # When on first page and results are limited, fetch additional page for deep discovery
-        if p_num == 1 and len(results) < 20:
-            page2 = client.search_multi(clean_q, page=2)
-            existing_ids = {r.get('id') for r in results}
-            for item in page2:
-                if item.get('id') not in existing_ids:
-                    results.append(item)
+        search_data = client.search_multi_paginated(clean_q, page=p_num)
+        results = search_data['results']
+        total_pages = search_data.get('total_pages', 1)
 
         if rating_filter:
             results = [r for r in results if r.get('age_rating', '').upper() == rating_filter or rating_filter in r.get('age_rating', '').upper()]
+            total_pages = 1 if len(results) < 20 else total_pages
     elif rating_filter:
         movie_results = client.discover_content(media_type='movie', certification=rating_filter, page=p_num)
         tv_results = client.discover_content(media_type='tv', certification=rating_filter, page=p_num)
         results = movie_results + tv_results
+        total_pages = 1 if len(results) < 20 else 5
 
     user_saved_ids = set()
     if request.user.is_authenticated:
         user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
 
-    pagination = get_pagination_context(page)
+    pagination = get_pagination_context(page, total_pages=total_pages)
 
     return render(request, 'catalog/search_results.html', {
         'results': results,

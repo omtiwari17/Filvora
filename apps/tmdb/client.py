@@ -257,7 +257,11 @@ class TMDBClient:
         return self.get_movie_details(movie_id)
 
     def get_movie_details(self, movie_id):
-        if str(movie_id) == "1222222":
+        if str(movie_id) in ["1744462", "1222222"]:
+            data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates"})
+            if data and (data.get('title') or data.get('poster_path')):
+                data['age_rating'] = self._extract_movie_rating(data) or '18+'
+                return data
             return self._get_gta_vi_special()
 
         data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates"})
@@ -347,14 +351,26 @@ class TMDBClient:
             ]
         }
 
-    def search_multi(self, query, page=1):
+    def search_multi_paginated(self, query, page=1):
         if not query or not query.strip():
-            return []
+            return {'results': [], 'total_pages': 1, 'total_results': 0}
         data = self._fetch("/search/multi", {"query": query.strip(), "page": page})
         results = data.get('results', [])
+        total_pages = data.get('total_pages', 1)
+        total_results = data.get('total_results', len(results))
+        
         filtered = []
+        seen_ids = set()
+        seen_titles = set()
         for r in results:
             if r.get('media_type') in ['movie', 'tv']:
+                item_id = r.get('id')
+                item_title = (r.get('title') or r.get('name') or '').strip().lower()
+                if item_id in seen_ids or (item_title and item_title in seen_titles):
+                    continue
+                seen_ids.add(item_id)
+                if item_title:
+                    seen_titles.add(item_title)
                 r['display_title'] = r.get('title') or r.get('name')
                 r['release_year'] = (r.get('release_date') or r.get('first_air_date') or '')[:4]
                 self._attach_age_rating(r, r.get('media_type'))
@@ -362,10 +378,18 @@ class TMDBClient:
         
         q_lower = query.lower()
         if any(term in q_lower for term in ['grand theft', 'gta', 'gta6', 'gta 6', 'gta vi', 'extended look', 'vice city', 'leonida', 'rockstar']):
-            gta = self._get_gta_vi_special()
-            if not any(f.get('id') == 1222222 for f in filtered):
+            if not any(f.get('id') in [1744462, 1222222] or 'grand theft auto vi' in (f.get('title') or f.get('name') or '').lower() for f in filtered):
+                gta = self._get_gta_vi_special()
                 filtered.insert(0, gta)
-        return filtered
+                
+        return {
+            'results': filtered,
+            'total_pages': total_pages,
+            'total_results': total_results
+        }
+
+    def search_multi(self, query, page=1):
+        return self.search_multi_paginated(query, page=page)['results']
 
     def search_categorized(self, query):
         if not query or not query.strip():
@@ -373,9 +397,14 @@ class TMDBClient:
         data = self._fetch("/search/multi", {"query": query.strip()})
         results = data.get('results', [])
         categorized = {'movies': [], 'series': [], 'people': []}
+        seen_movie_titles = set()
         for r in results:
             mtype = r.get('media_type')
             if mtype == 'movie':
+                t_lower = (r.get('title') or '').strip().lower()
+                if t_lower in seen_movie_titles:
+                    continue
+                seen_movie_titles.add(t_lower)
                 r['display_title'] = r.get('title', 'Unknown Movie')
                 r['release_year'] = (r.get('release_date') or '')[:4]
                 self._attach_age_rating(r, 'movie')
@@ -393,8 +422,8 @@ class TMDBClient:
 
         q_lower = query.lower()
         if any(term in q_lower for term in ['grand theft', 'gta', 'gta6', 'gta 6', 'gta vi', 'extended look', 'vice city', 'leonida', 'rockstar']):
-            gta = self._get_gta_vi_special()
-            if not any(m.get('id') == 1222222 for m in categorized['movies']):
+            if not any(m.get('id') in [1744462, 1222222] or 'grand theft auto vi' in (m.get('title') or '').lower() for m in categorized['movies']):
+                gta = self._get_gta_vi_special()
                 categorized['movies'].insert(0, gta)
 
         return categorized
@@ -500,23 +529,23 @@ class TMDBClient:
 
     def _get_gta_vi_special(self):
         return {
-            "id": 1222222,
+            "id": 1744462,
             "title": "Grand Theft Auto VI: An Extended Look",
             "name": "Grand Theft Auto VI: An Extended Look",
             "display_title": "Grand Theft Auto VI: An Extended Look",
             "tagline": "Welcome to Vice City. An exclusive extended cinematic showcase.",
-            "overview": "An exclusive extended look and cinematic deep dive into Grand Theft Auto VI. Explore the sun-soaked neon avenues of Vice City, the sprawling swamps of Leonida, and the dynamic criminal underworld crafted with groundbreaking next-generation open-world storytelling.",
-            "poster_path": "/static/images/gtavi_poster.svg",
-            "backdrop_path": "/static/images/gtavi_backdrop.svg",
-            "release_date": "2026-10-15",
-            "first_air_date": "2026-10-15",
+            "overview": "See the premiere of an extended look at Grand Theft Auto VI, the next evolution in the groundbreaking Grand Theft Auto series.",
+            "poster_path": "/xTZuh9ziUjIyHBWO9OvqNIPqVWe.jpg",
+            "backdrop_path": "/po0uFYwWNByHQzHLCVJ6FetkN4M.jpg",
+            "release_date": "2026-08-27",
+            "first_air_date": "2026-08-27",
             "release_year": "2026",
             "runtime": 65,
             "vote_average": 9.6,
             "vote_count": 12500,
             "age_rating": "18+",
             "media_type": "movie",
-            "genres": [{"id": 28, "name": "Action"}, {"id": 80, "name": "Crime"}, {"id": 99, "name": "Documentary"}],
+            "genres": [{"id": 28, "name": "Action"}, {"id": 80, "name": "Crime"}, {"id": 12, "name": "Adventure"}],
             "credits": {
                 "cast": [
                     {"id": 1001, "name": "Lucia", "character": "Protagonist", "profile_path": None},

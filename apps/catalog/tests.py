@@ -70,9 +70,9 @@ class CatalogViewsTestCase(TestCase):
         response = self.client.get('/search/?q=GTA+VI')
         self.assertEqual(response.status_code, 200)
         self.assertIn('results', response.context)
-        self.assertTrue(any(r.get('id') == 1222222 for r in response.context['results']))
+        self.assertTrue(any(r.get('id') in [1744462, 1222222] for r in response.context['results']))
 
-        detail_resp = self.client.get('/movies/1222222/')
+        detail_resp = self.client.get('/movies/1744462/')
         self.assertEqual(detail_resp.status_code, 200)
         self.assertEqual(detail_resp.context['movie']['title'], "Grand Theft Auto VI: An Extended Look")
 

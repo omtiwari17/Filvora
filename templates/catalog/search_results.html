@@ -42,7 +42,7 @@
     </div>
 
     <!-- Pagination Controls -->
-    {% if results|length >= 8 or pagination.has_prev or pagination.has_next %}
+    {% if pagination.total_pages > 1 and pagination.page_numbers %}
     <div class="flex items-center justify-center gap-2 pt-6 border-t border-gray-800/80 mb-12">
         {% if pagination.has_prev %}
         <a href="?q={{ query }}&page={{ pagination.prev_page }}{% if selected_rating %}&rating={{ selected_rating }}{% endif %}" 

@@ -24,7 +24,7 @@ class HomeView(TemplateView):
         
         upcoming_releases = client.get_movies_catalog(category='upcoming')
         gta = client._get_gta_vi_special()
-        if not any(m.get('id') == 1222222 for m in upcoming_releases):
+        if not any(m.get('id') in [1744462, 1222222] or 'grand theft auto vi' in (m.get('title') or '').lower() for m in upcoming_releases):
             upcoming_releases.insert(0, gta)
 
         context['hero_movie'] = trending_movies[0] if trending_movies else (popular_movies[0] if popular_movies else None)
