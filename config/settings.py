@@ -37,7 +37,15 @@ csrf_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
 if csrf_origins:
     CSRF_TRUSTED_ORIGINS = [o.strip() for o in csrf_origins.split(',')]
 else:
-    CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
+    CSRF_TRUSTED_ORIGINS = [
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+        'http://0.0.0.0:8000',
+        'http://192.168.1.5:8000',
+        'http://192.168.*',
+        'http://10.*',
+        'http://172.16.*',
+    ]
 
 # Reverse Proxy & SSL headers for secure remote tunnels (Cloudflare / Caddy / Nginx)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
