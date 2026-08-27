@@ -226,30 +226,48 @@ def search_suggest(request):
 
 def search_results(request):
     raw_q = request.GET.get('q', '').strip()
+    page = request.GET.get('page', '1')
     explicit_rating = request.GET.get('rating') or request.GET.get('cert')
     clean_q, rating_filter = parse_search_query(raw_q, explicit_rating)
 
     client = TMDBClient()
     results = []
 
+    try:
+        p_num = max(1, int(page))
+    except (ValueError, TypeError):
+        p_num = 1
+
     if clean_q:
-        results = client.search_multi(clean_q)
+        results = client.search_multi(clean_q, page=p_num)
+        
+        # When on first page and results are limited, fetch additional page for deep discovery
+        if p_num == 1 and len(results) < 20:
+            page2 = client.search_multi(clean_q, page=2)
+            existing_ids = {r.get('id') for r in results}
+            for item in page2:
+                if item.get('id') not in existing_ids:
+                    results.append(item)
+
         if rating_filter:
             results = [r for r in results if r.get('age_rating', '').upper() == rating_filter or rating_filter in r.get('age_rating', '').upper()]
     elif rating_filter:
-        movie_results = client.discover_content(media_type='movie', certification=rating_filter)
-        tv_results = client.discover_content(media_type='tv', certification=rating_filter)
+        movie_results = client.discover_content(media_type='movie', certification=rating_filter, page=p_num)
+        tv_results = client.discover_content(media_type='tv', certification=rating_filter, page=p_num)
         results = movie_results + tv_results
 
     user_saved_ids = set()
     if request.user.is_authenticated:
         user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
 
+    pagination = get_pagination_context(page)
+
     return render(request, 'catalog/search_results.html', {
         'results': results,
         'query': raw_q,
         'clean_query': clean_q,
         'selected_rating': rating_filter,
+        'pagination': pagination,
         'user_saved_ids': user_saved_ids,
     })
 

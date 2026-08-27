@@ -347,10 +347,10 @@ class TMDBClient:
             ]
         }
 
-    def search_multi(self, query):
+    def search_multi(self, query, page=1):
         if not query or not query.strip():
             return []
-        data = self._fetch("/search/multi", {"query": query.strip()})
+        data = self._fetch("/search/multi", {"query": query.strip(), "page": page})
         results = data.get('results', [])
         filtered = []
         for r in results:

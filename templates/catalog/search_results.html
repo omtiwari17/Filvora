@@ -40,6 +40,32 @@
             {% endif %}
         {% endfor %}
     </div>
+
+    <!-- Pagination Controls -->
+    {% if results|length >= 8 or pagination.has_prev or pagination.has_next %}
+    <div class="flex items-center justify-center gap-2 pt-6 border-t border-gray-800/80 mb-12">
+        {% if pagination.has_prev %}
+        <a href="?q={{ query }}&page={{ pagination.prev_page }}{% if selected_rating %}&rating={{ selected_rating }}{% endif %}" 
+           class="px-4 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-xs font-bold text-gray-300 hover:text-white border border-gray-800 transition">
+            &larr; Previous
+        </a>
+        {% endif %}
+
+        {% for p_num in pagination.page_numbers %}
+        <a href="?q={{ query }}&page={{ p_num }}{% if selected_rating %}&rating={{ selected_rating }}{% endif %}" 
+           class="w-9 h-9 flex items-center justify-center rounded-xl text-xs font-bold transition {% if pagination.current_page == p_num %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-800{% endif %}">
+            {{ p_num }}
+        </a>
+        {% endfor %}
+
+        {% if pagination.has_next %}
+        <a href="?q={{ query }}&page={{ pagination.next_page }}{% if selected_rating %}&rating={{ selected_rating }}{% endif %}" 
+           class="px-4 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-xs font-bold text-gray-300 hover:text-white border border-gray-800 transition">
+            Next &rarr;
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
     {% else %}
         {% if query %}
             {% include 'components/empty_state.html' with icon="search" title="No Results Found" message="We couldn't find any movies or TV series matching your query. Try searching for a different keyword or browse our catalog." cta_url="/movies/" cta_text="Explore Movies" %}
