@@ -1,3 +1,4 @@
+import concurrent.futures
 from django.shortcuts import render
 from django.views.generic import TemplateView
 from apps.tmdb.client import TMDBClient
@@ -13,16 +14,28 @@ class HomeView(TemplateView):
         client = TMDBClient()
         engine = RecommendationEngine()
         
-        trending_movies = client.get_trending_movies()
-        popular_movies = client.get_popular_movies()
-        top_rated_movies = client.get_top_rated_movies()
-        popular_series = client.get_popular_series()
-        top_rated_series = client.get_top_rated_series()
-        action_movies = client.get_action_movies()
-        scifi_movies = client.get_scifi_movies()
-        animation_movies = client.get_animation_movies()
+        # Concurrently fetch all 9 homepage rails in parallel
+        with concurrent.futures.ThreadPoolExecutor(max_workers=9) as executor:
+            f_trending = executor.submit(client.get_trending_movies)
+            f_popular_m = executor.submit(client.get_popular_movies)
+            f_top_m = executor.submit(client.get_top_rated_movies)
+            f_popular_s = executor.submit(client.get_popular_series)
+            f_top_s = executor.submit(client.get_top_rated_series)
+            f_action = executor.submit(client.get_action_movies)
+            f_scifi = executor.submit(client.get_scifi_movies)
+            f_animation = executor.submit(client.get_animation_movies)
+            f_upcoming = executor.submit(client.get_movies_catalog, category='upcoming')
+
+            trending_movies = f_trending.result()
+            popular_movies = f_popular_m.result()
+            top_rated_movies = f_top_m.result()
+            popular_series = f_popular_s.result()
+            top_rated_series = f_top_s.result()
+            action_movies = f_action.result()
+            scifi_movies = f_scifi.result()
+            animation_movies = f_animation.result()
+            upcoming_releases = f_upcoming.result()
         
-        upcoming_releases = client.get_movies_catalog(category='upcoming')
         gta = client._get_gta_vi_special()
         if not any(m.get('id') in [1744462, 1222222] or 'grand theft auto vi' in (m.get('title') or '').lower() for m in upcoming_releases):
             upcoming_releases.insert(0, gta)
@@ -43,16 +56,19 @@ class HomeView(TemplateView):
         custom_collections = []
         if self.request.user.is_authenticated:
             context['user_saved_ids'] = set(LibraryItem.objects.filter(user=self.request.user).values_list('tmdb_id', flat=True))
-            library_items = LibraryItem.objects.filter(user=self.request.user).order_by('-added_at')[:10]
-            for item in library_items:
-                if item.media_type == 'movie':
-                    d = dict(client.get_movie(item.tmdb_id))
-                    d['media_type'] = 'movie'
-                    my_list_preview.append(d)
-                else:
-                    d = dict(client.get_tv(item.tmdb_id))
-                    d['media_type'] = 'tv'
-                    my_list_preview.append(d)
+            library_items = list(LibraryItem.objects.filter(user=self.request.user).order_by('-added_at')[:10])
+            if library_items:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(library_items), 6)) as ex:
+                    def _fetch_lib_item(item):
+                        if item.media_type == 'movie':
+                            d = dict(client.get_movie(item.tmdb_id))
+                            d['media_type'] = 'movie'
+                            return d
+                        else:
+                            d = dict(client.get_tv(item.tmdb_id))
+                            d['media_type'] = 'tv'
+                            return d
+                    my_list_preview = list(ex.map(_fetch_lib_item, library_items))
             
             custom_collections = list(CustomCollection.objects.filter(user=self.request.user).prefetch_related('items'))
         else:

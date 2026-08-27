@@ -9,12 +9,18 @@ from django.conf import settings
 class TMDBClient:
     BASE_URL = "https://api.themoviedb.org/3"
     _cache = {}
-    CACHE_TTL = 300  # 5 minutes in-memory cache
+    CACHE_TTL = 900  # 15 minutes in-memory cache
+    _session = None
 
     def __init__(self):
         self.api_key = os.environ.get('TMDB_API_KEY')
         if not self.api_key and hasattr(settings, 'TMDB_API_KEY'):
             self.api_key = settings.TMDB_API_KEY
+        if TMDBClient._session is None:
+            TMDBClient._session = requests.Session()
+            adapter = requests.adapters.HTTPAdapter(pool_connections=25, pool_maxsize=25, max_retries=1)
+            TMDBClient._session.mount('https://', adapter)
+            TMDBClient._session.mount('http://', adapter)
 
     def _fetch(self, endpoint, params=None):
         if not params:
@@ -34,14 +40,24 @@ class TMDBClient:
         query_string = urllib.parse.urlencode(params)
         url = f"{self.BASE_URL}{endpoint}?{query_string}"
 
-        # Method 1: Windows Schannel curl with --ssl-no-revoke and IPv4
+        # Method 1: Requests with persistent keep-alive connection pool (Fastest, ~100-200ms)
+        try:
+            r = self._session.get(url, timeout=3.5)
+            if r.status_code == 200:
+                data = r.json()
+                self._cache[cache_key] = (data, time.time())
+                return data
+        except Exception:
+            pass
+
+        # Method 2: Windows Schannel curl fallback if requests encounters SSL/network glitch
         try:
             res = subprocess.run(
-                ['curl.exe', '-s', '--ssl-no-revoke', '-4', '--connect-timeout', '4', url],
+                ['curl.exe', '-s', '--ssl-no-revoke', '-4', '--connect-timeout', '3', url],
                 capture_output=True,
                 text=True,
                 encoding='utf-8',
-                timeout=6
+                timeout=4
             )
             if res.returncode == 0 and res.stdout.strip():
                 data = json.loads(res.stdout)
@@ -50,16 +66,6 @@ class TMDBClient:
                     return data
         except Exception:
             pass
-
-        # Method 2: Requests fallback
-        try:
-            r = requests.get(url, timeout=4)
-            if r.status_code == 200:
-                data = r.json()
-                self._cache[cache_key] = (data, time.time())
-                return data
-        except Exception as e:
-            print(f"TMDB Fetch Error for {endpoint}: {e}")
 
         return {}
 
