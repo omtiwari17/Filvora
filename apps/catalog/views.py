@@ -358,7 +358,7 @@ def discover(request):
     if request.user.is_authenticated:
         user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
 
-    total_pages = 1 if len(results) < 20 and str(page).strip() in ['1', ''] else 500
+    total_pages = 1 if len(results) < 24 and str(page).strip() in ['1', ''] else 500
     pagination = get_pagination_context(page, total_pages=total_pages)
 
     return render(request, 'catalog/discover.html', {

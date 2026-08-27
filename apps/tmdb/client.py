@@ -238,10 +238,49 @@ class TMDBClient:
         results = data.get('results', self._get_mock_movies())
         return [self._attach_age_rating(m, 'movie') for m in results]
 
-    def get_movies_catalog(self, category='popular', genre_id=None, sort_by='popularity.desc', page=1, kids_only=False):
-        params = {"page": page}
-        endpoint = "/movie/popular"
+    def _fetch_paginated_24(self, endpoint, base_params, page=1, media_type='movie', kids_only=False):
+        try:
+            curr_page = max(1, int(page or 1))
+        except (ValueError, TypeError):
+            curr_page = 1
 
+        target_count = 24
+        start_idx = (curr_page - 1) * target_count
+        end_idx = start_idx + target_count
+
+        tmdb_start_page = (start_idx // 20) + 1
+        tmdb_end_page = ((end_idx - 1) // 20) + 1
+        offset = start_idx - (tmdb_start_page - 1) * 20
+
+        raw_results = []
+        for p_num in range(tmdb_start_page, tmdb_end_page + 1):
+            p_params = dict(base_params)
+            p_params['page'] = p_num
+            data = self._fetch(endpoint, p_params)
+            res = data.get('results', [])
+            if not res and not raw_results:
+                res = self._get_mock_movies() if media_type == 'movie' else self._get_mock_series()
+            raw_results.extend(res)
+            if len(raw_results) >= (offset + target_count):
+                break
+
+        sliced = raw_results[offset : offset + target_count]
+        if not sliced and raw_results:
+            sliced = raw_results[:target_count]
+
+        processed = []
+        for item in sliced:
+            item['media_type'] = media_type
+            item['display_title'] = item.get('title') or item.get('name') or f"Title {item.get('id')}"
+            item['release_year'] = (item.get('release_date') or item.get('first_air_date') or '')[:4]
+            self._attach_age_rating(item, media_type)
+            if kids_only and item.get('age_rating') in ['R', 'NC-17', 'TV-MA', '18+']:
+                continue
+            processed.append(item)
+
+        return processed
+
+    def get_movies_catalog(self, category='popular', genre_id=None, sort_by='popularity.desc', page=1, kids_only=False):
         if genre_id or sort_by != 'popularity.desc':
             return self.discover_content(
                 media_type='movie',
@@ -262,23 +301,9 @@ class TMDBClient:
         else:
             endpoint = "/movie/popular"
 
-        data = self._fetch(endpoint, params)
-        results = data.get('results', self._get_mock_movies())
-        processed = []
-        for m in results:
-            m['media_type'] = 'movie'
-            m['display_title'] = m.get('title', 'Unknown Movie')
-            m['release_year'] = (m.get('release_date') or '')[:4]
-            self._attach_age_rating(m, 'movie')
-            if kids_only and m.get('age_rating') in ['R', 'NC-17', '18+']:
-                continue
-            processed.append(m)
-        return processed
+        return self._fetch_paginated_24(endpoint, {}, page=page, media_type='movie', kids_only=kids_only)
 
     def get_series_catalog(self, category='popular', genre_id=None, sort_by='popularity.desc', page=1, kids_only=False):
-        params = {"page": page}
-        endpoint = "/tv/popular"
-
         if genre_id or sort_by != 'popularity.desc':
             return self.discover_content(
                 media_type='tv',
@@ -299,18 +324,7 @@ class TMDBClient:
         else:
             endpoint = "/tv/popular"
 
-        data = self._fetch(endpoint, params)
-        results = data.get('results', self._get_mock_series())
-        processed = []
-        for s in results:
-            s['media_type'] = 'tv'
-            s['display_title'] = s.get('name', 'Unknown Series')
-            s['release_year'] = (s.get('first_air_date') or '')[:4]
-            self._attach_age_rating(s, 'tv')
-            if kids_only and s.get('age_rating') in ['TV-MA', '18+']:
-                continue
-            processed.append(s)
-        return processed
+        return self._fetch_paginated_24(endpoint, {}, page=page, media_type='tv', kids_only=kids_only)
 
 
     def get_movie(self, movie_id):
@@ -555,19 +569,7 @@ class TMDBClient:
             params['include_adult'] = 'false'
 
         endpoint = "/discover/movie" if media_type == 'movie' else "/discover/tv"
-        data = self._fetch(endpoint, params)
-        results = data.get('results', self._get_mock_movies() if media_type == 'movie' else self._get_mock_series())
-        
-        processed = []
-        for item in results:
-            item['media_type'] = media_type
-            item['display_title'] = item.get('title') or item.get('name')
-            item['release_year'] = (item.get('release_date') or item.get('first_air_date') or '')[:4]
-            self._attach_age_rating(item, media_type)
-            if kids_only and item.get('age_rating') in ['R', 'NC-17', 'TV-MA', '18+']:
-                continue
-            processed.append(item)
-        return processed
+        return self._fetch_paginated_24(endpoint, params, page=page, media_type=media_type, kids_only=kids_only)
 
     def get_surprise_title(self, media_type='movie', genre_id=None, mood=None):
         import random
