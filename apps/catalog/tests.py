@@ -44,6 +44,12 @@ class CatalogViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('results', response.context)
 
+    def test_search_with_age_rating(self):
+        response = self.client.get('/search/?q=Interstellar rating:PG-13')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('results', response.context)
+        self.assertEqual(response.context['selected_rating'], 'PG-13')
+
     def test_search_suggest(self):
         response = self.client.get('/search/suggest/?q=Dune')
         self.assertEqual(response.status_code, 200)

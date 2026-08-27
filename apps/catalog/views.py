@@ -1,3 +1,4 @@
+import re
 from django.shortcuts import render
 from django.http import HttpResponse
 from apps.tmdb.client import TMDBClient
@@ -158,31 +159,58 @@ def season_episodes(request, tmdb_id, season_number):
     })
 
 def search_suggest(request):
-    q = request.GET.get('q', '').strip()
-    if len(q) < 2:
+    raw_q = request.GET.get('q', '').strip()
+    rating_filter = request.GET.get('rating', '').strip().upper()
+    clean_q = raw_q
+
+    match = re.search(r'(?:rating|cert):([a-zA-Z0-9\-+]+)', raw_q, re.IGNORECASE)
+    if match:
+        rating_filter = match.group(1).upper()
+        clean_q = re.sub(r'(?:rating|cert):[a-zA-Z0-9\-+]+', '', raw_q, flags=re.IGNORECASE).strip()
+
+    if len(clean_q) < 2:
         return HttpResponse('')
     
     client = TMDBClient()
-    categorized = client.search_categorized(q)
+    categorized = client.search_categorized(clean_q)
+
+    if rating_filter:
+        categorized['movies'] = [m for m in categorized['movies'] if m.get('age_rating', '').upper() == rating_filter or rating_filter in m.get('age_rating', '').upper()]
+        categorized['series'] = [s for s in categorized['series'] if s.get('age_rating', '').upper() == rating_filter or rating_filter in s.get('age_rating', '').upper()]
+
     return render(request, 'catalog/partials/search_suggestions.html', {
         'categorized': categorized,
         'movies': categorized['movies'][:4],
         'series': categorized['series'][:4],
         'people': categorized['people'][:3],
         'has_results': bool(categorized['movies'] or categorized['series'] or categorized['people']),
-        'query': q,
+        'query': clean_q,
     })
 
 def search_results(request):
-    q = request.GET.get('q', '').strip()
+    raw_q = request.GET.get('q', '').strip()
+    rating_filter = request.GET.get('rating', '').strip().upper()
+    clean_q = raw_q
+
+    match = re.search(r'(?:rating|cert):([a-zA-Z0-9\-+]+)', raw_q, re.IGNORECASE)
+    if match:
+        rating_filter = match.group(1).upper()
+        clean_q = re.sub(r'(?:rating|cert):[a-zA-Z0-9\-+]+', '', raw_q, flags=re.IGNORECASE).strip()
+
     client = TMDBClient()
-    results = client.search_multi(q) if q else []
+    results = client.search_multi(clean_q) if clean_q else []
+
+    if rating_filter:
+        results = [r for r in results if r.get('age_rating', '').upper() == rating_filter or rating_filter in r.get('age_rating', '').upper()]
+
     user_saved_ids = set()
     if request.user.is_authenticated:
         user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
+
     return render(request, 'catalog/search_results.html', {
         'results': results,
-        'query': q,
+        'query': clean_q,
+        'selected_rating': rating_filter,
         'user_saved_ids': user_saved_ids,
     })
 
