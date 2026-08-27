@@ -8,7 +8,7 @@ class TMDBTestCase(TestCase):
     def test_mock_movies_fallback(self):
         movies = self.client._get_mock_movies()
         self.assertGreater(len(movies), 0)
-        self.assertEqual(movies[0]['title'], 'Interstellar')
+        self.assertTrue(any(m['title'] == 'Interstellar' for m in movies))
 
     def test_mock_series_fallback(self):
         series = self.client._get_mock_series()

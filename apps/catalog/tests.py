@@ -66,6 +66,16 @@ class CatalogViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('categorized', response.context)
 
+    def test_gta_vi_search_and_detail(self):
+        response = self.client.get('/search/?q=GTA+VI')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('results', response.context)
+        self.assertTrue(any(r.get('id') == 1222222 for r in response.context['results']))
+
+        detail_resp = self.client.get('/movies/1222222/')
+        self.assertEqual(detail_resp.status_code, 200)
+        self.assertEqual(detail_resp.context['movie']['title'], "Grand Theft Auto VI: An Extended Look")
+
     def test_discover_view(self):
         response = self.client.get('/discover/?type=movie&genre=28&rating=7.0')
         self.assertEqual(response.status_code, 200)

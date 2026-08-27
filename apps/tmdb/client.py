@@ -257,6 +257,9 @@ class TMDBClient:
         return self.get_movie_details(movie_id)
 
     def get_movie_details(self, movie_id):
+        if str(movie_id) == "1222222":
+            return self._get_gta_vi_special()
+
         data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates"})
         if data and (data.get('title') or data.get('poster_path')):
             data['age_rating'] = self._extract_movie_rating(data)
@@ -356,6 +359,12 @@ class TMDBClient:
                 r['release_year'] = (r.get('release_date') or r.get('first_air_date') or '')[:4]
                 self._attach_age_rating(r, r.get('media_type'))
                 filtered.append(r)
+        
+        q_lower = query.lower()
+        if any(term in q_lower for term in ['grand theft', 'gta', 'gta6', 'gta 6', 'gta vi', 'extended look', 'vice city', 'leonida', 'rockstar']):
+            gta = self._get_gta_vi_special()
+            if not any(f.get('id') == 1222222 for f in filtered):
+                filtered.insert(0, gta)
         return filtered
 
     def search_categorized(self, query):
@@ -381,6 +390,12 @@ class TMDBClient:
                 known_titles = [k.get('title') or k.get('name') for k in r.get('known_for', []) if (k.get('title') or k.get('name'))]
                 r['known_for_text'] = ", ".join(known_titles[:2]) if known_titles else r.get('known_for_department', 'Acting')
                 categorized['people'].append(r)
+
+        q_lower = query.lower()
+        if any(term in q_lower for term in ['grand theft', 'gta', 'gta6', 'gta 6', 'gta vi', 'extended look', 'vice city', 'leonida', 'rockstar']):
+            gta = self._get_gta_vi_special()
+            if not any(m.get('id') == 1222222 for m in categorized['movies']):
+                categorized['movies'].insert(0, gta)
 
         return categorized
 
@@ -483,8 +498,50 @@ class TMDBClient:
             }
         return data
 
+    def _get_gta_vi_special(self):
+        return {
+            "id": 1222222,
+            "title": "Grand Theft Auto VI: An Extended Look",
+            "name": "Grand Theft Auto VI: An Extended Look",
+            "display_title": "Grand Theft Auto VI: An Extended Look",
+            "tagline": "Welcome to Vice City. An exclusive extended cinematic showcase.",
+            "overview": "An exclusive extended look and cinematic deep dive into Grand Theft Auto VI. Explore the sun-soaked neon avenues of Vice City, the sprawling swamps of Leonida, and the dynamic criminal underworld crafted with groundbreaking next-generation open-world storytelling.",
+            "poster_path": "/kDp1vUBnMpe8ak4rjgl3cLELqjU.jpg",
+            "backdrop_path": "/yDHYTfA3R0jFYba16jBB1ef8oIt.jpg",
+            "release_date": "2026-10-15",
+            "first_air_date": "2026-10-15",
+            "release_year": "2026",
+            "runtime": 65,
+            "vote_average": 9.6,
+            "vote_count": 12500,
+            "age_rating": "18+",
+            "media_type": "movie",
+            "genres": [{"id": 28, "name": "Action"}, {"id": 80, "name": "Crime"}, {"id": 99, "name": "Documentary"}],
+            "credits": {
+                "cast": [
+                    {"id": 1001, "name": "Lucia", "character": "Protagonist", "profile_path": None},
+                    {"id": 1002, "name": "Jason", "character": "Protagonist", "profile_path": None},
+                    {"id": 1003, "name": "Sam Houser", "character": "Executive Producer", "profile_path": None}
+                ]
+            },
+            "recommendations": {
+                "results": [
+                    {
+                        "id": 157336,
+                        "title": "Interstellar",
+                        "poster_path": "/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+                        "vote_average": 8.4,
+                        "release_date": "2014-11-05",
+                        "age_rating": "PG-13",
+                        "media_type": "movie"
+                    }
+                ]
+            }
+        }
+
     def _get_mock_movies(self):
         return [
+            self._get_gta_vi_special(),
             {
                 "id": 157336,
                 "title": "Interstellar",
