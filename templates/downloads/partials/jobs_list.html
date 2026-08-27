@@ -1,3 +1,18 @@
+<!-- Out-of-band swap for header stats badges so they stay in sync with the jobs list on every poll -->
+<div id="downloads-header-stats" hx-swap-oob="true" class="flex items-center gap-2">
+    <span class="px-3 py-1.5 rounded-xl bg-gray-900 border border-gray-800 text-xs font-bold text-gray-300">
+        <strong class="text-amber-400">{{ active_count|default:0 }}</strong> Active
+    </span>
+    <span class="px-3 py-1.5 rounded-xl bg-gray-900 border border-gray-800 text-xs font-bold text-gray-300">
+        <strong class="text-emerald-400">{{ ready_count|default:0 }}</strong> Ready
+    </span>
+    {% if failed_count %}
+    <span class="px-3 py-1.5 rounded-xl bg-gray-900 border border-gray-800 text-xs font-bold text-gray-300">
+        <strong class="text-red-400">{{ failed_count }}</strong> Failed
+    </span>
+    {% endif %}
+</div>
+
 {% if jobs %}
 <div class="space-y-4">
     {% for job in jobs %}
@@ -21,7 +36,7 @@
                 <span class="text-brand-400 font-bold">{{ job.quality }}</span>
                 {% if job.file_size_display %}
                 <span>•</span>
-                <span class="text-gray-500">{{ job.file_size_display }}</span>
+                <span class="text-gray-400 font-bold">{{ job.file_size_display }}</span>
                 {% endif %}
             </p>
 

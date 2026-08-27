@@ -5,9 +5,10 @@ Manages registration and resolution of authorized download providers.
 Providers are resolved by priority (lower number = higher priority).
 """
 from apps.downloads.providers.base import DownloadProvider
+from apps.downloads.providers.direct import DirectDownloadProvider
 
-# Global provider registry
-_PROVIDERS: list[DownloadProvider] = []
+# Global provider registry initialized with default authorized providers
+_PROVIDERS: list[DownloadProvider] = [DirectDownloadProvider()]
 
 
 def register_provider(provider: DownloadProvider):
@@ -55,3 +56,9 @@ def get_available_qualities(tmdb_id: int, media_type: str, season: int = None, e
 def clear_providers():
     """Clear all registered providers (for testing)."""
     _PROVIDERS.clear()
+
+
+def reset_default_providers():
+    """Reset to default providers."""
+    _PROVIDERS.clear()
+    _PROVIDERS.append(DirectDownloadProvider())

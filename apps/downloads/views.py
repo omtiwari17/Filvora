@@ -50,12 +50,21 @@ def downloads_dashboard(request):
 @login_required
 def download_status_partial(request):
     """HTMX partial for live-polling job status updates."""
-    jobs = DownloadJob.objects.filter(user=request.user).order_by('-created_at')[:20]
+    jobs = list(DownloadJob.objects.filter(user=request.user).order_by('-created_at')[:20])
 
     for job in jobs:
         job.file_size_display = format_file_size(job.file_size) if job.file_size else ''
 
-    return render(request, 'downloads/partials/jobs_list.html', {'jobs': jobs})
+    active_count = sum(1 for j in jobs if j.status in ['QUEUED', 'DOWNLOADING', 'PROCESSING'])
+    ready_count = sum(1 for j in jobs if j.status == 'READY')
+    failed_count = sum(1 for j in jobs if j.status == 'FAILED')
+
+    return render(request, 'downloads/partials/jobs_list.html', {
+        'jobs': jobs,
+        'active_count': active_count,
+        'ready_count': ready_count,
+        'failed_count': failed_count,
+    })
 
 
 @login_required

@@ -13,12 +13,12 @@
             <p class="text-xs sm:text-sm text-gray-400 mt-1">Export standalone video files directly to your device with clean naming.</p>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div id="downloads-header-stats" class="flex items-center gap-2">
             <span class="px-3 py-1.5 rounded-xl bg-gray-900 border border-gray-800 text-xs font-bold text-gray-300">
-                <strong class="text-amber-400">{{ active_count }}</strong> Active
+                <strong class="text-amber-400">{{ active_count|default:0 }}</strong> Active
             </span>
             <span class="px-3 py-1.5 rounded-xl bg-gray-900 border border-gray-800 text-xs font-bold text-gray-300">
-                <strong class="text-emerald-400">{{ ready_count }}</strong> Ready
+                <strong class="text-emerald-400">{{ ready_count|default:0 }}</strong> Ready
             </span>
             {% if failed_count %}
             <span class="px-3 py-1.5 rounded-xl bg-gray-900 border border-gray-800 text-xs font-bold text-gray-300">
