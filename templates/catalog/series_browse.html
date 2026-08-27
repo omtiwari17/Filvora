@@ -1,24 +1,101 @@
 {% extends 'base.html' %}
 
-{% block title %}Browse TV Series — Filvora{% endblock %}
+{% block title %}Explore TV Series & Shows — Filvora Cinema{% endblock %}
 
 {% block content %}
-<div class="pt-24 px-4 sm:px-8 md:px-12 pb-20 min-h-screen">
-    <div class="flex items-center justify-between mb-8">
+<div class="pt-24 px-4 sm:px-8 md:px-12 pb-24 min-h-screen">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-            <h1 class="text-3xl sm:text-4xl font-black text-white drop-shadow-md">TV Series</h1>
-            <p class="text-xs sm:text-sm text-gray-400 mt-1">Binge-worthy drama, sci-fi epics, mystery thrillers, and comedy series.</p>
+            <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-md">TV Shows & Series</h1>
+            <p class="text-xs sm:text-sm text-gray-400 mt-1">Discover gripping dramas, bingeworthy sci-fi, anime, and comedy series.</p>
         </div>
+
+        <!-- Sort Control -->
+        <form method="get" action="/series/" class="flex items-center gap-2">
+            {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+            {% if selected_genre %}<input type="hidden" name="genre" value="{{ selected_genre }}">{% endif %}
+            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider hidden sm:inline">Sort By:</label>
+            <select name="sort" onchange="this.form.submit()" 
+                    class="bg-gray-900/90 border border-gray-800 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-brand-500 shadow-md">
+                <option value="popularity.desc" {% if selected_sort == 'popularity.desc' %}selected{% endif %}>🔥 Most Popular</option>
+                <option value="vote_average.desc" {% if selected_sort == 'vote_average.desc' %}selected{% endif %}>⭐ Highest Rated</option>
+                <option value="first_air_date.desc" {% if selected_sort == 'first_air_date.desc' %}selected{% endif %}>🆕 Newest Airing</option>
+            </select>
+        </form>
     </div>
-    
-    {% if series_list %}
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 sm:gap-6">
-        {% for s in series_list %}
-            {% include 'components/series_card.html' with series=s user_saved_ids=user_saved_ids %}
+
+    <!-- Category Tabs Rail -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-none mb-6">
+        <a href="/series/?category=popular{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'popular' and not selected_genre %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            🔥 Popular
+        </a>
+        <a href="/series/?category=trending{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'trending' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            ⚡ Trending Today
+        </a>
+        <a href="/series/?category=top_rated{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'top_rated' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            ⭐ Top Rated
+        </a>
+        <a href="/series/?category=on_the_air{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'on_the_air' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            📡 On The Air
+        </a>
+        <a href="/series/?category=airing_today{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'airing_today' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            📺 Airing Today
+        </a>
+    </div>
+
+    <!-- Genre Quick Filter Rail -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-none mb-8">
+        <a href="/series/?category={{ selected_category }}" 
+           class="px-3 py-1.5 rounded-xl text-[11px] font-bold transition flex-none {% if not selected_genre %}bg-gray-800 text-white border border-gray-600{% else %}bg-gray-950 text-gray-400 hover:text-white border border-gray-800/80{% endif %}">
+            All Genres
+        </a>
+        {% for g in genres %}
+        <a href="/series/?genre={{ g.id }}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+           class="px-3 py-1.5 rounded-xl text-[11px] font-bold transition flex-none {% if selected_genre == g.id|stringformat:'i' %}bg-brand-500/20 text-brand-400 border border-brand-500/40{% else %}bg-gray-950 text-gray-400 hover:text-white border border-gray-800/80{% endif %}">
+            {{ g.icon }} {{ g.name }}
+        </a>
         {% endfor %}
     </div>
+    
+    <!-- Grid -->
+    {% if series_list %}
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4 md:gap-6 mb-12">
+        {% for series in series_list %}
+            {% include 'components/series_card.html' with item=series user_saved_ids=user_saved_ids %}
+        {% endfor %}
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="flex items-center justify-center gap-2 pt-6 border-t border-gray-800/80">
+        {% if pagination.has_prev %}
+        <a href="?page={{ pagination.prev_page }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+           class="px-4 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-xs font-bold text-gray-300 hover:text-white border border-gray-800 transition">
+            &larr; Previous
+        </a>
+        {% endif %}
+
+        {% for p_num in pagination.page_numbers %}
+        <a href="?page={{ p_num }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+           class="w-9 h-9 flex items-center justify-center rounded-xl text-xs font-bold transition {% if pagination.current_page == p_num %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-800{% endif %}">
+            {{ p_num }}
+        </a>
+        {% endfor %}
+
+        {% if pagination.has_next %}
+        <a href="?page={{ pagination.next_page }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+           class="px-4 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-xs font-bold text-gray-300 hover:text-white border border-gray-800 transition">
+            Next &rarr;
+        </a>
+        {% endif %}
+    </div>
     {% else %}
-        {% include 'components/empty_state.html' with title="No Series Available" message="Could not load TV series catalog at this moment. Please check back shortly." cta_url="/" cta_text="Return Home" %}
+        {% include 'components/empty_state.html' with title="No TV Series Available" message="Could not find series matching the selected filters. Please adjust your criteria or browse other categories." cta_url="/series/" cta_text="Reset Filters" %}
     {% endif %}
 </div>
 {% endblock %}

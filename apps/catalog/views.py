@@ -3,13 +3,55 @@ from django.http import HttpResponse
 from apps.tmdb.client import TMDBClient
 from apps.library.models import LibraryItem
 
+def get_pagination_context(page, total_pages=500):
+    try:
+        current = max(1, int(page or 1))
+    except (ValueError, TypeError):
+        current = 1
+    start_p = max(1, current - 2)
+    end_p = min(total_pages, current + 2)
+    page_numbers = list(range(start_p, end_p + 1))
+    return {
+        'current_page': current,
+        'has_prev': current > 1,
+        'prev_page': current - 1,
+        'has_next': current < total_pages,
+        'next_page': current + 1,
+        'page_numbers': page_numbers,
+    }
+
 def movie_browse(request):
     client = TMDBClient()
-    movies = client.get_popular_movies()
+    category = request.GET.get('category', 'popular')
+    genre_id = request.GET.get('genre')
+    sort_by = request.GET.get('sort', 'popularity.desc')
+    page = request.GET.get('page', '1')
+    kids_mode = is_kids_profile(request)
+
+    movies = client.get_movies_catalog(
+        category=category,
+        genre_id=genre_id,
+        sort_by=sort_by,
+        page=page,
+        kids_only=kids_mode
+    )
+    genres = client.get_genres_list()
+
     user_saved_ids = set()
     if request.user.is_authenticated:
         user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
-    return render(request, 'catalog/movie_browse.html', {'movies': movies, 'user_saved_ids': user_saved_ids})
+
+    pagination = get_pagination_context(page)
+
+    return render(request, 'catalog/movie_browse.html', {
+        'movies': movies,
+        'genres': genres,
+        'selected_category': category,
+        'selected_genre': genre_id,
+        'selected_sort': sort_by,
+        'pagination': pagination,
+        'user_saved_ids': user_saved_ids
+    })
 
 def movie_detail(request, tmdb_id):
     client = TMDBClient()
@@ -41,11 +83,36 @@ def movie_detail(request, tmdb_id):
 
 def series_browse(request):
     client = TMDBClient()
-    series_list = client.get_popular_series()
+    category = request.GET.get('category', 'popular')
+    genre_id = request.GET.get('genre')
+    sort_by = request.GET.get('sort', 'popularity.desc')
+    page = request.GET.get('page', '1')
+    kids_mode = is_kids_profile(request)
+
+    series_list = client.get_series_catalog(
+        category=category,
+        genre_id=genre_id,
+        sort_by=sort_by,
+        page=page,
+        kids_only=kids_mode
+    )
+    genres = client.get_genres_list()
+
     user_saved_ids = set()
     if request.user.is_authenticated:
         user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
-    return render(request, 'catalog/series_browse.html', {'series_list': series_list, 'user_saved_ids': user_saved_ids})
+
+    pagination = get_pagination_context(page)
+
+    return render(request, 'catalog/series_browse.html', {
+        'series_list': series_list,
+        'genres': genres,
+        'selected_category': category,
+        'selected_genre': genre_id,
+        'selected_sort': sort_by,
+        'pagination': pagination,
+        'user_saved_ids': user_saved_ids
+    })
 
 
 def series_detail(request, tmdb_id):

@@ -178,6 +178,81 @@ class TMDBClient:
         results = data.get('results', self._get_mock_movies())
         return [self._attach_age_rating(m, 'movie') for m in results]
 
+    def get_movies_catalog(self, category='popular', genre_id=None, sort_by='popularity.desc', page=1, kids_only=False):
+        params = {"page": page}
+        endpoint = "/movie/popular"
+
+        if genre_id or sort_by != 'popularity.desc':
+            return self.discover_content(
+                media_type='movie',
+                genre_id=genre_id,
+                sort_by=sort_by,
+                page=page,
+                kids_only=kids_only
+            )
+
+        if category == 'trending':
+            endpoint = "/trending/movie/day"
+        elif category == 'top_rated':
+            endpoint = "/movie/top_rated"
+        elif category == 'now_playing':
+            endpoint = "/movie/now_playing"
+        elif category == 'upcoming':
+            endpoint = "/movie/upcoming"
+        else:
+            endpoint = "/movie/popular"
+
+        data = self._fetch(endpoint, params)
+        results = data.get('results', self._get_mock_movies())
+        processed = []
+        for m in results:
+            m['media_type'] = 'movie'
+            m['display_title'] = m.get('title', 'Unknown Movie')
+            m['release_year'] = (m.get('release_date') or '')[:4]
+            self._attach_age_rating(m, 'movie')
+            if kids_only and m.get('age_rating') in ['R', 'NC-17', '18+']:
+                continue
+            processed.append(m)
+        return processed
+
+    def get_series_catalog(self, category='popular', genre_id=None, sort_by='popularity.desc', page=1, kids_only=False):
+        params = {"page": page}
+        endpoint = "/tv/popular"
+
+        if genre_id or sort_by != 'popularity.desc':
+            return self.discover_content(
+                media_type='tv',
+                genre_id=genre_id,
+                sort_by=sort_by,
+                page=page,
+                kids_only=kids_only
+            )
+
+        if category == 'trending':
+            endpoint = "/trending/tv/day"
+        elif category == 'top_rated':
+            endpoint = "/tv/top_rated"
+        elif category == 'on_the_air':
+            endpoint = "/tv/on_the_air"
+        elif category == 'airing_today':
+            endpoint = "/tv/airing_today"
+        else:
+            endpoint = "/tv/popular"
+
+        data = self._fetch(endpoint, params)
+        results = data.get('results', self._get_mock_series())
+        processed = []
+        for s in results:
+            s['media_type'] = 'tv'
+            s['display_title'] = s.get('name', 'Unknown Series')
+            s['release_year'] = (s.get('first_air_date') or '')[:4]
+            self._attach_age_rating(s, 'tv')
+            if kids_only and s.get('age_rating') in ['TV-MA', '18+']:
+                continue
+            processed.append(s)
+        return processed
+
+
     def get_movie(self, movie_id):
         return self.get_movie_details(movie_id)
 
