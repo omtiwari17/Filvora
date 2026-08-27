@@ -25,12 +25,25 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-gp+r6=ybm(pm)e3@lu^@ll*7)+i^sa=nd3txhnw#ah+pe+q2a*'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-gp+r6=ybm(pm)e3@lu^@ll*7)+i^sa=nd3txhnw#ah+pe+q2a*')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = ['*']
+hosts = os.getenv('ALLOWED_HOSTS', '*')
+ALLOWED_HOSTS = [h.strip() for h in hosts.split(',')] if ',' in hosts else [hosts]
+
+csrf_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if csrf_origins:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in csrf_origins.split(',')]
+else:
+    CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
+
+# Reverse Proxy & SSL headers for secure remote tunnels (Cloudflare / Caddy / Nginx)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 
 # Application definition

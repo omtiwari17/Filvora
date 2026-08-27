@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=${SECRET_KEY:-filvora_production_secret_key_change_me}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,web}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-http://localhost,https://localhost}
+    volumes:
+      - ../db.sqlite3:/app/db.sqlite3
+      - static_volume:/app/static
+    ports:
+      - "8000:8000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - FILVORA_DOMAIN=${FILVORA_DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - static_volume:/app/static
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  static_volume:
+  caddy_data:
+  caddy_config:
