@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Offline Video Downloads — Filvora{% endblock %}
+
+{% block content %}
+<div class="pt-24 px-4 sm:px-8 md:px-12 pb-24 min-h-screen">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+            <div class="flex items-center gap-3">
+                <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-md">Downloads Pipeline</h1>
+                <span class="bg-gradient-to-r from-emerald-500 to-teal-500 text-[10px] font-black text-white px-2.5 py-0.5 rounded-full shadow">Phase 11</span>
+            </div>
+            <p class="text-xs sm:text-sm text-gray-400 mt-1">Export standalone DRM-free video files directly to your device with clean naming.</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <span class="px-3 py-1.5 rounded-xl bg-gray-900 border border-gray-800 text-xs font-bold text-gray-300">
+                <strong class="text-amber-400">{{ active_count }}</strong> Active
+            </span>
+            <span class="px-3 py-1.5 rounded-xl bg-gray-900 border border-gray-800 text-xs font-bold text-gray-300">
+                <strong class="text-emerald-400">{{ ready_count }}</strong> Ready
+            </span>
+        </div>
+    </div>
+
+    <!-- Live Auto-Polling Jobs List (HTMX) -->
+    <div id="downloads-list-container" 
+         hx-get="/downloads/status/" 
+         hx-trigger="every 2s" 
+         hx-swap="innerHTML">
+        {% include 'downloads/partials/jobs_list.html' %}
+    </div>
+</div>
+{% endblock %}
