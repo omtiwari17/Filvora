@@ -8,4 +8,5 @@ urlpatterns = [
     path('remove/', views.remove_progress, name='remove_progress'),
     path('history/', views.history_view, name='history'),
     path('history/clear/', views.clear_history, name='clear_history'),
+    path('analytics/', views.analytics_view, name='analytics'),
 ]

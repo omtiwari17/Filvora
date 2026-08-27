@@ -93,3 +93,20 @@ class WatchTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(WatchProgress.objects.filter(user=self.user).count(), 0)
 
+    def test_analytics_view(self):
+        self.client.login(username='watchuser', password='password123')
+        WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=157336,
+            media_type='movie',
+            position_seconds=3600,
+            duration_seconds=7200,
+            completed=True
+        )
+        response = self.client.get('/analytics/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('total_hours', response.context)
+        self.assertEqual(response.context['total_hours'], 1.0)
+        self.assertEqual(response.context['completed_count'], 1)
+
+

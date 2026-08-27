@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}Personal Analytics & Wrapped — Filvora{% endblock %}
+
+{% block content %}
+<div class="pt-24 px-4 sm:px-8 md:px-12 pb-24 min-h-screen">
+    <!-- Header -->
+    <div class="max-w-4xl mb-10">
+        <div class="flex items-center gap-2.5">
+            <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-md">Viewing Analytics</h1>
+            <span class="bg-gradient-to-r from-brand-500 to-amber-500 text-[10px] font-black text-white px-2.5 py-0.5 rounded-full shadow">Phase 10</span>
+        </div>
+        <p class="text-xs sm:text-sm text-gray-400 mt-1">Deep insights into your cinematic streaming milestones, genres, and watch time.</p>
+    </div>
+
+    <!-- Core Metrics Overview Grid -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-10">
+        <!-- Metric 1: Watch Time -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-gray-900/80 border border-gray-800/80 shadow-xl flex flex-col justify-between backdrop-blur-xl">
+            <div class="flex items-center justify-between text-gray-400">
+                <span class="text-xs font-bold uppercase tracking-wider">Stream Time</span>
+                <span class="text-xl">⏱️</span>
+            </div>
+            <div class="mt-4">
+                <div class="text-3xl sm:text-4xl font-black text-white tracking-tight">{{ total_hours }} <span class="text-sm font-bold text-gray-400">hrs</span></div>
+                <p class="text-[11px] text-gray-400 mt-1">Total cinematic immersion</p>
+            </div>
+        </div>
+
+        <!-- Metric 2: Movies -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-gray-900/80 border border-gray-800/80 shadow-xl flex flex-col justify-between backdrop-blur-xl">
+            <div class="flex items-center justify-between text-gray-400">
+                <span class="text-xs font-bold uppercase tracking-wider">Movies Streamed</span>
+                <span class="text-xl">🎬</span>
+            </div>
+            <div class="mt-4">
+                <div class="text-3xl sm:text-4xl font-black text-white tracking-tight">{{ total_movies }}</div>
+                <p class="text-[11px] text-gray-400 mt-1">Unique feature films</p>
+            </div>
+        </div>
+
+        <!-- Metric 3: Episodes -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-gray-900/80 border border-gray-800/80 shadow-xl flex flex-col justify-between backdrop-blur-xl">
+            <div class="flex items-center justify-between text-gray-400">
+                <span class="text-xs font-bold uppercase tracking-wider">Episodes Binge</span>
+                <span class="text-xl">📺</span>
+            </div>
+            <div class="mt-4">
+                <div class="text-3xl sm:text-4xl font-black text-white tracking-tight">{{ total_episodes }}</div>
+                <p class="text-[11px] text-gray-400 mt-1">Episodic chapters watched</p>
+            </div>
+        </div>
+
+        <!-- Metric 4: Completed -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-gray-900/80 border border-gray-800/80 shadow-xl flex flex-col justify-between backdrop-blur-xl">
+            <div class="flex items-center justify-between text-gray-400">
+                <span class="text-xs font-bold uppercase tracking-wider">Completed</span>
+                <span class="text-xl">🏆</span>
+            </div>
+            <div class="mt-4">
+                <div class="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight">{{ completed_count }}</div>
+                <p class="text-[11px] text-gray-400 mt-1">Titles watched to credits</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filvora Wrapped Interactive Banner -->
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-950 via-gray-900 to-black border border-brand-500/40 p-6 sm:p-10 mb-12 shadow-2xl">
+        <div class="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-brand-500/10 blur-3xl pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div class="space-y-4 max-w-xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/20 border border-brand-500/40 text-brand-400 text-xs font-black uppercase tracking-wider">
+                    <span>✨</span>
+                    <span>Filvora Wrapped 2026</span>
+                </div>
+                <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                    Your Streaming Identity: <br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-amber-400 to-rose-400">{{ favorite_genre }} Aficionado</span>
+                </h2>
+                <p class="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                    You've dedicated over <strong class="text-white">{{ total_hours }} hours</strong> exploring new cinematic worlds, with <strong class="text-brand-400">{{ most_watched_title }}</strong> leading your viewing record.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 flex-none">
+                <div class="p-4 rounded-2xl bg-black/60 border border-gray-800 text-center">
+                    <span class="text-xs text-gray-400 font-bold uppercase block">Favorite Universe</span>
+                    <span class="text-lg sm:text-xl font-black text-white mt-1 block">{{ favorite_genre }}</span>
+                </div>
+                <div class="p-4 rounded-2xl bg-black/60 border border-gray-800 text-center">
+                    <span class="text-xs text-gray-400 font-bold uppercase block">Total Library Hits</span>
+                    <span class="text-lg sm:text-xl font-black text-white mt-1 block">{{ total_titles }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Genre Distribution Breakdown -->
+    {% if top_genres %}
+    <div class="p-6 sm:p-8 rounded-3xl bg-gray-900/80 border border-gray-800/80 shadow-xl backdrop-blur-xl max-w-3xl">
+        <h3 class="text-lg sm:text-xl font-black text-white mb-6 flex items-center gap-2">
+            <span>Genre Affinity Breakdown</span>
+        </h3>
+        
+        <div class="space-y-5">
+            {% for g in top_genres %}
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs font-bold">
+                    <span class="text-white">{{ g.name }}</span>
+                    <span class="text-gray-400">{{ g.percentage }}%</span>
+                </div>
+                <div class="h-2.5 w-full bg-gray-950 rounded-full overflow-hidden p-0.5 border border-gray-800">
+                    <div class="h-full bg-gradient-to-r from-brand-500 to-amber-500 rounded-full transition-all duration-500" style="width: {{ g.percentage }}%;"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

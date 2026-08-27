@@ -156,3 +156,65 @@ def clear_history(request):
         WatchProgress.objects.filter(user=request.user).delete()
     return redirect('/watch/history/')
 
+@login_required
+def analytics_view(request):
+    from collections import Counter
+    client = TMDBClient()
+    items = list(WatchProgress.objects.filter(user=request.user).order_by('-updated_at'))
+    
+    total_seconds = sum(p.position_seconds for p in items)
+    total_hours = round(total_seconds / 3600.0, 1)
+    
+    movie_items = [p for p in items if p.media_type == 'movie']
+    tv_items = [p for p in items if p.media_type == 'tv']
+    completed_items = [p for p in items if p.completed]
+    
+    total_movies = len(set(p.tmdb_id for p in movie_items))
+    total_episodes = len(tv_items)
+    
+    # Genre calculations
+    genre_counter = Counter()
+    for p in items[:25]:
+        if p.media_type == 'movie':
+            details = client.get_movie_details(p.tmdb_id)
+        else:
+            details = client.get_tv_details(p.tmdb_id)
+        for g in details.get('genres', []):
+            gname = g.get('name') if isinstance(g, dict) else str(g)
+            if gname:
+                genre_counter[gname] += 1
+
+    total_genre_hits = sum(genre_counter.values()) or 1
+    top_genres = []
+    for gname, count in genre_counter.most_common(5):
+        top_genres.append({
+            'name': gname,
+            'count': count,
+            'percentage': int((count / total_genre_hits) * 100)
+        })
+
+    favorite_genre = top_genres[0]['name'] if top_genres else "Cinematic Variety"
+
+    # Most watched item
+    most_watched_title = "None yet"
+    if items:
+        longest_p = max(items, key=lambda x: x.position_seconds)
+        if longest_p.media_type == 'movie':
+            data = client.get_movie(longest_p.tmdb_id)
+            most_watched_title = data.get('title', f"Movie {longest_p.tmdb_id}")
+        else:
+            data = client.get_tv(longest_p.tmdb_id)
+            most_watched_title = data.get('name', f"Series {longest_p.tmdb_id}")
+
+    return render(request, 'watch/analytics.html', {
+        'total_hours': total_hours,
+        'total_movies': total_movies,
+        'total_episodes': total_episodes,
+        'completed_count': len(completed_items),
+        'top_genres': top_genres,
+        'favorite_genre': favorite_genre,
+        'most_watched_title': most_watched_title,
+        'total_titles': len(items)
+    })
+
+
