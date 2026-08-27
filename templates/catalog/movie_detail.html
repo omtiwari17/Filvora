@@ -7,7 +7,7 @@
     <!-- Cinematic Backdrop Banner -->
     <div class="relative w-full h-[70vh] md:h-[80vh] overflow-hidden">
         {% if movie.backdrop_path %}
-        <img src="https://image.tmdb.org/t/p/original{{ movie.backdrop_path }}" alt="{{ movie.display_title }}" class="w-full h-full object-cover">
+        <img src="{% if movie.backdrop_path|slice:':8' == '/static/' or movie.backdrop_path|slice:':4' == 'http' %}{{ movie.backdrop_path }}{% else %}https://image.tmdb.org/t/p/original{{ movie.backdrop_path }}{% endif %}" alt="{{ movie.display_title }}" class="w-full h-full object-cover">
         {% else %}
         <div class="w-full h-full bg-gray-900"></div>
         {% endif %}
@@ -22,7 +22,7 @@
             <!-- Left: Poster -->
             <div class="flex-none w-48 sm:w-60 md:w-72 mx-auto md:mx-0 shadow-2xl rounded-xl overflow-hidden ring-1 ring-gray-800 bg-gray-900 aspect-[2/3]">
                 {% if movie.poster_path %}
-                <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.display_title }}" class="w-full h-full object-cover">
+                <img src="{% if movie.poster_path|slice:':8' == '/static/' or movie.poster_path|slice:':4' == 'http' %}{{ movie.poster_path }}{% else %}https://image.tmdb.org/t/p/w500{{ movie.poster_path }}{% endif %}" alt="{{ movie.display_title }}" class="w-full h-full object-cover">
                 {% else %}
                 <div class="w-full h-full flex items-center justify-center p-4 text-center text-gray-500 font-medium">{{ movie.display_title }}</div>
                 {% endif %}

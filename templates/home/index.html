@@ -7,7 +7,7 @@
     <!-- Background Image & Atmospheric Gradients -->
     <div class="absolute inset-0 z-0">
         {% if hero_movie.backdrop_path %}
-        <img src="https://image.tmdb.org/t/p/original{{ hero_movie.backdrop_path }}" alt="{{ hero_movie.title }} Backdrop" class="w-full h-full object-cover scale-105 transform animate-pulse-slow">
+        <img src="{% if hero_movie.backdrop_path|slice:':8' == '/static/' or hero_movie.backdrop_path|slice:':4' == 'http' %}{{ hero_movie.backdrop_path }}{% else %}https://image.tmdb.org/t/p/original{{ hero_movie.backdrop_path }}{% endif %}" alt="{{ hero_movie.title }} Backdrop" class="w-full h-full object-cover scale-105 transform animate-pulse-slow">
         {% else %}
         <div class="w-full h-full bg-gray-900"></div>
         {% endif %}
