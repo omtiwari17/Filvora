@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}Discover Cinema & Series — Filvora{% endblock %}
+
+{% block content %}
+<div class="pt-24 px-4 sm:px-8 md:px-12 pb-24 min-h-screen">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+            <div class="flex items-center gap-2.5">
+                <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-md">Discover</h1>
+                <span class="bg-brand-500/20 text-brand-500 border border-brand-500/40 text-xs font-black px-2.5 py-0.5 rounded-full">Phase 04</span>
+            </div>
+            <p class="text-xs sm:text-sm text-gray-400 mt-1">Explore titles by mood, genre, release era, and star ratings.</p>
+        </div>
+
+        <!-- Surprise Me Quick Button -->
+        <a href="/surprise-me/?type={{ media_type }}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_mood %}&mood={{ selected_mood }}{% endif %}" 
+           class="inline-flex items-center gap-2 bg-gradient-to-r from-brand-500 to-amber-500 hover:from-red-600 hover:to-amber-600 text-white font-black text-xs sm:text-sm px-5 py-3 rounded-full transition shadow-xl shadow-brand-500/25 hover:scale-105 active:scale-95 self-start md:self-auto">
+            <span class="text-base">🎲</span>
+            <span>Surprise Me</span>
+        </a>
+    </div>
+
+    <!-- Mood Discovery Carousel Chips -->
+    <div class="mb-8 overflow-x-auto scrollbar-hide py-2 -my-2 flex items-center gap-2.5">
+        <a href="/discover/?type={{ media_type }}" 
+           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if not selected_mood %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/90 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            🌟 All Moods
+        </a>
+        <a href="/discover/?type={{ media_type }}&mood=adrenaline" 
+           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_mood == 'adrenaline' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/90 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            ⚡ Adrenaline Rush
+        </a>
+        <a href="/discover/?type={{ media_type }}&mood=mind_bending" 
+           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_mood == 'mind_bending' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/90 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            🧠 Mind-Bending
+        </a>
+        <a href="/discover/?type={{ media_type }}&mood=relax" 
+           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_mood == 'relax' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/90 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            🌴 Relax & Chill
+        </a>
+        <a href="/discover/?type={{ media_type }}&mood=funny" 
+           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_mood == 'funny' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/90 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            😂 Laugh Out Loud
+        </a>
+        <a href="/discover/?type={{ media_type }}&mood=emotional" 
+           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_mood == 'emotional' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/90 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            🥺 Deep & Emotional
+        </a>
+        <a href="/discover/?type={{ media_type }}&mood=scary" 
+           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_mood == 'scary' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/90 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            👻 Dark & Scary
+        </a>
+        <a href="/discover/?type={{ media_type }}&mood=escape_reality" 
+           class="px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_mood == 'escape_reality' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/90 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+            🌌 Escape Reality
+        </a>
+    </div>
+
+    <!-- Filter Control Bar -->
+    <form method="get" action="/discover/" class="bg-gray-900/80 border border-gray-800/90 rounded-2xl p-4 sm:p-5 mb-10 backdrop-blur-xl shadow-xl">
+        {% if selected_mood %}<input type="hidden" name="mood" value="{{ selected_mood }}">{% endif %}
+        
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+            <!-- Media Type -->
+            <div>
+                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Type</label>
+                <select name="type" onchange="this.form.submit()" 
+                        class="w-full bg-gray-950 border border-gray-700/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                    <option value="movie" {% if media_type == 'movie' %}selected{% endif %}>Movies</option>
+                    <option value="tv" {% if media_type == 'tv' %}selected{% endif %}>TV Series</option>
+                </select>
+            </div>
+
+            <!-- Genre -->
+            <div>
+                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Genre</label>
+                <select name="genre" onchange="this.form.submit()" 
+                        class="w-full bg-gray-950 border border-gray-700/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                    <option value="">All Genres</option>
+                    {% for g in genres %}
+                    <option value="{{ g.id }}" {% if selected_genre == g.id|stringformat:"i" %}selected{% endif %}>
+                        {{ g.icon }} {{ g.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Release Year -->
+            <div>
+                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Year</label>
+                <select name="year" onchange="this.form.submit()" 
+                        class="w-full bg-gray-950 border border-gray-700/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                    <option value="">All Years</option>
+                    <option value="2026" {% if selected_year == '2026' %}selected{% endif %}>2026</option>
+                    <option value="2025" {% if selected_year == '2025' %}selected{% endif %}>2025</option>
+                    <option value="2024" {% if selected_year == '2024' %}selected{% endif %}>2024</option>
+                    <option value="2023" {% if selected_year == '2023' %}selected{% endif %}>2023</option>
+                    <option value="2022" {% if selected_year == '2022' %}selected{% endif %}>2022</option>
+                    <option value="2020" {% if selected_year == '2020' %}selected{% endif %}>2020s</option>
+                    <option value="2010" {% if selected_year == '2010' %}selected{% endif %}>2010s</option>
+                    <option value="2000" {% if selected_year == '2000' %}selected{% endif %}>2000s</option>
+                </select>
+            </div>
+
+            <!-- Minimum Rating -->
+            <div>
+                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Minimum Score</label>
+                <select name="rating" onchange="this.form.submit()" 
+                        class="w-full bg-gray-950 border border-gray-700/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                    <option value="">Any Score</option>
+                    <option value="8.0" {% if selected_rating == '8.0' %}selected{% endif %}>★ 8.0+ Masterpiece</option>
+                    <option value="7.0" {% if selected_rating == '7.0' %}selected{% endif %}>★ 7.0+ Highly Rated</option>
+                    <option value="6.0" {% if selected_rating == '6.0' %}selected{% endif %}>★ 6.0+ Good</option>
+                </select>
+            </div>
+
+            <!-- Sort -->
+            <div>
+                <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Sort Order</label>
+                <select name="sort" onchange="this.form.submit()" 
+                        class="w-full bg-gray-950 border border-gray-700/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                    <option value="popularity.desc" {% if selected_sort == 'popularity.desc' %}selected{% endif %}>🔥 Popularity</option>
+                    <option value="vote_average.desc" {% if selected_sort == 'vote_average.desc' %}selected{% endif %}>⭐ Top Rated</option>
+                    <option value="primary_release_date.desc" {% if selected_sort == 'primary_release_date.desc' %}selected{% endif %}>🆕 Newest First</option>
+                </select>
+            </div>
+        </div>
+    </form>
+
+    <!-- Results Grid -->
+    {% if results %}
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 sm:gap-6">
+        {% for item in results %}
+            {% if media_type == 'tv' or item.media_type == 'tv' %}
+                {% include 'components/series_card.html' with series=item user_saved_ids=user_saved_ids %}
+            {% else %}
+                {% include 'components/movie_card.html' with movie=item user_saved_ids=user_saved_ids %}
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% else %}
+        {% include 'components/empty_state.html' with icon="search" title="No Matching Titles" message="No movies or series matched your exact filter combination. Try adjusting the score or genre filter." cta_url="/discover/" cta_text="Reset Filters" %}
+    {% endif %}
+</div>
+{% endblock %}

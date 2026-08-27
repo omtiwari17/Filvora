@@ -4,6 +4,9 @@ from . import views
 app_name = 'catalog'
 
 urlpatterns = [
+    path('discover/', views.discover, name='discover'),
+    path('surprise-me/', views.surprise_me, name='surprise_me'),
+    path('genres/', views.genres_view, name='genres'),
     path('movies/', views.movie_browse, name='movie_browse'),
     path('movies/<int:tmdb_id>/', views.movie_detail, name='movie_detail'),
     path('series/', views.series_browse, name='series_browse'),

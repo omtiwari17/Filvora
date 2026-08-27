@@ -283,6 +283,103 @@ class TMDBClient:
                 filtered.append(r)
         return filtered
 
+    def search_categorized(self, query):
+        if not query or not query.strip():
+            return {'movies': [], 'series': [], 'people': []}
+        data = self._fetch("/search/multi", {"query": query.strip()})
+        results = data.get('results', [])
+        categorized = {'movies': [], 'series': [], 'people': []}
+        for r in results:
+            mtype = r.get('media_type')
+            if mtype == 'movie':
+                r['display_title'] = r.get('title', 'Unknown Movie')
+                r['release_year'] = (r.get('release_date') or '')[:4]
+                self._attach_age_rating(r, 'movie')
+                categorized['movies'].append(r)
+            elif mtype == 'tv':
+                r['display_title'] = r.get('name', 'Unknown Series')
+                r['release_year'] = (r.get('first_air_date') or '')[:4]
+                self._attach_age_rating(r, 'tv')
+                categorized['series'].append(r)
+            elif mtype == 'person':
+                r['display_title'] = r.get('name', 'Unknown Person')
+                known_titles = [k.get('title') or k.get('name') for k in r.get('known_for', []) if (k.get('title') or k.get('name'))]
+                r['known_for_text'] = ", ".join(known_titles[:2]) if known_titles else r.get('known_for_department', 'Acting')
+                categorized['people'].append(r)
+
+        return categorized
+
+    def get_genres_list(self):
+        return [
+            {"id": 28, "name": "Action", "icon": "💥"},
+            {"id": 12, "name": "Adventure", "icon": "🧭"},
+            {"id": 16, "name": "Animation", "icon": "🎨"},
+            {"id": 35, "name": "Comedy", "icon": "😂"},
+            {"id": 80, "name": "Crime", "icon": "🕵️"},
+            {"id": 99, "name": "Documentary", "icon": "📹"},
+            {"id": 18, "name": "Drama", "icon": "🎭"},
+            {"id": 10751, "name": "Family", "icon": "👨‍👩‍👧"},
+            {"id": 14, "name": "Fantasy", "icon": "🧙"},
+            {"id": 27, "name": "Horror", "icon": "👻"},
+            {"id": 9648, "name": "Mystery", "icon": "🔍"},
+            {"id": 10749, "name": "Romance", "icon": "💖"},
+            {"id": 878, "name": "Sci-Fi", "icon": "🚀"},
+            {"id": 53, "name": "Thriller", "icon": "⚡"},
+        ]
+
+    def discover_content(self, media_type='movie', genre_id=None, year=None, min_rating=None, mood=None, sort_by='popularity.desc', page=1):
+        params = {
+            "page": page,
+            "sort_by": sort_by or "popularity.desc",
+            "vote_count.gte": 50,
+        }
+        
+        # Mood mappings
+        mood_map = {
+            'adrenaline': '28,12,53',
+            'mind_bending': '878,9648,18',
+            'relax': '35,16,10751',
+            'funny': '35',
+            'emotional': '18,10749',
+            'scary': '27,53',
+            'escape_reality': '14,878,12',
+        }
+        if mood and mood in mood_map:
+            params['with_genres'] = mood_map[mood]
+        elif genre_id:
+            params['with_genres'] = str(genre_id)
+
+        if year:
+            if media_type == 'movie':
+                params['primary_release_year'] = str(year)
+            else:
+                params['first_air_date_year'] = str(year)
+
+        if min_rating:
+            params['vote_average.gte'] = str(min_rating)
+
+        endpoint = "/discover/movie" if media_type == 'movie' else "/discover/tv"
+        data = self._fetch(endpoint, params)
+        results = data.get('results', self._get_mock_movies() if media_type == 'movie' else self._get_mock_series())
+        
+        processed = []
+        for item in results:
+            item['media_type'] = media_type
+            item['display_title'] = item.get('title') or item.get('name')
+            item['release_year'] = (item.get('release_date') or item.get('first_air_date') or '')[:4]
+            self._attach_age_rating(item, media_type)
+            processed.append(item)
+        return processed
+
+    def get_surprise_title(self, media_type='movie', genre_id=None, mood=None):
+        import random
+        results = self.discover_content(media_type=media_type, genre_id=genre_id, mood=mood, min_rating=7.0)
+        if results:
+            return random.choice(results[:15])
+        fallback = self._get_mock_movies()[0]
+        fallback['media_type'] = 'movie'
+        return fallback
+
     def _get_mock_movies(self):
         return [
             {

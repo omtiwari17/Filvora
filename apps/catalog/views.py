@@ -96,9 +96,13 @@ def search_suggest(request):
         return HttpResponse('')
     
     client = TMDBClient()
-    results = client.search_multi(q)[:6]
+    categorized = client.search_categorized(q)
     return render(request, 'catalog/partials/search_suggestions.html', {
-        'results': results,
+        'categorized': categorized,
+        'movies': categorized['movies'][:4],
+        'series': categorized['series'][:4],
+        'people': categorized['people'][:3],
+        'has_results': bool(categorized['movies'] or categorized['series'] or categorized['people']),
         'query': q,
     })
 
@@ -106,7 +110,65 @@ def search_results(request):
     q = request.GET.get('q', '').strip()
     client = TMDBClient()
     results = client.search_multi(q) if q else []
+    user_saved_ids = set()
+    if request.user.is_authenticated:
+        user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
     return render(request, 'catalog/search_results.html', {
         'results': results,
         'query': q,
+        'user_saved_ids': user_saved_ids,
     })
+
+def discover(request):
+    client = TMDBClient()
+    media_type = request.GET.get('type', 'movie')
+    if media_type not in ['movie', 'tv']:
+        media_type = 'movie'
+    genre_id = request.GET.get('genre')
+    year = request.GET.get('year')
+    min_rating = request.GET.get('rating')
+    mood = request.GET.get('mood')
+    sort_by = request.GET.get('sort', 'popularity.desc')
+
+    results = client.discover_content(
+        media_type=media_type,
+        genre_id=genre_id,
+        year=year,
+        min_rating=min_rating,
+        mood=mood,
+        sort_by=sort_by
+    )
+
+    genres = client.get_genres_list()
+    user_saved_ids = set()
+    if request.user.is_authenticated:
+        user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
+
+    return render(request, 'catalog/discover.html', {
+        'results': results,
+        'genres': genres,
+        'media_type': media_type,
+        'selected_genre': genre_id,
+        'selected_year': year,
+        'selected_rating': min_rating,
+        'selected_mood': mood,
+        'selected_sort': sort_by,
+        'user_saved_ids': user_saved_ids,
+    })
+
+def surprise_me(request):
+    from django.shortcuts import redirect
+    client = TMDBClient()
+    media_type = request.GET.get('type', 'movie')
+    genre_id = request.GET.get('genre')
+    mood = request.GET.get('mood')
+    pick = client.get_surprise_title(media_type=media_type, genre_id=genre_id, mood=mood)
+    
+    if pick.get('media_type') == 'tv':
+        return redirect(f"/series/{pick['id']}/")
+    return redirect(f"/movies/{pick['id']}/")
+
+def genres_view(request):
+    client = TMDBClient()
+    genres = client.get_genres_list()
+    return render(request, 'catalog/genres.html', {'genres': genres})

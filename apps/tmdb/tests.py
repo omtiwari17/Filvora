@@ -34,3 +34,23 @@ class TMDBTestCase(TestCase):
         self.assertIsNotNone(movie)
         self.assertIn('title', movie)
         self.assertIn('age_rating', movie)
+
+    def test_search_categorized(self):
+        res = self.client.search_categorized('Batman')
+        self.assertIn('movies', res)
+        self.assertIn('series', res)
+        self.assertIn('people', res)
+
+    def test_get_genres_list(self):
+        genres = self.client.get_genres_list()
+        self.assertGreater(len(genres), 5)
+        self.assertEqual(genres[0]['id'], 28)
+
+    def test_discover_content(self):
+        results = self.client.discover_content(media_type='movie', mood='adrenaline')
+        self.assertGreater(len(results), 0)
+
+    def test_get_surprise_title(self):
+        pick = self.client.get_surprise_title(media_type='movie')
+        self.assertIsNotNone(pick)
+        self.assertIn('id', pick)

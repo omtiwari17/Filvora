@@ -129,12 +129,18 @@
     </footer>
 
     <!-- Mobile Bottom Navigation Bar (App-Style UX for Mobile) -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-950/90 backdrop-blur-xl border-t border-gray-800/80 px-4 py-2 flex items-center justify-around text-[10px] font-medium text-gray-400">
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-950/95 backdrop-blur-xl border-t border-gray-800/80 px-2 py-2 flex items-center justify-around text-[10px] font-medium text-gray-400">
         <a href="/" class="flex flex-col items-center gap-1 hover:text-white transition {% if request.path == '/' %}text-brand-500 font-bold{% endif %}">
             <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20">
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
             </svg>
             <span>Home</span>
+        </a>
+        <a href="/discover/" class="flex flex-col items-center gap-1 hover:text-white transition {% if '/discover/' in request.path %}text-brand-500 font-bold{% endif %}">
+            <svg class="w-5 h-5 fill-none stroke-current" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 100 20 10 10 0 000-20zm3.5 6.5l-2.5 6-6 2.5 2.5-6 6-2.5z"/>
+            </svg>
+            <span>Discover</span>
         </a>
         <a href="/movies/" class="flex flex-col items-center gap-1 hover:text-white transition {% if '/movies/' in request.path %}text-brand-500 font-bold{% endif %}">
             <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20">
@@ -154,12 +160,6 @@
             </svg>
             <span>My List</span>
         </a>
-        <button onclick="const s = document.querySelector('input[name=\'q\']'); if(s){s.focus(); window.scrollTo({top:0, behavior:'smooth'});}" class="flex flex-col items-center gap-1 hover:text-white transition">
-            <svg class="w-5 h-5 fill-none stroke-current" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <span>Search</span>
-        </button>
     </nav>
 
     <!-- Custom JS -->

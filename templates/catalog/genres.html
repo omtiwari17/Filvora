@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Genres & Categories — Filvora{% endblock %}
+
+{% block content %}
+<div class="pt-24 px-4 sm:px-8 md:px-12 pb-24 min-h-screen">
+    <div class="max-w-4xl mb-10">
+        <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-md">Explore by Genre</h1>
+        <p class="text-xs sm:text-sm text-gray-400 mt-1">Browse our rich cinema collection categorized into specialized universes.</p>
+    </div>
+
+    <!-- Genres Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
+        {% for g in genres %}
+        <a href="/discover/?genre={{ g.id }}" 
+           class="group p-6 rounded-2xl bg-gray-900/80 hover:bg-gray-800/90 border border-gray-800 hover:border-brand-500/60 shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 flex flex-col justify-between aspect-[4/3] backdrop-blur-xl">
+            <span class="text-3xl sm:text-4xl transform group-hover:scale-110 transition-transform duration-200">{{ g.icon }}</span>
+            <div>
+                <h3 class="text-base sm:text-lg font-black text-white group-hover:text-brand-500 transition">{{ g.name }}</h3>
+                <p class="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1 group-hover:text-gray-300">
+                    <span>Explore universe</span>
+                    <span class="transform group-hover:translate-x-1 transition-transform">&rarr;</span>
+                </p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

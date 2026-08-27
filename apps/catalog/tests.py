@@ -42,3 +42,21 @@ class CatalogViewsTestCase(TestCase):
     def test_search_suggest(self):
         response = self.client.get('/search/suggest/?q=Dune')
         self.assertEqual(response.status_code, 200)
+        self.assertIn('categorized', response.context)
+
+    def test_discover_view(self):
+        response = self.client.get('/discover/?type=movie&genre=28&rating=7.0')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('results', response.context)
+        self.assertIn('genres', response.context)
+        self.assertEqual(response.context['media_type'], 'movie')
+
+    def test_surprise_me_redirect(self):
+        response = self.client.get('/surprise-me/?type=movie')
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith('/movies/') or response.url.startswith('/series/'))
+
+    def test_genres_view(self):
+        response = self.client.get('/genres/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('genres', response.context)
