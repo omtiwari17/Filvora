@@ -60,10 +60,23 @@
         }
     </style>
 </head>
-<body class="bg-black text-white h-screen w-screen overflow-hidden flex flex-col relative select-none font-sans">
+    <!-- Top Invisible Hover Detection Sensor -->
+    <div id="top-sensor" class="fixed top-0 left-0 w-full h-24 z-40 pointer-events-auto"></div>
+
+    <!-- Floating Quick Server Switcher Pill (Always accessible even when player hides) -->
+    <button id="quick-server-trigger" 
+            onclick="showOverlay()" 
+            title="Click to Switch Server & Open Controls (Alt + S)" 
+            class="fixed top-4 right-4 z-40 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gray-950/85 hover:bg-gray-900 border border-gray-700/80 backdrop-blur-2xl shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 text-xs text-gray-200 cursor-pointer">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="font-bold">Server {{ current_server|upper }}</span>
+        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
 
     <!-- Top Overlay (Title, Navigation & Server Switcher) -->
-    <div id="player-overlay" class="absolute top-0 left-0 w-full p-4 sm:p-6 z-40 flex items-center justify-between bg-gradient-to-b from-black/95 via-black/70 to-transparent transition-opacity duration-500">
+    <div id="player-overlay" class="fixed top-0 left-0 w-full p-4 sm:p-6 z-50 flex items-center justify-between bg-gradient-to-b from-black/95 via-black/80 to-transparent transition-all duration-300 transform">
         <div class="flex items-center gap-3 sm:gap-5">
             <a href="{% if media_type == 'movie' %}/movies/{{ tmdb_id }}/{% else %}/series/{{ tmdb_id }}/{% endif %}" 
                class="text-white hover:text-brand-500 transition p-2.5 rounded-full bg-black/60 backdrop-blur-xl border border-gray-700/60 shadow-lg hover:scale-105 active:scale-95"
@@ -322,26 +335,114 @@
             if (modal) modal.classList.add('hidden');
         }
 
+        let hideTimeout = null;
+        let isHoveredOverTop = false;
+
+        function showOverlay() {
+            const overlay = document.getElementById('player-overlay');
+            const quickTrigger = document.getElementById('quick-server-trigger');
+            if (overlay) {
+                overlay.style.opacity = '1';
+                overlay.style.pointerEvents = 'auto';
+                overlay.style.transform = 'translateY(0)';
+            }
+            if (quickTrigger) {
+                quickTrigger.style.opacity = '0';
+                quickTrigger.style.pointerEvents = 'none';
+            }
+            clearTimeout(hideTimeout);
+            if (!isHoveredOverTop) {
+                scheduleHide(4500);
+            }
+        }
+
+        function hideOverlay() {
+            if (isHoveredOverTop) return;
+            const overlay = document.getElementById('player-overlay');
+            const quickTrigger = document.getElementById('quick-server-trigger');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+                overlay.style.transform = 'translateY(-10px)';
+            }
+            if (quickTrigger) {
+                quickTrigger.style.opacity = '0.85';
+                quickTrigger.style.pointerEvents = 'auto';
+            }
+        }
+
+        function scheduleHide(ms = 4000) {
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => {
+                hideOverlay();
+            }, ms);
+        }
+
+        function toggleOverlay() {
+            const overlay = document.getElementById('player-overlay');
+            if (overlay && overlay.style.opacity === '1') {
+                hideOverlay();
+            } else {
+                showOverlay();
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('player-overlay');
+            const topSensor = document.getElementById('top-sensor');
+            const quickTrigger = document.getElementById('quick-server-trigger');
             const videoEl = document.getElementById('filvora-player');
             const currentServerId = '{{ current_server }}';
             const nextServerId = '{% if next_provider %}{{ next_provider.id }}{% else %}{% endif %}';
-            
-            let timeout;
-            const resetTimer = () => {
-                if (overlay) overlay.style.opacity = '1';
-                clearTimeout(timeout);
-                timeout = setTimeout(() => {
-                    if (overlay) {
-                        overlay.style.opacity = '0';
-                    }
-                }, 3500);
-            };
 
-            document.addEventListener('mousemove', resetTimer);
-            document.addEventListener('touchstart', resetTimer);
-            resetTimer();
+            // Top sensor hover triggers
+            if (topSensor) {
+                topSensor.addEventListener('mouseenter', () => {
+                    isHoveredOverTop = true;
+                    showOverlay();
+                });
+                topSensor.addEventListener('mouseleave', () => {
+                    isHoveredOverTop = false;
+                    scheduleHide(3500);
+                });
+                topSensor.addEventListener('mousemove', () => {
+                    isHoveredOverTop = true;
+                    showOverlay();
+                });
+            }
+
+            // Overlay hover keep-alive
+            if (overlay) {
+                overlay.addEventListener('mouseenter', () => {
+                    isHoveredOverTop = true;
+                    showOverlay();
+                });
+                overlay.addEventListener('mouseleave', () => {
+                    isHoveredOverTop = false;
+                    scheduleHide(3000);
+                });
+            }
+
+            if (quickTrigger) {
+                quickTrigger.addEventListener('mouseenter', () => {
+                    showOverlay();
+                });
+            }
+
+            document.addEventListener('mousemove', (e) => {
+                if (e.clientY <= 120) {
+                    showOverlay();
+                } else if (!isHoveredOverTop) {
+                    scheduleHide(4000);
+                }
+            });
+
+            document.addEventListener('touchstart', () => {
+                showOverlay();
+            });
+
+            // Initial display on load
+            showOverlay();
 
             // Progress tracking & sticky server recording
             const tmdbId = {{ tmdb_id }};
