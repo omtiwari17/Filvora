@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Watch History — Filvora{% endblock %}
+
+{% block content %}
+<div class="pt-24 px-4 sm:px-8 md:px-12 pb-24 min-h-screen">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+            <div class="flex items-center gap-3">
+                <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-md">Watch History</h1>
+                <span class="bg-brand-500/20 text-brand-500 border border-brand-500/30 text-xs font-bold px-2.5 py-1 rounded-full">
+                    {{ total_items }} Title{% if total_items != 1 %}s{% endif %}
+                </span>
+            </div>
+            <p class="text-xs sm:text-sm text-gray-400 mt-1">Review your recent streaming history and resume where you left off.</p>
+        </div>
+
+        {% if total_items > 0 %}
+        <form method="post" action="/watch/history/clear/" onsubmit="return confirm('Clear your entire watch history?');">
+            {% csrf_token %}
+            <button type="submit" class="px-4 py-2 bg-gray-900/80 hover:bg-red-600/80 border border-gray-700 hover:border-red-500 text-gray-300 hover:text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-lg">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                <span>Clear All History</span>
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    {% if total_items > 0 %}
+    <div class="space-y-10">
+        {% for group_title, items in grouped_history.items %}
+        <div>
+            <h2 class="text-lg sm:text-xl font-black text-white mb-4 pb-2 border-b border-gray-800/80 flex items-center gap-2">
+                <span>{{ group_title }}</span>
+                <span class="text-xs font-medium text-gray-500">({{ items|length }})</span>
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {% for item in items %}
+                <div class="history-item-card bg-gray-900/80 hover:bg-gray-900 border border-gray-800/80 hover:border-brand-500/60 rounded-2xl p-3.5 flex gap-3.5 transition group relative">
+                    <!-- Poster / Backdrop Thumbnail -->
+                    <div class="flex-none w-24 h-16 sm:w-28 sm:h-18 rounded-xl overflow-hidden bg-gray-950 relative">
+                        {% if item.backdrop_path %}
+                        <img src="https://image.tmdb.org/t/p/w300{{ item.backdrop_path }}" alt="{{ item.display_title }}" class="w-full h-full object-cover">
+                        {% elif item.poster_path %}
+                        <img src="https://image.tmdb.org/t/p/w185{{ item.poster_path }}" alt="{{ item.display_title }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-xs text-gray-600 font-bold">🎬</div>
+                        {% endif %}
+                        <!-- Play Overlay -->
+                        <a href="{{ item.watch_url }}" class="absolute inset-0 bg-black/40 hover:bg-black/20 flex items-center justify-center transition">
+                            <div class="w-7 h-7 rounded-full bg-brand-500 text-white flex items-center justify-center shadow-md">
+                                <svg class="w-3.5 h-3.5 fill-white translate-x-0.5" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Details -->
+                    <div class="flex-grow min-w-0 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between gap-1">
+                                <h4 class="text-xs sm:text-sm font-bold text-white truncate group-hover:text-brand-500 transition">{{ item.display_title }}</h4>
+                                <!-- Remove Single Item -->
+                                <button hx-post="/watch/remove/" 
+                                        hx-vals='{"tmdb_id": "{{ item.id }}", "media_type": "{{ item.media_type }}"}'
+                                        hx-target="closest .history-item-card"
+                                        hx-swap="outerHTML swap:300ms"
+                                        title="Remove from history"
+                                        class="text-gray-500 hover:text-red-400 p-1 transition">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1.5">
+                                <span class="font-semibold text-gray-300">{{ item.sub_label }}</span>
+                                {% if item.completed %}
+                                <span>•</span>
+                                <span class="text-[9px] font-black text-emerald-400 bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.2 rounded">Watched</span>
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <!-- Progress Bar & Timings -->
+                        <div class="mt-2 space-y-1">
+                            <div class="flex items-center justify-between text-[10px] text-gray-400 font-mono">
+                                <span>{{ item.position_formatted }} / {{ item.duration_formatted }}</span>
+                                <span>{{ item.progress_percentage }}%</span>
+                            </div>
+                            <div class="h-1 bg-gray-800 rounded-full overflow-hidden">
+                                <div class="h-full bg-brand-500" style="width: {{ item.progress_percentage }}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+        {% include 'components/empty_state.html' with title="No Watch History" message="Titles you start watching will appear here with your saved position and episode progress." cta_url="/movies/" cta_text="Explore Catalog" %}
+    {% endif %}
+</div>
+{% endblock %}

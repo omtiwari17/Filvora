@@ -65,3 +65,31 @@ class WatchTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content.decode('utf-8'), '')
         self.assertFalse(WatchProgress.objects.filter(user=self.user, tmdb_id=157336).exists())
+
+    def test_history_view(self):
+        self.client.login(username='watchuser', password='password123')
+        WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=157336,
+            media_type='movie',
+            position_seconds=1200,
+            duration_seconds=7200
+        )
+        response = self.client.get('/history/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('grouped_history', response.context)
+        self.assertEqual(response.context['total_items'], 1)
+
+    def test_clear_history(self):
+        self.client.login(username='watchuser', password='password123')
+        WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=157336,
+            media_type='movie',
+            position_seconds=1200,
+            duration_seconds=7200
+        )
+        response = self.client.post('/history/clear/')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(WatchProgress.objects.filter(user=self.user).count(), 0)
+

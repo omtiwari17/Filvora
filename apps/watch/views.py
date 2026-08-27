@@ -51,6 +51,76 @@ def save_progress(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 
+from datetime import datetime, timezone, timedelta
+from django.shortcuts import render, redirect
+from apps.tmdb.client import TMDBClient
+
+def format_time_str(seconds: float) -> str:
+    secs = int(seconds or 0)
+    hours = secs // 3600
+    minutes = (secs % 3600) // 60
+    remaining_seconds = secs % 60
+    if hours > 0:
+        return f"{hours}:{minutes:02d}:{remaining_seconds:02d}"
+    return f"{minutes:02d}:{remaining_seconds:02d}"
+
+@login_required
+def history_view(request):
+    client = TMDBClient()
+    items = WatchProgress.objects.filter(user=request.user).order_by('-updated_at')
+    
+    now = datetime.now(timezone.utc)
+    today = now.date()
+    yesterday = today - timedelta(days=1)
+    seven_days_ago = today - timedelta(days=7)
+
+    grouped_history = {
+        'Today': [],
+        'Yesterday': [],
+        'This Week': [],
+        'Earlier': []
+    }
+
+    for p in items:
+        item_date = p.updated_at.date()
+        if p.media_type == 'movie':
+            data = dict(client.get_movie(p.tmdb_id))
+            data['display_title'] = data.get('title', f"Movie {p.tmdb_id}")
+            data['sub_label'] = "Movie"
+            data['watch_url'] = f"/watch/movie/{p.tmdb_id}/"
+        else:
+            data = dict(client.get_tv(p.tmdb_id))
+            s_num = p.season or 1
+            ep_num = p.episode or 1
+            data['display_title'] = data.get('name', f"Series {p.tmdb_id}")
+            data['sub_label'] = f"S{s_num:02d}E{ep_num:02d}"
+            data['watch_url'] = f"/watch/tv/{p.tmdb_id}/{s_num}/{ep_num}/"
+
+        data['id'] = p.tmdb_id
+        data['media_type'] = p.media_type
+        data['position_formatted'] = format_time_str(p.position_seconds)
+        data['duration_formatted'] = format_time_str(p.duration_seconds)
+        data['progress_percentage'] = p.progress_percentage
+        data['completed'] = p.completed
+        data['updated_at'] = p.updated_at
+
+        if item_date == today:
+            grouped_history['Today'].append(data)
+        elif item_date == yesterday:
+            grouped_history['Yesterday'].append(data)
+        elif item_date >= seven_days_ago:
+            grouped_history['This Week'].append(data)
+        else:
+            grouped_history['Earlier'].append(data)
+
+    # Filter out empty date groups
+    active_groups = {k: v for k, v in grouped_history.items() if v}
+
+    return render(request, 'watch/history.html', {
+        'grouped_history': active_groups,
+        'total_items': len(items)
+    })
+
 @csrf_exempt
 @login_required
 def remove_progress(request):
@@ -72,7 +142,6 @@ def remove_progress(request):
             media_type=media_type
         ).delete()
 
-        # If it was an HTMX request, returning an empty response removes the target card
         if request.headers.get('HX-Request'):
             from django.http import HttpResponse
             return HttpResponse("", status=200)
@@ -80,3 +149,10 @@ def remove_progress(request):
         return JsonResponse({'status': 'ok', 'message': 'Removed from continue watching'})
     except (ValueError, TypeError, KeyError) as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+@login_required
+def clear_history(request):
+    if request.method == 'POST':
+        WatchProgress.objects.filter(user=request.user).delete()
+    return redirect('/watch/history/')
+

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Profiles — Filvora{% endblock %}
+
+{% block content %}
+<div class="pt-28 px-4 sm:px-8 max-w-4xl mx-auto pb-24 min-h-screen flex flex-col items-center justify-center">
+    <h1 class="text-3xl sm:text-4xl font-black text-white text-center mb-2 tracking-tight drop-shadow-md">Who's Watching?</h1>
+    <p class="text-xs sm:text-sm text-gray-400 text-center mb-10">Switch profiles to customize your watch history, recommendations, and lists.</p>
+
+    <!-- Profiles Grid -->
+    <div class="flex flex-wrap items-center justify-center gap-6 sm:gap-8 mb-12">
+        {% for p in profiles %}
+        <div class="flex flex-col items-center gap-3 group">
+            <a href="/accounts/profiles/{{ p.id }}/switch/" 
+               class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden p-1 border-2 {% if p.id == active_profile_id %}border-brand-500 shadow-xl shadow-brand-500/30 scale-105{% else %}border-gray-800 hover:border-gray-600{% endif %} group-hover:scale-110 transition-all duration-300 relative bg-gray-900 flex items-center justify-center">
+                <img src="{{ p.avatar }}" alt="{{ p.name }}" class="w-full h-full rounded-xl object-cover">
+                {% if p.is_kids %}
+                <span class="absolute bottom-1 right-1 bg-emerald-500 text-[9px] font-black text-white px-1.5 py-0.2 rounded shadow">KIDS</span>
+                {% endif %}
+            </a>
+            <div class="text-center">
+                <a href="/accounts/profiles/{{ p.id }}/switch/" class="text-sm font-bold text-gray-200 group-hover:text-white transition block">
+                    {{ p.name }}
+                </a>
+                {% if p.id == active_profile_id %}
+                <span class="text-[10px] text-brand-500 font-bold">Active</span>
+                {% endif %}
+            </div>
+            {% if profiles|length > 1 %}
+            <form method="post" action="/accounts/profiles/{{ p.id }}/delete/" onsubmit="return confirm('Delete profile {{ p.name }}?');" class="opacity-0 group-hover:opacity-100 transition-opacity">
+                {% csrf_token %}
+                <button type="submit" class="text-[10px] text-gray-500 hover:text-red-500 transition">Delete</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <!-- Add Profile Button -->
+        <button onclick="document.getElementById('add-profile-modal').classList.remove('hidden')" 
+                class="flex flex-col items-center gap-3 group">
+            <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-dashed border-gray-700 hover:border-brand-500 transition-all duration-300 flex items-center justify-center bg-gray-900/50 group-hover:scale-105">
+                <svg class="w-8 h-8 text-gray-400 group-hover:text-brand-500 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+            </div>
+            <span class="text-sm font-bold text-gray-400 group-hover:text-white transition">Add Profile</span>
+        </button>
+    </div>
+</div>
+
+<!-- Modal: Add Profile -->
+<div id="add-profile-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl space-y-6">
+        <div class="flex items-center justify-between">
+            <h3 class="text-xl font-black text-white">Add Profile</h3>
+            <button onclick="document.getElementById('add-profile-modal').classList.add('hidden')" class="text-gray-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form method="post" action="/accounts/profiles/create/" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-bold text-gray-300 uppercase mb-1">Profile Name</label>
+                <input type="text" name="name" required placeholder="e.g. Om or Family" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+                <input type="checkbox" id="is_kids" name="is_kids" class="w-4 h-4 text-brand-500 rounded border-gray-700 bg-gray-950">
+                <label for="is_kids" class="text-xs text-gray-300 font-medium cursor-pointer">Kid's Profile (Safe content only)</label>
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="button" onclick="document.getElementById('add-profile-modal').classList.add('hidden')" class="px-5 py-2.5 text-xs font-bold text-gray-400 hover:text-white">Cancel</button>
+                <button type="submit" class="px-6 py-2.5 bg-brand-500 hover:bg-red-600 text-white rounded-full font-bold text-xs shadow-lg shadow-brand-500/25">Save Profile</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
