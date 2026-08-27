@@ -327,7 +327,7 @@ class TMDBClient:
             {"id": 53, "name": "Thriller", "icon": "⚡"},
         ]
 
-    def discover_content(self, media_type='movie', genre_id=None, year=None, min_rating=None, mood=None, sort_by='popularity.desc', page=1):
+    def discover_content(self, media_type='movie', genre_id=None, year=None, min_rating=None, mood=None, language=None, certification=None, kids_only=False, sort_by='popularity.desc', page=1):
         params = {
             "page": page,
             "sort_by": sort_by or "popularity.desc",
@@ -358,6 +358,17 @@ class TMDBClient:
         if min_rating:
             params['vote_average.gte'] = str(min_rating)
 
+        if language:
+            params['with_original_language'] = str(language)
+
+        if certification:
+            params['certification_country'] = 'US'
+            params['certification'] = str(certification)
+        elif kids_only:
+            params['certification_country'] = 'US'
+            params['certification.lte'] = 'PG' if media_type == 'movie' else 'TV-PG'
+            params['include_adult'] = 'false'
+
         endpoint = "/discover/movie" if media_type == 'movie' else "/discover/tv"
         data = self._fetch(endpoint, params)
         results = data.get('results', self._get_mock_movies() if media_type == 'movie' else self._get_mock_series())
@@ -368,6 +379,8 @@ class TMDBClient:
             item['display_title'] = item.get('title') or item.get('name')
             item['release_year'] = (item.get('release_date') or item.get('first_air_date') or '')[:4]
             self._attach_age_rating(item, media_type)
+            if kids_only and item.get('age_rating') in ['R', 'NC-17', 'TV-MA', '18+']:
+                continue
             processed.append(item)
         return processed
 

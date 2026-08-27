@@ -54,3 +54,13 @@ class TMDBTestCase(TestCase):
         pick = self.client.get_surprise_title(media_type='movie')
         self.assertIsNotNone(pick)
         self.assertIn('id', pick)
+
+    def test_discover_content_with_filters(self):
+        results = self.client.discover_content(
+            media_type='movie',
+            language='ja',
+            certification='PG-13',
+            kids_only=True
+        )
+        self.assertGreater(len(results), 0)
+

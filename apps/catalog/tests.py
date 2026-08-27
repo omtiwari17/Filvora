@@ -60,3 +60,22 @@ class CatalogViewsTestCase(TestCase):
         response = self.client.get('/genres/')
         self.assertEqual(response.status_code, 200)
         self.assertIn('genres', response.context)
+
+    def test_discover_with_language_and_certification(self):
+        response = self.client.get('/discover/?type=movie&language=ja&certification=PG-13')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['selected_language'], 'ja')
+        self.assertEqual(response.context['selected_certification'], 'PG-13')
+
+    def test_kids_profile_discover_enforcement(self):
+        self.client.login(username='cataloguser', password='password123')
+        from apps.accounts.models import UserProfile
+        kids_profile = UserProfile.objects.create(user=self.user, name='Kids', is_kids=True)
+        session = self.client.session
+        session['active_profile_id'] = kids_profile.id
+        session.save()
+
+        response = self.client.get('/discover/?type=movie')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['is_kids_mode'])
+

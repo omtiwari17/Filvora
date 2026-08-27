@@ -119,6 +119,17 @@ def search_results(request):
         'user_saved_ids': user_saved_ids,
     })
 
+def is_kids_profile(request):
+    if not request.user.is_authenticated:
+        return False
+    from apps.accounts.models import UserProfile
+    profile_id = request.session.get('active_profile_id')
+    if profile_id:
+        p = UserProfile.objects.filter(id=profile_id, user=request.user).first()
+        if p and p.is_kids:
+            return True
+    return False
+
 def discover(request):
     client = TMDBClient()
     media_type = request.GET.get('type', 'movie')
@@ -128,7 +139,10 @@ def discover(request):
     year = request.GET.get('year')
     min_rating = request.GET.get('rating')
     mood = request.GET.get('mood')
+    language = request.GET.get('language')
+    certification = request.GET.get('certification')
     sort_by = request.GET.get('sort', 'popularity.desc')
+    kids_mode = is_kids_profile(request)
 
     results = client.discover_content(
         media_type=media_type,
@@ -136,6 +150,9 @@ def discover(request):
         year=year,
         min_rating=min_rating,
         mood=mood,
+        language=language,
+        certification=certification,
+        kids_only=kids_mode,
         sort_by=sort_by
     )
 
@@ -152,7 +169,10 @@ def discover(request):
         'selected_year': year,
         'selected_rating': min_rating,
         'selected_mood': mood,
+        'selected_language': language,
+        'selected_certification': certification,
         'selected_sort': sort_by,
+        'is_kids_mode': kids_mode,
         'user_saved_ids': user_saved_ids,
     })
 
@@ -172,3 +192,4 @@ def genres_view(request):
     client = TMDBClient()
     genres = client.get_genres_list()
     return render(request, 'catalog/genres.html', {'genres': genres})
+
