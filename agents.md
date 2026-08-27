@@ -14,10 +14,10 @@
   - Python Executable: `.\venv\Scripts\python.exe`
 - **Django Version**: 5.2+ (Django REST Framework, Requests, Python-Dotenv)
 - **Active Server Task**: 
-  - Django Development Server is active on **`http://127.0.0.1:8000/`**
-  - Command: `.\venv\Scripts\python.exe manage.py runserver`
-  - All routes (`/`, `/movies/`, `/series/`, `/discover/`, `/genres/`, `/history/`, `/analytics/`, `/downloads/`, `/library/`, `/search/`) return `200 OK`.
-- **Automated Test Suite**: 55 tests across all 8 apps (`apps.core`, `apps.catalog`, `apps.playback`, `apps.library`, `apps.watch`, `apps.tmdb`, `apps.accounts`, `apps.downloads`), 100% passing.
+  - Django Development Server is active on **`http://127.0.0.1:8000/`** & **`http://192.168.1.5:8000/`**
+  - Command: `.\venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000`
+  - All routes (`/`, `/movies/`, `/series/`, `/discover/`, `/genres/`, `/history/`, `/analytics/`, `/downloads/`, `/library/`, `/search/`, `/watch/`) return `200 OK`.
+- **Automated Test Suite**: **60 tests** across all 8 apps (`apps.core`, `apps.catalog`, `apps.playback`, `apps.library`, `apps.watch`, `apps.tmdb`, `apps.accounts`, `apps.downloads`), 100% passing.
 
 ---
 
@@ -28,7 +28,7 @@ Filvora/
 ├── apps/
 │   ├── core/                  # Homepage views, recommendation engine, backup command
 │   ├── catalog/               # Browse, discover, mood explorer, genres, person profiles
-│   ├── playback/              # Video player view, provider registry, server switcher
+│   ├── playback/              # Video player view, provider registry, server switcher, diagnostics
 │   ├── watch/                 # Watch progress beacon, watch history, analytics & Wrapped
 │   ├── library/               # Watchlist, custom collections & playlists
 │   ├── downloads/             # Standalone download pipeline, DownloadJob model & dashboard
@@ -45,7 +45,7 @@ Filvora/
 │   ├── docker-compose.yml     # Multi-container web + proxy stack
 │   └── README.md              # Remote access & Tailscale/Cloudflare guide
 ├── static/
-│   ├── css/main.css           # Glassmorphism, animations, rail scroll styles
+│   ├── css/main.css           # Glassmorphism, animations, scrollbar-hide styles
 │   ├── js/main.js             # Rail drag-scroll, keyboard shortcuts, toast engine
 │   ├── manifest.json          # PWA Web App Manifest
 │   └── sw.js                  # PWA Service Worker caching
@@ -57,6 +57,7 @@ Filvora/
     ├── downloads/             # Live polling download dashboard & partials
     ├── library/               # Watchlist and custom collections manager
     ├── accounts/              # Sign in, registration, and profile switcher
+    ├── playback/              # Immersive cinematic player view with server switcher
     ├── 404.html               # Custom cinematic 404 error page
     └── 500.html               # Custom cinematic 500 error page
 ```
@@ -65,36 +66,58 @@ Filvora/
 
 ## 3. Subsystem Implementation Overview
 
-### 3.1 Metadata & Age Ratings Engine (`apps/tmdb/client.py`)
+### 3.1 Metadata & Dynamic Age Ratings Engine (`apps/tmdb/client.py`)
 - **TMDB API Client**: Encapsulates endpoints with dual-mode execution (Windows Schannel `curl.exe` with `--ssl-no-revoke` and `requests` fallback) and in-memory TTL caching.
-- **Content Certification & Age Ratings**:
-  - Movies: Queries TMDB `release_dates` (`append_to_response=release_dates`) to extract film certifications (`PG-13`, `R`, `PG`, `G`, `NC-17`, `18+`).
-  - TV Series: Queries TMDB `content_ratings` (`append_to_response=content_ratings`) to extract TV ratings (`TV-MA`, `TV-14`, `TV-PG`, `TV-G`, `TV-Y7`).
-  - Search & List Heuristics: Automatic genre fallback (`_attach_age_rating`).
+- **Dynamic Content Certification & Singleton Rating Cache (`_RATING_CACHE`)**:
+  - Automatically queries official TMDB release certifications (`/movie/{id}/release_dates` and `/tv/{id}/content_ratings`) when rating is not bundled in list responses.
+  - Ensures 100% rating consistency between listing cards and detail pages (e.g. *Call Me by Your Name* consistently displays `R`).
+  - Caches extracted ratings in `_RATING_CACHE[media_type:tmdb_id]` across all app requests.
 
-### 3.2 Recommendation Engine (`apps/core/recommendations.py`)
-- **Deterministic Affinity Scoring**: Calculates genre preference weights from completed watch history (weight 3.0), in-progress watches (weight 1.0), and saved watchlist items (weight 2.0).
-- **Personalized Rails**: Injects *"Recommended For You"* and explainable *"Because You Watched [Title]"* rails on the homepage.
+### 3.2 Balanced Responsive Grid Engine (`apps/tmdb/client.py`)
+- **24-Item Page Windowing (`_fetch_paginated_24`)**:
+  - TMDB API returns 20 items per page by default, which causes awkward orphan cards in 6-column desktop grids ($20 \pmod 6 = 2$).
+  - `_fetch_paginated_24` concatenates across TMDB page boundaries and slices exactly **24 titles per page**.
+  - Creates 100% full, even rows across every device breakpoint:
+    - 🖥️ **Desktop (6 columns)**: Exactly **4 complete rows** of 6.
+    - 💻 **Medium (4 columns)**: Exactly **6 complete rows** of 4.
+    - 📱 **Tablet (3 columns)**: Exactly **8 complete rows** of 3.
+    - 📲 **Mobile (2 columns)**: Exactly **12 complete rows** of 2.
 
-### 3.3 Standalone Video Download Subsystem (`apps/downloads/`)
+### 3.3 Multi-Page Discover Engine (`apps/catalog/views.py`, `templates/catalog/discover.html`)
+- **Faceted Search & Pagination**:
+  - Supports combinations of **Media Type** (`movie`/`tv`), **Mood**, **Genre**, **Language**, **Rating / Score**, **Certification**, and **Sort Order**.
+  - Full pagination controls (`← Previous`, page numbers, `Next →`) with complete query parameter preservation across page transitions.
+
+### 3.4 Advanced Playback Subsystem (`apps/playback/`, `templates/playback/watch.html`)
+- **Fullscreen Controls Preservation**:
+  - In native Full Screen mode (via <kbd>F</kbd> key, Video.js button, or top bar Fullscreen button), `#top-sensor`, `#quick-server-container`, `#player-overlay`, and modals are mounted directly inside `player.el()` with `z-index: 2147483647` so they remain interactive in native browser fullscreen.
+- **Direct Hover Server Switcher**:
+  - Floating top-right pill (`Server VIDLINK ⌵`) expands a glassmorphic server dropdown instantly upon cursor hover.
+- **Playback-Driven Progress & Resume Threshold**:
+  - Removed blind background timers. Watch progress is only recorded when media is actively playing (`!player.paused()` and `currentTime >= 15s`).
+  - Resume prompts strictly require $\ge 30$ seconds of verified watch time.
+- **Auto-Hide Controls on Pause**:
+  - Player controls, big play button, and top navigation auto-hide after 3.5 seconds of inactivity even when paused.
+
+### 3.5 Season-Wise Playtime Breakdown & Analytics (`apps/watch/views.py`, `templates/watch/analytics.html`)
+- **Season Playtime Aggregation**:
+  - Aggregates user watch history by series and season to compute total watch hours per season (`Season 1: 5.4 hrs`).
+  - Displays playtime badges on TV series season tabs and a dedicated breakdown table in Personal Analytics (`/analytics/`).
+
+### 3.6 UI Polish & Scrollbar Suppression (`static/css/main.css`)
+- Replaced emoji icons with clean, scalable Tailwind SVG icons.
+- Suppressed native browser horizontal scrollbars on carousels, genre pills, mood tabs, and cast rails across Chrome, Safari, Firefox, and Edge.
+
+### 3.7 Standalone Video Download Subsystem (`apps/downloads/`)
 - **DownloadJob Model**: Tracks user downloads with statuses: `QUEUED`, `DOWNLOADING`, `PROCESSING`, `READY`, `FAILED`, `CANCELLED`.
 - **Deterministic Filename Service** (`apps/downloads/services/filename.py`):
   - Movies: `Movie Name (Year) [Quality].mp4` (e.g. `Interstellar (2014) [1080p].mp4`)
   - Episodes: `Series Name S01E01 [Quality].mp4` (e.g. `Breaking Bad S02E03 [720p].mp4`)
-- **Background Pipeline**: Streams chunks to `media/downloads/temp/` and serves via `FileResponse` as standalone attachment.
 
-### 3.4 User Profiles & Kids Safety Mode (`apps/accounts/`)
+### 3.8 User Profiles & Kids Safety Mode (`apps/accounts/`)
 - **UserProfile Model**: Supports multiple user profiles with custom avatars and `is_kids` boolean flag.
 - **Session Profile Switching**: Active profile stored in `request.session['active_profile_id']`.
 - **Server-Side Content Filtering**: Gated discovery and detail views enforce `certification.lte=PG` for kids profiles.
-
-### 3.5 Personal Analytics & Filvora Wrapped (`apps/watch/`)
-- **Metrics**: Computes total watch hours, movie and episode counts, completed titles, and genre affinity breakdown.
-- **Filvora Wrapped 2026**: Interactive celebratory showcase celebrating user milestones and favorite genres.
-
-### 3.6 PWA & Mobile Shell (`static/`)
-- **Web App Manifest**: `static/manifest.json` configured for standalone display.
-- **Service Worker**: `static/sw.js` caches shell assets (`main.css`, `main.js`) with network-first for dynamic content.
 
 ---
 
@@ -102,27 +125,37 @@ Filvora/
 
 1. **Database Privacy & `.env` Isolation**:
    - `db.sqlite3`, `backups/`, `media/`, and `.env` are strictly ignored in `.gitignore`.
-2. **Play Icon SVGs**:
+2. **Git Commit & Push**:
+   - Always stage, commit with clear semantic messages, and `git push origin main` after completing tasks.
+   - Do NOT commit the `FILVORA_PHASED_WORK_GUIDE` folder.
+3. **Play Icon SVGs**:
    - Never use double-circle `play-circle` inside circular buttons. Always use solid geometric play triangle:
      ```html
      <svg class="w-4 h-4 fill-white translate-x-0.5" viewBox="0 0 24 24">
          <path d="M8 5v14l11-7z"/>
      </svg>
      ```
-3. **HTMX Event Propagation**:
+4. **HTMX Event Propagation**:
    - Nested action buttons inside clickable cards must include `onclick="event.preventDefault(); event.stopPropagation();"`.
 
 ---
 
-## 5. Useful Commands
+## 5. Useful Commands & Credentials Reference
 
 ```powershell
-# Run Development Server
-.\venv\Scripts\python.exe manage.py runserver
+# Run Development Server (accessible locally and on LAN)
+.\venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000
 
-# Run Automated Test Suite (55 tests)
+# Run Automated Test Suite (60 tests across 8 apps)
 .\venv\Scripts\python.exe manage.py test apps.core apps.catalog apps.playback apps.library apps.watch apps.tmdb apps.accounts apps.downloads
 
 # Backup Local Database
 .\venv\Scripts\python.exe manage.py backup_db
+
+# Reset / Change User Password
+.\venv\Scripts\python.exe manage.py changepassword moon
 ```
+
+### Local Test Accounts:
+- **Main User**: `moon` (Password: `1234`)
+- **Superuser**: `admin` (Password: `1234`)
