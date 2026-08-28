@@ -69,6 +69,10 @@
 - **Focus Context & Keyboard Shortcuts**:
   - Clicking inside an external iframe transfers browser keyboard focus into the cross-origin frame. Because third-party embed scripts do not intercept the <kbd>F</kbd> key, key events are not processed while the iframe retains focus.
   - Moving the mouse cursor into the top 120px sensor or hovering over the top navigation automatically invokes `window.focus()`, immediately restoring Filvora's global keyboard shortcut listeners (<kbd>F</kbd> for Fullscreen, <kbd>Alt</kbd>+<kbd>S</kbd> for server switch, <kbd>Esc</kbd> for exit).
+- **Player Quality Controls & Adaptive Bitrate (ABR)**:
+  - Third-party streaming servers (`VidFast`, `VidLink`, etc.) utilize Adaptive Bitrate Streaming (HLS / m3u8 manifests).
+  - The video manifest dynamically delivers the peak available bitrate and resolution (1080p HD or 4K UHD) supported by the client connection.
+  - Because streams are served as single-rendition peak files or automated ABR manifests, the player's internal settings menu (`⚙️`) defaults to displaying **"Playback Speed"** rather than a manual ladder selection menu.
 
 ---
 
