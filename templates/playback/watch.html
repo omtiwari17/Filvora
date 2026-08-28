@@ -319,10 +319,12 @@
             id="filvora-embed-frame"
             src="{{ video_url }}"
             class="w-full h-full border-0 absolute inset-0 bg-black"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen; display-capture"
+            allow="accelerometer *; autoplay *; clipboard-write *; encrypted-media *; gyroscope *; picture-in-picture *; web-share *; fullscreen *; display-capture *"
             allowfullscreen="true"
             webkitallowfullscreen="true"
             mozallowfullscreen="true"
+            oallowfullscreen="true"
+            msallowfullscreen="true"
             referrerpolicy="origin"
         ></iframe>
         {% endif %}
