@@ -35,6 +35,7 @@
 | **Library & Collections** | `apps/library/` | One-click Watchlist toggling via HTMX, custom user collections, and playlist management. |
 | **Multi-Profile & Kids Safety Mode** | `apps/accounts/` | Multi-profile switching with custom avatars and `is_kids` boolean flag enforcing server-side `certification.lte=PG` content filtering. |
 | **Homepage Cinematic Billboard** | `templates/home/index.html` | Hero spotlight billboard with backdrop image blending, action buttons (Play Now, In My List, Details), and responsive spacing avoiding overlap with the "Continue Watching" rail. |
+| **Mobile-First UX & App Navigation** | `templates/base.html`, `static/css/main.css` | Native app-like mobile experience with iOS/Android safe area insets (`env(safe-area-inset-bottom)`), active pill bottom navigation, mobile poster rating badges (visible without hover), full-width touch CTA buttons on detail views, horizontal touch-swipe season selector rails, and search bar boundary bounds. |
 | **UI Polish & Controls** | `static/css/`, `static/js/` | Clean Tailwind SVGs (no emojis), suppressed native horizontal scrollbars on carousels/rails, rail drag-scroll, keyboard shortcuts (<kbd>F</kbd> for fullscreen, <kbd>Space</kbd> for play/pause, <kbd>M</kbd> for mute, <kbd>Alt</kbd>+<kbd>S</kbd> for server switch). |
 
 ---
