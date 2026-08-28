@@ -127,12 +127,12 @@ def _download_with_ytdlp(url: str, output_filepath: str, quality: str, progress_
 def _download_with_curl(url: str, filepath: str, headers: dict) -> bool:
     """Download a file using curl.exe (Windows Schannel)."""
     try:
-        cmd = ['curl.exe', '-L', '-o', filepath, '--ssl-no-revoke', '-s', '--max-time', '3600']
+        cmd = ['curl.exe', '-L', '-o', filepath, '--ssl-no-revoke', '-s', '--connect-timeout', '15', '--max-time', '600']
         for key, value in headers.items():
             cmd.extend(['-H', f'{key}: {value}'])
         cmd.append(url)
 
-        result = subprocess.run(cmd, capture_output=True, timeout=3600)
+        result = subprocess.run(cmd, capture_output=True, timeout=610)
         return result.returncode == 0 and os.path.exists(filepath) and os.path.getsize(filepath) > 0
     except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
         logger.warning(f"curl download failed: {e}")
@@ -142,7 +142,7 @@ def _download_with_curl(url: str, filepath: str, headers: dict) -> bool:
 def _download_with_requests(url: str, filepath: str, headers: dict, progress_callback=None) -> bool:
     """Download a file using requests library with streaming."""
     try:
-        with requests.get(url, headers=headers, stream=True, timeout=3600) as r:
+        with requests.get(url, headers=headers, stream=True, timeout=(10, 600)) as r:
             r.raise_for_status()
             total_size = int(r.headers.get('content-length', 0))
             downloaded = 0

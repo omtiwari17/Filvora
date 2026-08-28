@@ -27,7 +27,8 @@
             </div>
         </div>
 
-        <!-- Dialog Body -->
+        {% if is_supported %}
+        <!-- Dialog Body (Supported) -->
         <form method="post" action="/downloads/start/">
             {% csrf_token %}
             <input type="hidden" name="tmdb_id" value="{{ tmdb_id }}">
@@ -101,5 +102,36 @@
                 </button>
             </div>
         </form>
+        {% else %}
+        <!-- Dialog Body (Online Streaming Only) -->
+        <div class="px-6 py-6 space-y-5">
+            <div class="bg-brand-500/10 border border-brand-500/30 rounded-2xl p-4 text-center space-y-2.5">
+                <div class="w-12 h-12 rounded-full bg-brand-500/20 border border-brand-500/40 mx-auto flex items-center justify-center">
+                    <svg class="w-6 h-6 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h4 class="text-sm font-bold text-white">Online Multi-Server Streaming</h4>
+                <p class="text-xs text-gray-300 leading-relaxed max-w-xs mx-auto">
+                    This title is optimized for instant online streaming across our 5 live servers (VidLink, AutoEmbed, 2Embed, NontonGo, VidSrc). Offline direct download is not available for this stream.
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <a href="{{ watch_url }}" 
+                   class="flex-1 bg-brand-500 hover:bg-brand-600 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-brand-500/25 transform hover:scale-[1.02] active:scale-95">
+                    <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <span>Watch Online Now</span>
+                </a>
+                <button type="button" onclick="document.getElementById('download-dialog-overlay').remove()" 
+                        class="px-5 py-3 rounded-xl font-bold text-sm text-gray-400 hover:text-white border border-gray-700 hover:border-gray-600 bg-gray-800/50 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>

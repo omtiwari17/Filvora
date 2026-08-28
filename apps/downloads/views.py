@@ -139,6 +139,16 @@ def download_dialog(request):
     episode_int = int(episode) if episode else None
     qualities = get_available_qualities(tmdb_id, media_type, season_int, episode_int)
 
+    # Check provider support
+    provider = find_provider(tmdb_id, media_type, season_int, episode_int)
+    is_supported = bool(provider and provider.supports_download(tmdb_id, media_type, season_int, episode_int))
+
+    # Build watch url for online streaming fallback
+    if media_type == 'tv' and season and episode:
+        watch_url = f"/watch/tv/{tmdb_id}/{season}/{episode}/"
+    else:
+        watch_url = f"/watch/movie/{tmdb_id}/"
+
     # Build display title
     if media_type == 'tv' and season and episode:
         display_title = f"{title} S{int(season):02d}E{int(episode):02d}"
@@ -153,6 +163,8 @@ def download_dialog(request):
         'title': display_title,
         'qualities': qualities,
         'default_quality': qualities[0] if qualities else '1080p',
+        'is_supported': is_supported,
+        'watch_url': watch_url,
     })
 
 
