@@ -424,6 +424,7 @@
         }
 
         function toggleFullscreen() {
+            // 1. If direct Video.js player is present
             const videoEl = document.getElementById('filvora-player');
             if (videoEl && typeof videojs !== 'undefined') {
                 try {
@@ -437,29 +438,34 @@
                 } catch (e) {}
             }
 
-            // Universal Fullscreen for Embed Providers (VidFast, VidLink, etc.)
-            const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
-            const target = document.getElementById('player-wrapper') || document.documentElement;
+            // 2. Cross-browser Document Fullscreen
+            const isFull = !!(
+                document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement
+            );
 
+            const docEl = document.documentElement;
             if (!isFull) {
-                if (target.requestFullscreen) {
-                    target.requestFullscreen().catch(() => {});
-                } else if (target.webkitRequestFullscreen) {
-                    target.webkitRequestFullscreen();
-                } else if (target.mozRequestFullScreen) {
-                    target.mozRequestFullScreen();
-                } else if (target.msRequestFullscreen) {
-                    target.msRequestFullscreen();
+                const req = docEl.requestFullscreen ||
+                            docEl.webkitRequestFullscreen ||
+                            docEl.mozRequestFullScreen ||
+                            docEl.msRequestFullscreen;
+                if (req) {
+                    req.call(docEl).catch(err => {
+                        console.warn('Fullscreen request:', err);
+                    });
                 }
             } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen().catch(() => {});
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                } else if (document.mozCancelFullScreen) {
-                    document.mozCancelFullScreen();
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen();
+                const exit = document.exitFullscreen ||
+                             document.webkitExitFullscreen ||
+                             document.mozCancelFullScreen ||
+                             document.msExitFullscreen;
+                if (exit) {
+                    exit.call(document).catch(err => {
+                        console.warn('Exit fullscreen:', err);
+                    });
                 }
             }
         }
