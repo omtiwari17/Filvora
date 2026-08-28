@@ -71,8 +71,8 @@
                 {% endif %}
 
                 <!-- Call to Action Buttons -->
-                <div class="flex items-center justify-center md:justify-start gap-4 pt-2">
-                    <a href="/watch/tv/{{ series.id }}/1/1/" class="bg-brand-500 hover:bg-red-600 text-white px-8 py-3.5 rounded-full font-black text-base sm:text-lg flex items-center gap-2.5 shadow-xl shadow-brand-500/30 transition transform hover:scale-105 active:scale-95">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center md:justify-start gap-3 sm:gap-4 pt-2">
+                    <a href="/watch/tv/{{ series.id }}/1/1/" class="bg-brand-500 hover:bg-red-600 text-white px-8 py-3.5 rounded-full font-black text-base sm:text-lg flex items-center justify-center gap-2.5 shadow-xl shadow-brand-500/30 transition transform hover:scale-105 active:scale-95">
                         <svg class="w-5 h-5 fill-white translate-x-0.5" viewBox="0 0 24 24">
                             <path d="M8 5v14l11-7z"/>
                         </svg>
@@ -82,7 +82,7 @@
                     <button hx-post="/library/toggle/" 
                             hx-vals='{"tmdb_id": "{{ series.id }}", "media_type": "tv"}' 
                             hx-swap="outerHTML"
-                            class="{% if in_library %}bg-brand-500 text-white hover:bg-red-600 shadow-brand-500/20{% else %}bg-gray-900/90 hover:bg-gray-800 text-white border border-gray-700{% endif %} px-6 py-3.5 rounded-full font-bold text-sm sm:text-base flex items-center gap-2 transition shadow-lg backdrop-blur-md transform hover:scale-105 active:scale-95">
+                            class="{% if in_library %}bg-brand-500 text-white hover:bg-red-600 shadow-brand-500/20{% else %}bg-gray-900/90 hover:bg-gray-800 text-white border border-gray-700{% endif %} px-6 py-3.5 rounded-full font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition shadow-lg backdrop-blur-md transform hover:scale-105 active:scale-95">
                         {% if in_library %}
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
@@ -114,13 +114,13 @@
 
                 <!-- Season selector tabs -->
                 {% if seasons %}
-                <div class="flex flex-wrap gap-2.5">
+                <div class="flex items-center gap-2.5 overflow-x-auto scrollbar-hide py-1 -my-1 max-w-full">
                     {% for s in seasons %}
                     <button hx-get="/series/{{ series.id }}/season/{{ s.season_number }}/"
                             hx-target="#episodes-container"
                             hx-swap="innerHTML"
                             onclick="document.querySelectorAll('.season-btn').forEach(b => { b.classList.remove('bg-brand-500', 'text-white', 'shadow-brand-500/25'); b.classList.add('bg-gray-900', 'text-gray-300'); }); this.classList.remove('bg-gray-900', 'text-gray-300'); this.classList.add('bg-brand-500', 'text-white', 'shadow-brand-500/25');"
-                            class="season-btn flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition border border-gray-700/80 shadow-md {% if s.season_number == current_season %}bg-brand-500 text-white shadow-brand-500/25{% else %}bg-gray-900 text-gray-300 hover:text-white hover:bg-gray-800{% endif %}">
+                            class="season-btn flex-none flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition border border-gray-700/80 shadow-md {% if s.season_number == current_season %}bg-brand-500 text-white shadow-brand-500/25{% else %}bg-gray-900 text-gray-300 hover:text-white hover:bg-gray-800{% endif %}">
                         <span>Season {{ s.season_number }}</span>
                         {% if s.total_hours_formatted %}
                         <span class="text-[10px] sm:text-[11px] bg-black/40 text-gray-200 border border-white/15 px-2 py-0.5 rounded-full font-semibold">{{ s.total_hours_formatted }}</span>

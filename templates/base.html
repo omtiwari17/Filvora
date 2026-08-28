@@ -134,33 +134,34 @@
         </div>
     </footer>
 
-    <!-- Mobile Bottom Navigation Bar (App-Style UX for Mobile) -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-950/95 backdrop-blur-xl border-t border-gray-800/80 px-2 py-2 flex items-center justify-around text-[10px] font-medium text-gray-400">
-        <a href="/" class="flex flex-col items-center gap-1 hover:text-white transition {% if request.path == '/' %}text-brand-500 font-bold{% endif %}">
+    <!-- Mobile Bottom Navigation Bar (App-Style UX for Mobile with Safe Area Support) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-950/95 backdrop-blur-2xl border-t border-gray-800/90 px-3 pt-2 flex items-center justify-around text-[10px] font-semibold text-gray-400 shadow-2xl"
+         style="padding-bottom: max(0.6rem, env(safe-area-inset-bottom, 0px));">
+        <a href="/" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all duration-200 active:scale-90 {% if request.path == '/' %}text-brand-500 font-bold bg-brand-500/10 shadow-sm ring-1 ring-brand-500/20{% else %}hover:text-white text-gray-400{% endif %}">
             <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20">
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
             </svg>
             <span>Home</span>
         </a>
-        <a href="/discover/" class="flex flex-col items-center gap-1 hover:text-white transition {% if '/discover/' in request.path %}text-brand-500 font-bold{% endif %}">
+        <a href="/discover/" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all duration-200 active:scale-90 {% if '/discover/' in request.path %}text-brand-500 font-bold bg-brand-500/10 shadow-sm ring-1 ring-brand-500/20{% else %}hover:text-white text-gray-400{% endif %}">
             <svg class="w-5 h-5 fill-none stroke-current" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 100 20 10 10 0 000-20zm3.5 6.5l-2.5 6-6 2.5 2.5-6 6-2.5z"/>
             </svg>
             <span>Discover</span>
         </a>
-        <a href="/movies/" class="flex flex-col items-center gap-1 hover:text-white transition {% if '/movies/' in request.path %}text-brand-500 font-bold{% endif %}">
+        <a href="/movies/" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all duration-200 active:scale-90 {% if '/movies/' in request.path %}text-brand-500 font-bold bg-brand-500/10 shadow-sm ring-1 ring-brand-500/20{% else %}hover:text-white text-gray-400{% endif %}">
             <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20">
                 <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/>
             </svg>
             <span>Movies</span>
         </a>
-        <a href="/series/" class="flex flex-col items-center gap-1 hover:text-white transition {% if '/series/' in request.path %}text-brand-500 font-bold{% endif %}">
+        <a href="/series/" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all duration-200 active:scale-90 {% if '/series/' in request.path %}text-brand-500 font-bold bg-brand-500/10 shadow-sm ring-1 ring-brand-500/20{% else %}hover:text-white text-gray-400{% endif %}">
             <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"/>
             </svg>
             <span>Series</span>
         </a>
-        <a href="/library/" class="flex flex-col items-center gap-1 hover:text-white transition {% if '/library/' in request.path %}text-brand-500 font-bold{% endif %}">
+        <a href="/library/" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all duration-200 active:scale-90 {% if '/library/' in request.path %}text-brand-500 font-bold bg-brand-500/10 shadow-sm ring-1 ring-brand-500/20{% else %}hover:text-white text-gray-400{% endif %}">
             <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20">
                 <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/>
             </svg>
