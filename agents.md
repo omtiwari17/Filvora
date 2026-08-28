@@ -39,7 +39,39 @@
 
 ---
 
-### 2.2 ⚠️ Standby / Inactive Subsystem: Video Downloads (`apps/downloads/`)
+### 2.2 📺 Playback Architecture & Embed Mechanics (`apps/playback/`)
+
+#### Streaming Providers Matrix:
+1. **Server 1 (VidLink)** ⭐: Primary fast 1080p Full HD default server with reliable CDN routing and zero buffer stalls.
+2. **Server 2 (VidFast)**: High-bitrate 4K Ultra HD & 1080p streaming node. Runs on automatic adaptive bitrate (ABR); its internal UI exposes playback speed while serving peak source resolution.
+3. **Server 3 (AutoEmbed)**: Multi-source failover streaming node.
+4. **Server 4 (VidSrc)**: High-definition embed mirror (`vidsrc.pm`).
+5. **Server 5 (2Embed)**: Secondary backup stream node.
+6. **Server 6 (NontonGo)**: Alternative multi-server backup.
+
+#### Fullscreen & Iframe Delegation Architecture:
+- **Iframe Permissions Policy**: The player `<iframe>` uses wildcard origin permissions:
+  ```html
+  <iframe
+      id="filvora-embed-frame"
+      src="{{ video_url }}"
+      allow="accelerometer *; autoplay *; clipboard-write *; encrypted-media *; gyroscope *; picture-in-picture *; web-share *; fullscreen *; display-capture *"
+      allowfullscreen="true"
+      webkitallowfullscreen="true"
+      mozallowfullscreen="true"
+      oallowfullscreen="true"
+      msallowfullscreen="true"
+  ></iframe>
+  ```
+  The `fullscreen *` wildcard is strictly required by modern Chromium/WebKit browsers so that internal video elements and nested iframes inside the embed provider have permission to trigger full screen via their own bottom-right `[ ⛶ ]` button.
+- **Top-Bar Fullscreen API**: Filvora's top-right `[⛶ Fullscreen]` button executes `document.documentElement.requestFullscreen()` directly on the root HTML element, expanding both the player and top navigation controls.
+- **Focus Context & Keyboard Shortcuts**:
+  - Clicking inside an external iframe transfers browser keyboard focus into the cross-origin frame. Because third-party embed scripts do not intercept the <kbd>F</kbd> key, key events are not processed while the iframe retains focus.
+  - Moving the mouse cursor into the top 120px sensor or hovering over the top navigation automatically invokes `window.focus()`, immediately restoring Filvora's global keyboard shortcut listeners (<kbd>F</kbd> for Fullscreen, <kbd>Alt</kbd>+<kbd>S</kbd> for server switch, <kbd>Esc</kbd> for exit).
+
+---
+
+### 2.3 ⚠️ Standby / Inactive Subsystem: Video Downloads (`apps/downloads/`)
 
 > **IMPORTANT**: Standalone offline video downloading is **NOT an active user-facing feature**. All download buttons and links are hidden from the user interface.
 
