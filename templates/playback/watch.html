@@ -234,13 +234,15 @@
             </button>
 
             <!-- Fullscreen Toggle Button -->
-            <button onclick="toggleFullscreen()" 
+            <button id="fullscreen-toggle-btn"
+                    type="button"
+                    onclick="toggleFullscreen()" 
                     title="Toggle Fullscreen (F)" 
-                    class="bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    class="bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer">
+                <svg id="fullscreen-icon" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                 </svg>
-                <span class="hidden md:inline">Fullscreen</span>
+                <span id="fullscreen-label" class="hidden md:inline">Fullscreen</span>
             </button>
         </div>
     </div>
@@ -743,6 +745,45 @@
                 setTimeout(() => el.classList.add('hidden'), 600);
             }
 
+            // Global Fullscreen Change Listener
+            function onFullscreenChange() {
+                const isFull = !!(
+                    document.fullscreenElement ||
+                    document.webkitFullscreenElement ||
+                    document.mozFullScreenElement ||
+                    document.msFullscreenElement
+                );
+                const label = document.getElementById('fullscreen-label');
+                const icon = document.getElementById('fullscreen-icon');
+                if (label) {
+                    label.innerText = isFull ? 'Exit Fullscreen' : 'Fullscreen';
+                }
+                if (icon) {
+                    if (isFull) {
+                        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />';
+                    } else {
+                        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />';
+                    }
+                }
+                showOverlay();
+                scheduleHide(3500);
+            }
+
+            document.addEventListener('fullscreenchange', onFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+            document.addEventListener('mozfullscreenchange', onFullscreenChange);
+            document.addEventListener('MSFullscreenChange', onFullscreenChange);
+
+            // Bind Fullscreen Button Click directly
+            const fsBtn = document.getElementById('fullscreen-toggle-btn');
+            if (fsBtn) {
+                fsBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleFullscreen();
+                });
+            }
+
             // If Video.js is active on this page
             if (videoEl && typeof videojs !== 'undefined') {
                 const player = videojs('filvora-player');
@@ -790,11 +831,6 @@
 
                 // Show top overlay and server switcher on fullscreen changes
                 player.on('fullscreenchange', () => {
-                    showOverlay();
-                    scheduleHide(3500);
-                });
-
-                document.addEventListener('fullscreenchange', () => {
                     showOverlay();
                     scheduleHide(3500);
                 });
