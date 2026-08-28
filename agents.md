@@ -126,9 +126,9 @@ Filvora/
   - `manager.py`: Complete lifecycle orchestrator handling job creation, worker dispatch, state transitions, retry of failed/cancelled jobs, and concurrency safety.
 - **Celery-Ready Background Tasks** (`apps/downloads/tasks.py`):
   - Thread-based background workers structured with a clean Celery-compatible interface.
-- **Interactive HTMX UI**:
-  - Glassmorphic Quality Selection Modal (`/downloads/dialog/`) dynamically loaded onto movie and series detail pages.
-  - Auto-polling Dashboard (`/downloads/`) with live progress bars, retry buttons, error diagnostics, file sizes, and cancel/delete controls.
+- **Standby & UI Gating**:
+  - The complete backend pipeline, models, services, providers, views, and test suite remain 100% intact in `apps/downloads/`.
+  - User-facing download buttons on movie/series detail pages and navbar are hidden from the UI since 3rd-party iframe playback providers (VidLink, AutoEmbed, 2Embed, NontonGo, VidSrc) do not offer direct MP4 download links. The subsystem is ready for immediate activation whenever direct download mirrors or authorized storage backends are added in the future.
 
 ### 3.8 User Profiles & Kids Safety Mode (`apps/accounts/`)
 - **UserProfile Model**: Supports multiple user profiles with custom avatars and `is_kids` boolean flag.
