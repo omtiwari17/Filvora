@@ -27,15 +27,15 @@
 
 | Subsystem | Location | Description & Capabilities |
 | :--- | :--- | :--- |
-| **Multi-Server Online Playback** | `apps/playback/` | Full multi-server web player with 6 streaming providers: **VidLink** (Primary Fast 1080p HD), **VidFast** (4K Ultra HD), **AutoEmbed**, **VidSrc** (UHD/HD), **2Embed**, **NontonGo**. Fullscreen overlay preservation, direct hover server switcher, resume prompt threshold ($\ge 30$s), active beacon progress tracking ($\ge 15$s), 3.5s pause auto-hide. |
+| **Multi-Server Online Playback** | `apps/playback/` | Full multi-server web player with 6 streaming providers: **VidLink** (Primary Fast 1080p HD, Default), **VidFast** (4K Ultra HD), **AutoEmbed**, **VidSrc** (UHD/HD active mirror `vidsrc.pm`), **2Embed**, **NontonGo**. Fullscreen overlay preservation, direct hover server switcher dropdown, wildcard origin iframe permissions (`allow="fullscreen *; ..."` allowing embedded player internal fullscreen), universal `document.documentElement` fullscreen toggle button, resume prompt threshold ($\ge 30$s), active beacon progress tracking ($\ge 15$s), 3.5s pause auto-hide. |
+| **Season Total Runtime & Analytics Engine** | `apps/catalog/`, `apps/watch/` | Aggregates individual episode runtimes per TV season via `format_season_runtime` in `apps/catalog/views.py`. Displays duration badges directly on season selector tabs (`Season 1 • 6h 38m`) and episode list meta headers (`Season 1 • 8 Episodes • 6h 38m Total`). Aggregates user watch history by season badges (`Season 1: 5.4 hrs`) in Personal Analytics & Filvora Wrapped (`/analytics/`). |
 | **Dynamic Age Ratings Engine** | `apps/tmdb/client.py` | Automatically extracts official release certifications (`PG`, `PG-13`, `R`, `TV-MA`) from TMDB and caches them in singleton `_RATING_CACHE[media_type:tmdb_id]` across all views. Ensures 100% rating consistency between cards and detail pages. |
 | **Balanced Responsive Grid Engine** | `apps/tmdb/client.py` | `_fetch_paginated_24` windowing creates perfectly full, even rows of 24 titles per page (Desktop: 4 rows of 6; Laptop: 6 rows of 4; Tablet: 8 rows of 3; Mobile: 12 rows of 2). |
 | **Multi-Page Discover Engine** | `apps/catalog/` | Faceted multi-page discovery filtering by Media Type (`movie`/`tv`), Mood, Genre, Language, Score, Certification (`G`, `PG`, `PG-13`, `R`, `NC-17`), and Sort Order with preserved query parameters across pagination. |
-| **Season-Wise Playtime & Analytics** | `apps/watch/` | Aggregates watch progress by series and season to compute total watch hours per season (`Season 1: 5.4 hrs`). Displays season badges and dedicated analytics tables in Personal Analytics & Filvora Wrapped (`/analytics/`). |
 | **Library & Collections** | `apps/library/` | One-click Watchlist toggling via HTMX, custom user collections, and playlist management. |
 | **Multi-Profile & Kids Safety Mode** | `apps/accounts/` | Multi-profile switching with custom avatars and `is_kids` boolean flag enforcing server-side `certification.lte=PG` content filtering. |
 | **Homepage Cinematic Billboard** | `templates/home/index.html` | Hero spotlight billboard with backdrop image blending, action buttons (Play Now, In My List, Details), and responsive spacing avoiding overlap with the "Continue Watching" rail. |
-| **UI Polish & Controls** | `static/css/`, `static/js/` | Clean Tailwind SVGs (no emojis), suppressed native horizontal scrollbars on carousels/rails, rail drag-scroll, keyboard shortcuts (<kbd>F</kbd> for fullscreen, <kbd>Space</kbd> for play/pause, <kbd>M</kbd> for mute). |
+| **UI Polish & Controls** | `static/css/`, `static/js/` | Clean Tailwind SVGs (no emojis), suppressed native horizontal scrollbars on carousels/rails, rail drag-scroll, keyboard shortcuts (<kbd>F</kbd> for fullscreen, <kbd>Space</kbd> for play/pause, <kbd>M</kbd> for mute, <kbd>Alt</kbd>+<kbd>S</kbd> for server switch). |
 
 ---
 
@@ -44,7 +44,7 @@
 > **IMPORTANT**: Standalone offline video downloading is **NOT an active user-facing feature**. All download buttons and links are hidden from the user interface.
 
 #### Why Video Downloading is Not Active For Users:
-1. **Third-Party Iframe Embed Gating**: Filvora does not self-host video files; it uses 5 third-party embed providers (VidLink, AutoEmbed, 2Embed, NontonGo, VidSrc) for web streaming. These providers stream via tokenized, obfuscated web player iframes and explicitly block direct external MP4 downloading using Cloudflare WAF, IP rate-limits, and session tokens (`"requiresProxy": true`).
+1. **Third-Party Iframe Embed Gating**: Filvora does not self-host video files; it uses 6 third-party embed providers (VidLink, VidFast, AutoEmbed, VidSrc, 2Embed, NontonGo) for web streaming. These providers stream via tokenized, obfuscated web player iframes and explicitly block direct external MP4 downloading using Cloudflare WAF, IP rate-limits, and session tokens (`"requiresProxy": true`).
 2. **Rejection of Trailers & Dummy Files**:
    - TMDB API only provides YouTube promotional trailer keys (2–3 minute clips @ ~7.5 MB), NOT full movies. Downloading trailers as movies was explicitly rejected.
    - Fake 100 KB placeholder files were also explicitly rejected.
