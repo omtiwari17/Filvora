@@ -86,10 +86,23 @@ class VidLinkProvider(PlaybackProvider):
         return f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}"
 
 
+class VidFastProvider(PlaybackProvider):
+    id = "vidfast"
+    name = "Server 2 (VidFast - 4K UHD)"
+    priority = 2
+    health_check_url = "https://vidfast.pro"
+
+    def get_movie_url(self, tmdb_id: int) -> str:
+        return f"https://vidfast.pro/movie/{tmdb_id}"
+
+    def get_tv_url(self, tmdb_id: int, season: int, episode: int) -> str:
+        return f"https://vidfast.pro/tv/{tmdb_id}/{season}/{episode}"
+
+
 class AutoEmbedProvider(PlaybackProvider):
     id = "autoembed"
-    name = "Server 2 (AutoEmbed)"
-    priority = 2
+    name = "Server 3 (AutoEmbed)"
+    priority = 3
     health_check_url = "https://autoembed.co"
 
     def get_movie_url(self, tmdb_id: int) -> str:
@@ -99,10 +112,23 @@ class AutoEmbedProvider(PlaybackProvider):
         return f"https://autoembed.co/tv/tmdb/{tmdb_id}-{season}-{episode}"
 
 
+class VidsrcProvider(PlaybackProvider):
+    id = "vidsrc"
+    name = "Server 4 (VidSrc - UHD)"
+    priority = 4
+    health_check_url = "https://vidsrc.pm"
+
+    def get_movie_url(self, tmdb_id: int) -> str:
+        return f"https://vidsrc.pm/embed/movie/{tmdb_id}"
+
+    def get_tv_url(self, tmdb_id: int, season: int, episode: int) -> str:
+        return f"https://vidsrc.pm/embed/tv/{tmdb_id}/{season}/{episode}"
+
+
 class TwoEmbedProvider(PlaybackProvider):
     id = "2embed"
-    name = "Server 3 (2Embed)"
-    priority = 3
+    name = "Server 5 (2Embed)"
+    priority = 5
     health_check_url = "https://www.2embed.cc"
 
     def get_movie_url(self, tmdb_id: int) -> str:
@@ -114,8 +140,8 @@ class TwoEmbedProvider(PlaybackProvider):
 
 class NontonGoProvider(PlaybackProvider):
     id = "nontongo"
-    name = "Server 4 (NontonGo)"
-    priority = 4
+    name = "Server 6 (NontonGo)"
+    priority = 6
     health_check_url = "https://www.NontonGo.win"
 
     def get_movie_url(self, tmdb_id: int) -> str:
@@ -125,24 +151,11 @@ class NontonGoProvider(PlaybackProvider):
         return f"https://www.NontonGo.win/embed/tv/{tmdb_id}/{season}/{episode}"
 
 
-class VidsrcProvider(PlaybackProvider):
-    id = "vidsrc"
-    name = "Server 5 (VidSrc)"
-    priority = 5
-    health_check_url = "https://vidsrc.me"
-
-    def get_movie_url(self, tmdb_id: int) -> str:
-        return f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
-
-    def get_tv_url(self, tmdb_id: int, season: int, episode: int) -> str:
-        return f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
-
-
 class ProviderRegistry:
     def __init__(self):
         self._providers: Dict[str, PlaybackProvider] = {}
-        # Register default providers
-        for p in [VidLinkProvider(), AutoEmbedProvider(), TwoEmbedProvider(), NontonGoProvider(), VidsrcProvider()]:
+        # Register default providers (VidLink as Primary, VidFast as 4K UHD Server)
+        for p in [VidLinkProvider(), VidFastProvider(), AutoEmbedProvider(), VidsrcProvider(), TwoEmbedProvider(), NontonGoProvider()]:
             self.register(p)
 
     def register(self, provider: PlaybackProvider):

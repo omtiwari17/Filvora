@@ -33,7 +33,7 @@
 - **Artist Filmographies**: Detailed actor/cast biography and filmography grids (`/person/<id>/`).
 
 ### 📺 4. Multi-Server Playback Engine (`apps/playback/`)
-- **5 High-Speed Streaming Providers**: Switch streaming nodes on the fly with zero page reloads (**VidLink**, **AutoEmbed**, **2Embed**, **NontonGo**, **VidSrc**).
+- **6 High-Speed Streaming Providers**: Switch streaming nodes on the fly with zero page reloads (**VidLink** [Primary Fast 1080p], **VidFast** [4K Ultra HD], **AutoEmbed**, **VidSrc** [UHD/HD], **2Embed**, **NontonGo**).
 - **Direct Hover Server Switcher**: Floating pill (`Server VIDLINK ⌵`) expands a glassmorphic server switcher dropdown on cursor hover.
 - **Fullscreen Overlay Preservation**: Interactive top sensors, quick server switchers, and dialogs remain mounted directly inside fullscreen video mode (`z-index: 2147483647`).
 - **Playback-Driven Progress Tracking**: Records watch timestamps only when media is actively playing (`!player.paused()` and `currentTime >= 15s`). Resume prompts strictly require $\ge 30$ seconds of verified watch time.

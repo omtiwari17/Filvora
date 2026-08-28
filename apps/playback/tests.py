@@ -43,11 +43,11 @@ class PlaybackTestCase(TestCase):
         ordered = registry.get_ordered_providers()
         self.assertGreater(len(ordered), 1)
         self.assertEqual(ordered[0].id, 'vidlink')
-        self.assertEqual(ordered[1].id, 'autoembed')
+        self.assertEqual(ordered[1].id, 'vidfast')
 
         # Test next provider fallback calculation
         next_after_vidlink = registry.get_next_provider('vidlink')
-        self.assertEqual(next_after_vidlink.id, 'autoembed')
+        self.assertEqual(next_after_vidlink.id, 'vidfast')
 
         # Test custom preference ordering
         custom_ordered = registry.get_ordered_providers(preferred_id='autoembed')

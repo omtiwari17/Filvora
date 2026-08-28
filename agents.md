@@ -27,7 +27,7 @@
 
 | Subsystem | Location | Description & Capabilities |
 | :--- | :--- | :--- |
-| **Multi-Server Online Playback** | `apps/playback/` | Full multi-server web player with 5 streaming providers (VidLink, AutoEmbed, 2Embed, NontonGo, VidSrc). Fullscreen overlay preservation, direct hover server switcher, resume prompt threshold ($\ge 30$s), active beacon progress tracking ($\ge 15$s), 3.5s pause auto-hide. |
+| **Multi-Server Online Playback** | `apps/playback/` | Full multi-server web player with 6 streaming providers: **VidLink** (Primary Fast 1080p HD), **VidFast** (4K Ultra HD), **AutoEmbed**, **VidSrc** (UHD/HD), **2Embed**, **NontonGo**. Fullscreen overlay preservation, direct hover server switcher, resume prompt threshold ($\ge 30$s), active beacon progress tracking ($\ge 15$s), 3.5s pause auto-hide. |
 | **Dynamic Age Ratings Engine** | `apps/tmdb/client.py` | Automatically extracts official release certifications (`PG`, `PG-13`, `R`, `TV-MA`) from TMDB and caches them in singleton `_RATING_CACHE[media_type:tmdb_id]` across all views. Ensures 100% rating consistency between cards and detail pages. |
 | **Balanced Responsive Grid Engine** | `apps/tmdb/client.py` | `_fetch_paginated_24` windowing creates perfectly full, even rows of 24 titles per page (Desktop: 4 rows of 6; Laptop: 6 rows of 4; Tablet: 8 rows of 3; Mobile: 12 rows of 2). |
 | **Multi-Page Discover Engine** | `apps/catalog/` | Faceted multi-page discovery filtering by Media Type (`movie`/`tv`), Mood, Genre, Language, Score, Certification (`G`, `PG`, `PG-13`, `R`, `NC-17`), and Sort Order with preserved query parameters across pagination. |
