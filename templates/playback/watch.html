@@ -317,8 +317,10 @@
             id="filvora-embed-frame"
             src="{{ video_url }}"
             class="w-full h-full border-0 absolute inset-0 bg-black"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-            allowfullscreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen; display-capture"
+            allowfullscreen="true"
+            webkitallowfullscreen="true"
+            mozallowfullscreen="true"
             referrerpolicy="origin"
         ></iframe>
         {% endif %}
@@ -434,18 +436,30 @@
                     return;
                 } catch (e) {}
             }
+
+            // Universal Fullscreen for Embed Providers (VidFast, VidLink, etc.)
+            const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
             const target = document.getElementById('player-wrapper') || document.documentElement;
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+
+            if (!isFull) {
                 if (target.requestFullscreen) {
                     target.requestFullscreen().catch(() => {});
                 } else if (target.webkitRequestFullscreen) {
                     target.webkitRequestFullscreen();
+                } else if (target.mozRequestFullScreen) {
+                    target.mozRequestFullScreen();
+                } else if (target.msRequestFullscreen) {
+                    target.msRequestFullscreen();
                 }
             } else {
                 if (document.exitFullscreen) {
                     document.exitFullscreen().catch(() => {});
                 } else if (document.webkitExitFullscreen) {
                     document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
                 }
             }
         }
@@ -510,11 +524,12 @@
             const currentServerId = '{{ current_server }}';
             const nextServerId = '{% if next_provider %}{{ next_provider.id }}{% else %}{% endif %}';
 
-            // Top sensor hover triggers
+            // Top sensor hover triggers & window focus recovery
             if (topSensor) {
                 topSensor.addEventListener('mouseenter', () => {
                     isHoveredOverTop = true;
                     showOverlay();
+                    window.focus();
                 });
                 topSensor.addEventListener('mouseleave', () => {
                     isHoveredOverTop = false;
@@ -531,6 +546,7 @@
                 quickContainer.addEventListener('mouseenter', () => {
                     isHoveredOverTop = true;
                     clearTimeout(hideTimeout);
+                    window.focus();
                 });
                 quickContainer.addEventListener('mouseleave', () => {
                     isHoveredOverTop = false;
@@ -543,6 +559,7 @@
                 overlay.addEventListener('mouseenter', () => {
                     isHoveredOverTop = true;
                     showOverlay();
+                    window.focus();
                 });
                 overlay.addEventListener('mouseleave', () => {
                     isHoveredOverTop = false;
@@ -553,6 +570,7 @@
             document.addEventListener('mousemove', (e) => {
                 if (e.clientY <= 120) {
                     showOverlay();
+                    window.focus();
                 } else if (!isHoveredOverTop) {
                     showOverlay();
                 }
@@ -626,15 +644,64 @@
                 } catch (err) {}
             });
 
-            // Alt + S Shortcut to quickly switch to next server
-            document.addEventListener('keydown', (e) => {
-                if (e.altKey && (e.key === 's' || e.key === 'S')) {
+            // Universal Global Keyboard Shortcuts (Works for Video.js AND all embed providers: VidFast, VidLink, AutoEmbed, etc.)
+            function handleGlobalKeydown(e) {
+                const active = document.activeElement;
+                if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
+
+                const key = e.key ? e.key.toLowerCase() : '';
+
+                // Fullscreen toggle (F key)
+                if (key === 'f') {
+                    e.preventDefault();
+                    toggleFullscreen();
+                    return;
+                }
+
+                // Alt + S Shortcut to quickly switch to next server
+                if (e.altKey && key === 's') {
                     e.preventDefault();
                     if (nextServerId) {
                         window.location.replace('?server=' + nextServerId);
                     }
+                    return;
                 }
-            });
+
+                // Escape key to exit fullscreen
+                if (key === 'escape') {
+                    const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+                    if (isFull) {
+                        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+                        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                    }
+                    return;
+                }
+
+                // Direct video player shortcuts (when local Video.js is active)
+                if (videoEl && typeof videojs !== 'undefined') {
+                    try {
+                        const player = videojs('filvora-player');
+                        if (key === ' ' || key === 'k') {
+                            e.preventDefault();
+                            player.paused() ? player.play() : player.pause();
+                        } else if (key === 'm') {
+                            e.preventDefault();
+                            player.muted(!player.muted());
+                        } else if (key === 'arrowright' || key === 'l') {
+                            e.preventDefault();
+                            player.currentTime(Math.min(player.duration() || 99999, player.currentTime() + 10));
+                            showSeekIndicator('seek-ripple-right');
+                        } else if (key === 'arrowleft' || key === 'j') {
+                            e.preventDefault();
+                            player.currentTime(Math.max(0, player.currentTime() - 10));
+                            showSeekIndicator('seek-ripple-left');
+                        }
+                    } catch (err) {}
+                }
+            }
+
+            window.addEventListener('keydown', handleGlobalKeydown, true);
+            document.addEventListener('keydown', handleGlobalKeydown, true);
 
             // Double Tap Left / Right Seek Detection
             let lastTap = 0;
@@ -774,32 +841,6 @@
                     const modal = document.getElementById('fallback-modal');
                     if (modal) modal.classList.remove('hidden');
                 });
-
-                // Global Keyboard Shortcuts
-                document.addEventListener('keydown', (e) => {
-                    const active = document.activeElement;
-                    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
-                    
-                    const key = e.key ? e.key.toLowerCase() : '';
-                    if (key === ' ' || key === 'k') {
-                        e.preventDefault();
-                        player.paused() ? player.play() : player.pause();
-                    } else if (key === 'f') {
-                        e.preventDefault();
-                        player.isFullscreen() ? player.exitFullscreen() : player.requestFullscreen();
-                    } else if (key === 'm') {
-                        e.preventDefault();
-                        player.muted(!player.muted());
-                    } else if (key === 'arrowright' || key === 'l') {
-                        e.preventDefault();
-                        player.currentTime(Math.min(player.duration() || 99999, player.currentTime() + 10));
-                        showSeekIndicator('seek-ripple-right');
-                    } else if (key === 'arrowleft' || key === 'j') {
-                        e.preventDefault();
-                        player.currentTime(Math.max(0, player.currentTime() - 10));
-                        showSeekIndicator('seek-ripple-left');
-                    }
-                }, true);
             }
         });
     </script>
