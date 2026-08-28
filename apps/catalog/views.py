@@ -133,6 +133,19 @@ def series_browse(request):
     })
 
 
+def format_season_runtime(minutes: int) -> str:
+    """Format total minutes into human-readable duration (e.g. '6h 38m')."""
+    if not minutes:
+        return ""
+    hrs = minutes // 60
+    mins = minutes % 60
+    if hrs > 0 and mins > 0:
+        return f"{hrs}h {mins}m"
+    elif hrs > 0:
+        return f"{hrs} hrs"
+    return f"{mins}m"
+
+
 def series_detail(request, tmdb_id):
     client = TMDBClient()
     series = client.get_tv_details(tmdb_id)
@@ -150,9 +163,22 @@ def series_detail(request, tmdb_id):
     if 'credits' in series and 'cast' in series['credits']:
         cast = series['credits']['cast'][:12]
 
-    # Fetch initial Season 1 episodes
+    # Fetch seasons and compute total season runtime for each
     seasons = [s for s in series.get('seasons', []) if s.get('season_number', 0) > 0]
-    
+    avg_runtime = series.get('episode_run_time', [45])[0] if series.get('episode_run_time') else 45
+
+    for s in seasons:
+        s_num = s.get('season_number', 1)
+        s_data = client.get_tv_season(tmdb_id, s_num)
+        s_eps = s_data.get('episodes', [])
+        s_total_mins = sum(e.get('runtime') or avg_runtime for e in s_eps)
+        if not s_total_mins and s.get('episode_count'):
+            s_total_mins = s.get('episode_count', 0) * avg_runtime
+
+        s['total_minutes'] = s_total_mins
+        s['total_hours_formatted'] = format_season_runtime(s_total_mins)
+        s['total_hours_decimal'] = f"{round(s_total_mins / 60.0, 1)} hrs" if s_total_mins else ""
+
     # Compute season-wise watch time if user is logged in
     if request.user.is_authenticated:
         from apps.watch.models import WatchProgress
@@ -183,6 +209,8 @@ def series_detail(request, tmdb_id):
     initial_season_num = seasons[0]['season_number'] if seasons else 1
     season_data = client.get_tv_season(tmdb_id, initial_season_num)
     episodes = season_data.get('episodes', [])
+    initial_season_runtime = seasons[0].get('total_hours_formatted', '') if seasons else ''
+    initial_season_decimal = seasons[0].get('total_hours_decimal', '') if seasons else ''
 
     return render(request, 'catalog/series_detail.html', {
         'series': series,
@@ -191,16 +219,28 @@ def series_detail(request, tmdb_id):
         'seasons': seasons,
         'current_season': initial_season_num,
         'episodes': episodes,
+        'initial_season_runtime': initial_season_runtime,
+        'initial_season_decimal': initial_season_decimal,
     })
+
 
 def season_episodes(request, tmdb_id, season_number):
     client = TMDBClient()
-    season_data = client.get_tv_season(tmdb_id, season_number)
+    season_num = int(season_number) if str(season_number).isdigit() else 1
+    season_data = client.get_tv_season(tmdb_id, season_num)
     episodes = season_data.get('episodes', [])
+    series = client.get_tv_details(tmdb_id)
+    avg_runtime = series.get('episode_run_time', [45])[0] if series.get('episode_run_time') else 45
+    total_mins = sum(ep.get('runtime') or avg_runtime for ep in episodes)
+    total_formatted = format_season_runtime(total_mins)
+
     return render(request, 'catalog/partials/episode_list.html', {
         'tmdb_id': tmdb_id,
-        'season_number': season_number,
+        'season_number': season_num,
         'episodes': episodes,
+        'season_total_runtime': total_formatted,
+        'season_total_hours_decimal': f"{round(total_mins / 60.0, 1)} hrs" if total_mins else "",
+        'season_total_minutes': total_mins,
     })
 
 KNOWN_RATINGS = {'G', 'PG', 'PG-13', 'R', 'NC-17', '18+', 'TV-MA', 'TV-14', 'TV-PG', 'TV-G', 'TV-Y7', 'TV-Y'}

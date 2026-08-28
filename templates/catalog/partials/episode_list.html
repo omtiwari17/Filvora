@@ -1,3 +1,23 @@
+{% if episodes %}
+<!-- Season Meta Summary Header -->
+<div class="flex flex-wrap items-center justify-between gap-3 mb-5 px-1 pb-3 border-b border-gray-800/80">
+    <div class="flex items-center gap-2.5 sm:gap-3 text-xs sm:text-sm">
+        <span class="font-bold text-white text-sm sm:text-base">Season {{ season_number }}</span>
+        <span class="text-gray-600">•</span>
+        <span class="text-gray-300 font-medium">{{ episodes|length }} Episodes</span>
+        {% if season_total_runtime %}
+        <span class="text-gray-600">•</span>
+        <span class="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-full shadow-sm">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{{ season_total_runtime }} Total</span>
+        </span>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     {% for ep in episodes %}
     <div class="flex gap-4 p-3.5 sm:p-4 rounded-2xl bg-gray-900/70 border border-gray-800/80 hover:border-gray-700 transition group relative overflow-hidden backdrop-blur-md">
