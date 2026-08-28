@@ -95,19 +95,6 @@
                         <span>Add to My List</span>
                         {% endif %}
                     </button>
-
-                    <!-- Offline Download Button (Opens Quality Dialog) -->
-                    <button hx-get="/downloads/dialog/?tmdb_id={{ movie.id }}&media_type=movie"
-                            hx-target="body"
-                            hx-swap="beforeend"
-                            onclick="event.preventDefault(); event.stopPropagation();"
-                            title="Download for Offline Viewing"
-                            class="bg-gray-900/90 hover:bg-gray-800 border border-gray-700 hover:border-emerald-500/80 text-gray-300 hover:text-white px-5 py-3.5 rounded-full font-bold text-sm sm:text-base flex items-center gap-2 transition shadow-lg backdrop-blur-md transform hover:scale-105 active:scale-95">
-                        <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                        </svg>
-                        <span class="hidden sm:inline">Download</span>
-                    </button>
                 </div>
 
                 <!-- Overview -->
