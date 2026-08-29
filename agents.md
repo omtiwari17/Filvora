@@ -17,7 +17,9 @@
   - Django Development Server is active on **`http://127.0.0.1:8000/`** & **`http://192.168.1.5:8000/`**
   - Command: `.\venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000`
   - All active routes (`/`, `/movies/`, `/series/`, `/discover/`, `/genres/`, `/history/`, `/analytics/`, `/library/`, `/search/`, `/watch/`) return `200 OK`.
-- **Automated Test Suite**: **89 tests** across all 8 apps (`apps.core`, `apps.catalog`, `apps.playback`, `apps.library`, `apps.watch`, `apps.tmdb`, `apps.accounts`, `apps.downloads`), **100% passing**.
+- **One-Click Launcher**:
+  - `Start Filvora.bat` located at root: verifies venv, silently checks database migrations, auto-opens browser, and runs dev server bound to `0.0.0.0:8000`.
+- **Automated Test Suite**: **97 tests** across all 8 apps (`apps.core`, `apps.catalog`, `apps.playback`, `apps.library`, `apps.watch`, `apps.tmdb`, `apps.accounts`, `apps.downloads`), **100% passing**.
 
 ---
 
@@ -27,16 +29,18 @@
 
 | Subsystem | Location | Description & Capabilities |
 | :--- | :--- | :--- |
+| **Interactive User Ratings & Affinity Engine** | `apps/watch/`, `apps/core/`, `templates/components/` | Custom `UserRating` model (1–5 stars, unique per user/media). Interactive HTMX star rating widget with instant left-to-right JavaScript cascade hover animations (hovering star $N$ lights up stars $1 \dots N$ gold with `scale(1.2)`). Users can rate already-watched OR unstreamed titles directly from Movie/Series detail pages (`/movies/<id>/`, `/series/<id>/`), Watchlist (`/library/`), and Watch History (`/history/`). Powers `RecommendationEngine` by weighting 4–5 star titles (+5 affinity), 3 star titles (+2 affinity), and 1–2 star titles (-2 penalty) and driving "Because You Watched / Loved" suggestions. |
+| **Multi-Tab Watch History & Rated Hub** | `apps/watch/`, `templates/watch/history.html` | Dual-tab history dashboard featuring: (1) **Streamed History** with grouped timeline rails (*Today, Yesterday, This Week, Earlier*), progress bars, and single-item removal, and (2) **Rated Titles** tab displaying a dedicated poster grid of all user-rated content with live star badges and in-place rating adjustments. |
 | **Multi-Server Online Playback** | `apps/playback/` | Full multi-server web player with 6 streaming providers: **VidLink** (Primary Fast 1080p HD, Default), **VidFast** (4K Ultra HD), **AutoEmbed**, **VidSrc** (UHD/HD active mirror `vidsrc.pm`), **2Embed**, **NontonGo**. Fullscreen overlay preservation, direct hover server switcher dropdown, wildcard origin iframe permissions (`allow="fullscreen *; ..."` allowing embedded player internal fullscreen), universal `document.documentElement` fullscreen toggle button, resume prompt threshold ($\ge 30$s), active beacon progress tracking ($\ge 15$s), 3.5s pause auto-hide. |
-| **Season Total Runtime & Analytics Engine** | `apps/catalog/`, `apps/watch/` | Aggregates individual episode runtimes per TV season via `format_season_runtime` in `apps/catalog/views.py`. Displays duration badges directly on season selector tabs (`Season 1 • 6h 38m`) and episode list meta headers (`Season 1 • 8 Episodes • 6h 38m Total`). Aggregates user watch history by season badges (`Season 1: 5.4 hrs`) in Personal Analytics & Filvora Wrapped (`/analytics/`). |
+| **Season Total Runtime & Analytics Engine** | `apps/catalog/`, `apps/watch/` | Aggregates individual episode runtimes per TV season via `format_season_runtime` in `apps/catalog/views.py`. Displays duration badges directly on season selector tabs (`Season 1 • 6h 38m`) and episode list meta headers (`Season 1 • 8 Episodes • 6h 38m Total`). Aggregates user watch history by season badges (`Season 1: 5.4 hrs`) in Personal Analytics & Filvora Wrapped (`/analytics/`), with 5-metric dashboard including **Avg Rating** and total rated counts. |
 | **Dynamic Age Ratings Engine** | `apps/tmdb/client.py` | Automatically extracts official release certifications (`PG`, `PG-13`, `R`, `TV-MA`) from TMDB and caches them in singleton `_RATING_CACHE[media_type:tmdb_id]` across all views. Ensures 100% rating consistency between cards and detail pages. |
 | **Balanced Responsive Grid Engine** | `apps/tmdb/client.py` | `_fetch_paginated_24` windowing creates perfectly full, even rows of 24 titles per page (Desktop: 4 rows of 6; Laptop: 6 rows of 4; Tablet: 8 rows of 3; Mobile: 12 rows of 2). |
 | **Multi-Page Discover Engine** | `apps/catalog/` | Faceted multi-page discovery filtering by Media Type (`movie`/`tv`), Mood, Genre, Language, Score, Certification (`G`, `PG`, `PG-13`, `R`, `NC-17`), and Sort Order with preserved query parameters across pagination. |
-| **Library & Collections** | `apps/library/` | One-click Watchlist toggling via HTMX, custom user collections, and playlist management. |
+| **Library & Collections** | `apps/library/` | One-click Watchlist toggling via HTMX, custom user collections, playlist management, and inline star rating controls. |
 | **Multi-Profile & Kids Safety Mode** | `apps/accounts/` | Multi-profile switching with custom avatars and `is_kids` boolean flag enforcing server-side `certification.lte=PG` content filtering. |
 | **Homepage Cinematic Billboard** | `templates/home/index.html` | Hero spotlight billboard with backdrop image blending, action buttons (Play Now, In My List, Details), and responsive spacing avoiding overlap with the "Continue Watching" rail. |
 | **Mobile-First UX & App Navigation** | `templates/base.html`, `static/css/main.css` | Native app-like mobile experience with iOS/Android safe area insets (`env(safe-area-inset-bottom)`), active pill bottom navigation, mobile poster rating badges (visible without hover), full-width touch CTA buttons on detail views, horizontal touch-swipe season selector rails, and search bar boundary bounds. |
-| **UI Polish & Controls** | `static/css/`, `static/js/` | Clean Tailwind SVGs (no emojis), suppressed native horizontal scrollbars on carousels/rails, rail drag-scroll, keyboard shortcuts (<kbd>F</kbd> for fullscreen, <kbd>Space</kbd> for play/pause, <kbd>M</kbd> for mute, <kbd>Alt</kbd>+<kbd>S</kbd> for server switch). |
+| **Zero Emojis / Strict SVG Design** | `static/css/`, `static/js/`, `templates/` | 100% clean Tailwind SVGs across all components (metrics, badges, fallback posters, dropdowns, bat launcher, buttons). Suppressed native horizontal scrollbars on carousels/rails, rail drag-scroll, keyboard shortcuts (<kbd>F</kbd> for fullscreen, <kbd>Space</kbd> for play/pause, <kbd>M</kbd> for mute, <kbd>Alt</kbd>+<kbd>S</kbd> for server switch). |
 
 ---
 
@@ -69,10 +73,6 @@
 - **Focus Context & Keyboard Shortcuts**:
   - Clicking inside an external iframe transfers browser keyboard focus into the cross-origin frame. Because third-party embed scripts do not intercept the <kbd>F</kbd> key, key events are not processed while the iframe retains focus.
   - Moving the mouse cursor into the top 120px sensor or hovering over the top navigation automatically invokes `window.focus()`, immediately restoring Filvora's global keyboard shortcut listeners (<kbd>F</kbd> for Fullscreen, <kbd>Alt</kbd>+<kbd>S</kbd> for server switch, <kbd>Esc</kbd> for exit).
-- **Player Quality Controls & Adaptive Bitrate (ABR)**:
-  - Third-party streaming servers (`VidFast`, `VidLink`, etc.) utilize Adaptive Bitrate Streaming (HLS / m3u8 manifests).
-  - The video manifest dynamically delivers the peak available bitrate and resolution (1080p HD or 4K UHD) supported by the client connection.
-  - Because streams are served as single-rendition peak files or automated ABR manifests, the player's internal settings menu (`⚙️`) defaults to displaying **"Playback Speed"** rather than a manual ladder selection menu.
 
 ---
 
@@ -91,7 +91,6 @@
      - `services/`: Filename sanitization service, isolated per-job storage (`media/downloads/temp/`), dual-mode downloader (`curl` + `requests` with chunk streaming), FFmpeg processor, validator, and orphan cleanup.
      - `providers/`: `DownloadProvider` abstract interface and registry.
      - `tests.py`: **34 comprehensive unit tests** all passing 100%.
-   - **Future Reactivation**: If direct download mirrors, authorized storage backends, or stream resolvers are added in the future, the download feature can be reactivated simply by connecting a provider and adding the UI button back.
 
 ---
 
@@ -100,11 +99,11 @@
 ```text
 Filvora/
 ├── apps/
-│   ├── core/                  # Homepage views, recommendation engine, backup command
-│   ├── catalog/               # Browse, discover, mood explorer, genres, person profiles
+│   ├── core/                  # Homepage views, recommendation engine (weighted with ratings), backup command
+│   ├── catalog/               # Browse, discover, mood explorer, genres, person profiles, detail views with ratings
 │   ├── playback/              # Video player view, provider registry, server switcher, diagnostics
-│   ├── watch/                 # Watch progress beacon, watch history, analytics & Wrapped
-│   ├── library/               # Watchlist, custom collections & playlists
+│   ├── watch/                 # WatchProgress & UserRating models, history (with tabs), analytics & Wrapped
+│   ├── library/               # Watchlist, custom collections & playlists with rating support
 │   ├── downloads/             # Standby download pipeline, DownloadJob model, services & 34 tests
 │   ├── tmdb/                  # TMDB API client with curl/requests fallback & caching
 │   └── accounts/              # Authentication & UserProfile multi-profile switcher
@@ -119,15 +118,16 @@ Filvora/
 │   ├── docker-compose.yml     # Multi-container web + proxy stack
 │   └── README.md              # Remote access & Tailscale/Cloudflare guide
 ├── static/
-│   ├── css/main.css           # Glassmorphism, animations, scrollbar-hide styles
-│   ├── js/main.js             # Rail drag-scroll, keyboard shortcuts, toast engine
+│   ├── css/main.css           # Glassmorphism, animations, scrollbar-hide styles, star cascade hover CSS
+│   ├── js/main.js             # Rail drag-scroll, keyboard shortcuts, toast engine, star rating hover engine
 │   ├── manifest.json          # PWA Web App Manifest
 │   └── sw.js                  # PWA Service Worker caching
+├── Start Filvora.bat          # Double-clickable launcher for Windows (venv check, migrations, browser launch)
 └── templates/
     ├── base.html              # Base layout with navbar, footer, PWA meta & bottom nav
-    ├── components/            # Reusable partials (movie_card, series_card, empty_state)
+    ├── components/            # Reusable partials (movie_card, series_card, empty_state, rating_stars)
     ├── catalog/               # Browse, discover, genres, and person detail views
-    ├── watch/                 # History and Personal Analytics (Wrapped) templates
+    ├── watch/                 # History (Streamed & Rated tabs) and Personal Analytics (Wrapped) templates
     ├── downloads/             # Standby download dashboard & dialog partials
     ├── library/               # Watchlist and custom collections manager
     ├── accounts/              # Sign in, registration, and profile switcher
@@ -145,13 +145,14 @@ Filvora/
 2. **Git Commit & Push**:
    - Always stage, commit with clear semantic messages, and `git push origin main` after completing tasks.
    - Do NOT commit the `FILVORA_PHASED_WORK_GUIDE` folder.
-3. **Play Icon SVGs**:
+3. **Play Icon SVGs & No Emoji Policy**:
    - Never use double-circle `play-circle` inside circular buttons. Always use solid geometric play triangle:
      ```html
      <svg class="w-4 h-4 fill-white translate-x-0.5" viewBox="0 0 24 24">
          <path d="M8 5v14l11-7z"/>
      </svg>
      ```
+   - Never use emoji characters (e.g. 🎬, 📺, ⭐, 🏆) in HTML templates, options, or scripts. Always use clean Tailwind SVG icons.
 4. **HTMX Event Propagation**:
    - Nested action buttons inside clickable cards must include `onclick="event.preventDefault(); event.stopPropagation();"`.
 5. **No Fake / Deceptive Content**:
@@ -162,10 +163,13 @@ Filvora/
 ## 5. Useful Commands & Credentials Reference
 
 ```powershell
-# Run Development Server (accessible locally and on LAN)
+# Double-click launcher (or run in shell)
+.\Start Filvora.bat
+
+# Run Development Server manually
 .\venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000
 
-# Run Automated Test Suite (89 tests across 8 apps)
+# Run Automated Test Suite (97 tests across 8 apps)
 .\venv\Scripts\python.exe manage.py test apps.core apps.catalog apps.playback apps.library apps.watch apps.tmdb apps.accounts apps.downloads
 
 # Backup Local Database
@@ -178,4 +182,3 @@ Filvora/
 ### Local Test Accounts:
 - **Main User**: `moon` (Password: `1234`)
 - **Superuser**: `admin` (Password: `1234`)
-
