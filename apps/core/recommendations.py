@@ -89,17 +89,23 @@ class RecommendationEngine:
         if not user or not user.is_authenticated:
             return None
 
-        latest_progress = WatchProgress.objects.filter(user=user, position_seconds__gt=30).order_by('-updated_at').first()
-        if not latest_progress:
-            # Fallback to latest library item
-            latest_lib = LibraryItem.objects.filter(user=user).order_by('-added_at').first()
-            if not latest_lib:
-                return None
-            mtype = latest_lib.media_type
-            tid = latest_lib.tmdb_id
+        # Priority 1: Top user-rated title (score >= 4)
+        top_rated = UserRating.objects.filter(user=user, score__gte=4).order_by('-updated_at').first()
+        if top_rated:
+            mtype = top_rated.media_type
+            tid = top_rated.tmdb_id
         else:
-            mtype = latest_progress.media_type
-            tid = latest_progress.tmdb_id
+            latest_progress = WatchProgress.objects.filter(user=user, position_seconds__gt=30).order_by('-updated_at').first()
+            if not latest_progress:
+                # Fallback to latest library item
+                latest_lib = LibraryItem.objects.filter(user=user).order_by('-added_at').first()
+                if not latest_lib:
+                    return None
+                mtype = latest_lib.media_type
+                tid = latest_lib.tmdb_id
+            else:
+                mtype = latest_progress.media_type
+                tid = latest_progress.tmdb_id
 
         if mtype == 'movie':
             details = self.client.get_movie_details(tid)

@@ -132,9 +132,14 @@
                     </div>
                 </div>
             </div>
-            <div class="mt-2 px-1">
-                <p class="text-xs sm:text-sm font-bold text-white truncate block hover:text-brand-500 transition">{{ item.display_title }}</p>
-                <p class="text-[10px] uppercase font-bold text-gray-400 mt-0.5">{{ item.media_type|default:'movie' }}</p>
+            <div class="mt-2 px-1 space-y-1">
+                <a href="{% if item.media_type == 'movie' %}/movies/{{ item.id }}/{% else %}/series/{{ item.id }}/{% endif %}" class="text-xs sm:text-sm font-bold text-white truncate block hover:text-brand-500 transition">{{ item.display_title }}</a>
+                <div class="flex items-center justify-between gap-1">
+                    <span class="text-[10px] uppercase font-bold text-gray-400">{{ item.media_type|default:'movie' }}</span>
+                </div>
+                <div class="pt-0.5">
+                    {% include 'components/rating_stars.html' with tmdb_id=item.id media_type=item.media_type|default:'movie' rating_score=item.rating_score star_range=star_range %}
+                </div>
             </div>
         </div>
         {% endfor %}

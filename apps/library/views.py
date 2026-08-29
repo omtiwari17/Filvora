@@ -10,22 +10,31 @@ def my_list(request):
     custom_collections = CustomCollection.objects.filter(user=request.user).prefetch_related('items')
     client = TMDBClient()
     
+    from apps.watch.models import UserRating
+    user_ratings = {
+        (r.tmdb_id, r.media_type): r.score
+        for r in UserRating.objects.filter(user=request.user)
+    }
+
     saved_items = []
     for item in items:
         if item.media_type == 'movie':
             data = client.get_movie(item.tmdb_id)
             data['media_type'] = 'movie'
             data['display_title'] = data.get('title', '')
+            data['rating_score'] = user_ratings.get((item.tmdb_id, 'movie'), 0)
             saved_items.append(data)
         elif item.media_type == 'tv':
             data = client.get_tv(item.tmdb_id)
             data['media_type'] = 'tv'
             data['display_title'] = data.get('name', '')
+            data['rating_score'] = user_ratings.get((item.tmdb_id, 'tv'), 0)
             saved_items.append(data)
             
     return render(request, 'library/list.html', {
         'saved_items': saved_items,
         'custom_collections': custom_collections,
+        'star_range': [1, 2, 3, 4, 5],
     })
 
 @login_required
