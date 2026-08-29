@@ -1,17 +1,17 @@
-<!-- Reusable Star Rating Component (HTMX-powered with cascade hover animation) -->
+<!-- Reusable Star Rating Component (HTMX-powered with instant hover animation) -->
 <!-- Required context: tmdb_id, media_type, rating_score (0 = unrated, 1-5 = rated) -->
 <div id="rating-widget-{{ tmdb_id }}" class="inline-flex items-center gap-2">
-    <div class="star-rating-group gap-0.5" role="radiogroup" aria-label="Rate this title">
-        <!-- Render in reverse order (5 down to 1) so CSS sibling selector (~ .star-rating-btn) fills all preceding stars on hover -->
-        {% for star_val in "54321" %}
+    <div class="star-rating-container inline-flex items-center gap-0.5" data-score="{{ rating_score|default:0 }}" role="radiogroup" aria-label="Rate this title">
+        {% for star_val in "12345" %}
         <button hx-post="/progress/rate/"
                 hx-vals='{"tmdb_id": "{{ tmdb_id }}", "media_type": "{{ media_type }}", "score": "{{ star_val }}"}'
                 hx-target="#rating-widget-{{ tmdb_id }}"
                 hx-swap="outerHTML"
                 onclick="event.preventDefault(); event.stopPropagation();"
+                data-star="{{ star_val }}"
                 title="Rate {{ star_val }} out of 5"
-                class="star-rating-btn p-0.5 focus:outline-none cursor-pointer {% if rating_score >= star_val|add:'0' %}text-yellow-400{% else %}text-gray-600{% endif %}">
-            <svg class="w-5 h-5 drop-shadow-sm fill-current" viewBox="0 0 20 20">
+                class="star-btn p-0.5 transition-all duration-150 transform focus:outline-none cursor-pointer {% if rating_score >= star_val|add:'0' %}text-yellow-400{% else %}text-gray-600{% endif %}">
+            <svg class="w-5 h-5 drop-shadow-sm fill-current transition-colors duration-150" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
             </svg>
         </button>

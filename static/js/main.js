@@ -295,3 +295,52 @@ function initHorizontalRails() {
         }, true);
     });
 }
+
+// --- Dynamic Star Rating Hover Animation ---
+function initStarRatingHover() {
+    document.addEventListener('mouseover', (e) => {
+        const btn = e.target.closest('.star-btn');
+        if (!btn) return;
+        const container = btn.closest('.star-rating-container');
+        if (!container) return;
+        const hoverVal = parseInt(btn.dataset.star || '0', 10);
+        const stars = container.querySelectorAll('.star-btn');
+        stars.forEach(s => {
+            const val = parseInt(s.dataset.star || '0', 10);
+            const svg = s.querySelector('svg');
+            if (val <= hoverVal) {
+                s.classList.add('text-yellow-400', 'scale-125');
+                s.classList.remove('text-gray-600');
+                if (svg) svg.classList.add('text-yellow-400');
+            } else {
+                s.classList.remove('text-yellow-400', 'scale-125');
+                s.classList.add('text-gray-600');
+                if (svg) svg.classList.remove('text-yellow-400');
+            }
+        });
+    });
+
+    document.addEventListener('mouseout', (e) => {
+        const container = e.target.closest('.star-rating-container');
+        if (!container) return;
+        // Check if cursor actually left the container
+        if (e.relatedTarget && container.contains(e.relatedTarget)) return;
+        const currentScore = parseInt(container.dataset.score || '0', 10);
+        const stars = container.querySelectorAll('.star-btn');
+        stars.forEach(s => {
+            const val = parseInt(s.dataset.star || '0', 10);
+            const svg = s.querySelector('svg');
+            s.classList.remove('scale-125');
+            if (val <= currentScore) {
+                s.classList.add('text-yellow-400');
+                s.classList.remove('text-gray-600');
+                if (svg) svg.classList.add('text-yellow-400');
+            } else {
+                s.classList.remove('text-yellow-400');
+                s.classList.add('text-gray-600');
+                if (svg) svg.classList.remove('text-yellow-400');
+            }
+        });
+    });
+}
+initStarRatingHover();
