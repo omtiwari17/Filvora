@@ -174,3 +174,24 @@ button, a, input, select {
         transform: translateX(0) scale(1);
     }
 }
+
+/* Interactive Star Rating Hover Cascade */
+.star-rating-group {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    align-items: center;
+}
+
+.star-rating-btn {
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s ease;
+}
+
+.star-rating-btn:hover,
+.star-rating-btn:hover ~ .star-rating-btn {
+    color: #facc15 !important; /* Tailwind yellow-400 */
+    transform: scale(1.2);
+}
+
+.star-rating-btn:active {
+    transform: scale(0.95);
+}
