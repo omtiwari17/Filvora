@@ -1,5 +1,5 @@
 /**
- * Filvora v2.0 - Core Application JavaScript
+ * Filvora v2.1 - Core Application JavaScript
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -89,7 +89,7 @@ function toggleShortcutsModal() {
             <div class="bg-gray-900 border border-gray-700/80 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
                 <div class="flex items-center justify-between border-b border-gray-800 pb-3">
                     <div class="flex items-center gap-2">
-                        <span class="bg-brand-500 text-white text-xs font-black px-2 py-0.5 rounded">v2.0</span>
+                        <span class="bg-brand-500 text-white text-xs font-black px-2 py-0.5 rounded">v2.1</span>
                         <h3 class="text-lg font-bold text-white">Keyboard Shortcuts</h3>
                     </div>
                     <button onclick="document.getElementById('shortcuts-modal').classList.add('hidden');" class="text-gray-400 hover:text-white text-xl font-bold p-1">&times;</button>
