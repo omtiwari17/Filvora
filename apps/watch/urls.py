@@ -9,4 +9,7 @@ urlpatterns = [
     path('history/', views.history_view, name='history'),
     path('history/clear/', views.clear_history, name='clear_history'),
     path('analytics/', views.analytics_view, name='analytics'),
+    path('rate/', views.rate_content, name='rate_content'),
+    path('rate/remove/', views.remove_rating, name='remove_rating'),
 ]
+

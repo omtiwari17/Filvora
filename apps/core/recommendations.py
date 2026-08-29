@@ -1,6 +1,6 @@
 from collections import Counter
 from apps.tmdb.client import TMDBClient
-from apps.watch.models import WatchProgress
+from apps.watch.models import WatchProgress, UserRating
 from apps.library.models import LibraryItem
 
 class RecommendationEngine:
@@ -40,6 +40,27 @@ class RecommendationEngine:
                 gid = g.get('id') if isinstance(g, dict) else g
                 if gid:
                     genre_counts[gid] += 2
+
+        # 3. Signals from User Ratings (strongest personalization signal)
+        rated_items = UserRating.objects.filter(user=user).order_by('-updated_at')[:20]
+        for r in rated_items:
+            if r.media_type == 'movie':
+                details = self.client.get_movie_details(r.tmdb_id)
+            else:
+                details = self.client.get_tv_details(r.tmdb_id)
+
+            # High ratings (4-5) = strong positive signal, low (1-2) = negative signal
+            if r.score >= 4:
+                weight = 5
+            elif r.score == 3:
+                weight = 2
+            else:
+                weight = -2
+
+            for g in details.get('genres', []):
+                gid = g.get('id') if isinstance(g, dict) else g
+                if gid:
+                    genre_counts[gid] += weight
 
         # Return top genres sorted by frequency
         return [gid for gid, _ in genre_counts.most_common(3)]

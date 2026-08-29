@@ -39,3 +39,31 @@ class WatchProgress(models.Model):
             pct = (self.position_seconds / self.duration_seconds) * 100
             return min(100, max(0, round(pct, 1)))
         return 0.0
+
+
+class UserRating(models.Model):
+    MEDIA_TYPE_CHOICES = [
+        ('movie', 'Movie'),
+        ('tv', 'TV Series'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ratings')
+    tmdb_id = models.IntegerField()
+    media_type = models.CharField(max_length=10, choices=MEDIA_TYPE_CHOICES, default='movie')
+    score = models.IntegerField()  # 1-5 stars
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        app_label = 'watch'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'tmdb_id', 'media_type'],
+                name='unique_user_content_rating'
+            )
+        ]
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.user.username} rated {self.media_type}:{self.tmdb_id} = {self.score}/5"
+

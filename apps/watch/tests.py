@@ -1,7 +1,8 @@
 import json
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
-from apps.watch.models import WatchProgress
+from apps.watch.models import WatchProgress, UserRating
+
 
 class WatchTestCase(TestCase):
     def setUp(self):
@@ -144,6 +145,106 @@ class WatchTestCase(TestCase):
         self.assertEqual(series_item['formatted_seasons'][0]['play_time_str'], '1.0 hrs')
         self.assertEqual(series_item['formatted_seasons'][1]['season_number'], 2)
         self.assertEqual(series_item['formatted_seasons'][1]['play_time_str'], '30 mins')
+
+
+class UserRatingTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='rateuser', password='password123')
+
+    def test_rate_content_json(self):
+        self.client.login(username='rateuser', password='password123')
+        payload = {'tmdb_id': 550, 'media_type': 'movie', 'score': 4}
+        response = self.client.post(
+            '/progress/rate/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['status'], 'ok')
+        self.assertEqual(data['score'], 4)
+        self.assertTrue(data['created'])
+        self.assertTrue(UserRating.objects.filter(user=self.user, tmdb_id=550, score=4).exists())
+
+    def test_rate_content_update(self):
+        self.client.login(username='rateuser', password='password123')
+        UserRating.objects.create(user=self.user, tmdb_id=550, media_type='movie', score=3)
+        payload = {'tmdb_id': 550, 'media_type': 'movie', 'score': 5}
+        response = self.client.post(
+            '/progress/rate/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['score'], 5)
+        self.assertFalse(data['created'])
+        self.assertEqual(UserRating.objects.get(user=self.user, tmdb_id=550).score, 5)
+
+    def test_rate_content_invalid_score(self):
+        self.client.login(username='rateuser', password='password123')
+        payload = {'tmdb_id': 550, 'media_type': 'movie', 'score': 6}
+        response = self.client.post(
+            '/progress/rate/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_rate_content_zero_score(self):
+        self.client.login(username='rateuser', password='password123')
+        payload = {'tmdb_id': 550, 'media_type': 'movie', 'score': 0}
+        response = self.client.post(
+            '/progress/rate/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_remove_rating(self):
+        self.client.login(username='rateuser', password='password123')
+        UserRating.objects.create(user=self.user, tmdb_id=550, media_type='movie', score=4)
+        response = self.client.post(
+            '/progress/rate/remove/',
+            data=json.dumps({'tmdb_id': 550, 'media_type': 'movie'}),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(UserRating.objects.filter(user=self.user, tmdb_id=550).exists())
+
+    def test_rate_requires_login(self):
+        payload = {'tmdb_id': 550, 'media_type': 'movie', 'score': 4}
+        response = self.client.post(
+            '/progress/rate/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 302)  # Redirect to login
+
+    def test_rate_tv_series(self):
+        self.client.login(username='rateuser', password='password123')
+        payload = {'tmdb_id': 1399, 'media_type': 'tv', 'score': 5}
+        response = self.client.post(
+            '/progress/rate/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(UserRating.objects.filter(user=self.user, tmdb_id=1399, media_type='tv', score=5).exists())
+
+    def test_unique_constraint(self):
+        self.client.login(username='rateuser', password='password123')
+        UserRating.objects.create(user=self.user, tmdb_id=550, media_type='movie', score=3)
+        # Rating same content again should update, not create duplicate
+        payload = {'tmdb_id': 550, 'media_type': 'movie', 'score': 5}
+        self.client.post(
+            '/progress/rate/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(UserRating.objects.filter(user=self.user, tmdb_id=550, media_type='movie').count(), 1)
+
 
 
 

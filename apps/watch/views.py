@@ -2,7 +2,9 @@ import json
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
-from .models import WatchProgress
+from .models import WatchProgress, UserRating
+
+
 
 @csrf_exempt
 @login_required
@@ -85,6 +87,11 @@ def history_view(request):
         'Earlier': []
     }
 
+    # Pre-fetch all user ratings for quick lookup
+    user_ratings = {}
+    for r in UserRating.objects.filter(user=request.user):
+        user_ratings[(r.tmdb_id, r.media_type)] = r.score
+
     for p in items:
         item_date = p.updated_at.date()
         if p.media_type == 'movie':
@@ -107,6 +114,7 @@ def history_view(request):
         data['progress_percentage'] = p.progress_percentage
         data['completed'] = p.completed
         data['updated_at'] = p.updated_at
+        data['rating_score'] = user_ratings.get((p.tmdb_id, p.media_type), 0)
 
         if item_date == today:
             grouped_history['Today'].append(data)
@@ -122,7 +130,8 @@ def history_view(request):
 
     return render(request, 'watch/history.html', {
         'grouped_history': active_groups,
-        'total_items': len(items)
+        'total_items': len(items),
+        'star_range': [1, 2, 3, 4, 5],
     })
 
 @csrf_exempt
@@ -159,6 +168,94 @@ def clear_history(request):
     if request.method == 'POST':
         WatchProgress.objects.filter(user=request.user).delete()
     return redirect('/watch/history/')
+
+
+@csrf_exempt
+@login_required
+def rate_content(request):
+    """HTMX endpoint: create or update a user rating (1-5 stars)."""
+    if request.method != 'POST':
+        return HttpResponseBadRequest("POST required")
+
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
+        tmdb_id = int(data.get('tmdb_id'))
+        media_type = data.get('media_type', 'movie')
+        score = int(data.get('score', 0))
+
+        if score < 1 or score > 5:
+            return JsonResponse({'status': 'error', 'message': 'Score must be 1-5'}, status=400)
+
+        rating, created = UserRating.objects.update_or_create(
+            user=request.user,
+            tmdb_id=tmdb_id,
+            media_type=media_type,
+            defaults={'score': score}
+        )
+
+        # Return HTMX partial: re-render the star widget with the new score
+        if request.headers.get('HX-Request'):
+            from django.template.loader import render_to_string
+            html = render_to_string('components/rating_stars.html', {
+                'rating_score': score,
+                'tmdb_id': tmdb_id,
+                'media_type': media_type,
+                'star_range': [1, 2, 3, 4, 5],
+            })
+            from django.http import HttpResponse
+            return HttpResponse(html)
+
+        return JsonResponse({
+            'status': 'ok',
+            'score': score,
+            'created': created,
+        })
+    except (ValueError, TypeError, KeyError) as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+@login_required
+def remove_rating(request):
+    """HTMX endpoint: delete a user rating."""
+    if request.method != 'POST':
+        return HttpResponseBadRequest("POST required")
+
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
+        tmdb_id = int(data.get('tmdb_id'))
+        media_type = data.get('media_type', 'movie')
+
+        UserRating.objects.filter(
+            user=request.user,
+            tmdb_id=tmdb_id,
+            media_type=media_type
+        ).delete()
+
+        if request.headers.get('HX-Request'):
+            from django.template.loader import render_to_string
+            html = render_to_string('components/rating_stars.html', {
+                'rating_score': 0,
+                'tmdb_id': tmdb_id,
+                'media_type': media_type,
+                'star_range': [1, 2, 3, 4, 5],
+            })
+            from django.http import HttpResponse
+            return HttpResponse(html)
+
+        return JsonResponse({'status': 'ok', 'message': 'Rating removed'})
+    except (ValueError, TypeError, KeyError) as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
 
 @login_required
 def analytics_view(request):
@@ -274,6 +371,11 @@ def analytics_view(request):
             data = client.get_tv(longest_p.tmdb_id)
             most_watched_title = data.get('name', f"Series {longest_p.tmdb_id}")
 
+    # User rating stats
+    all_ratings = list(UserRating.objects.filter(user=request.user).values_list('score', flat=True))
+    total_ratings = len(all_ratings)
+    avg_rating = round(sum(all_ratings) / total_ratings, 1) if total_ratings > 0 else 0
+
     return render(request, 'watch/analytics.html', {
         'total_hours': total_hours,
         'total_movies': total_movies,
@@ -283,7 +385,9 @@ def analytics_view(request):
         'favorite_genre': favorite_genre,
         'most_watched_title': most_watched_title,
         'total_titles': len(items),
-        'series_season_list': series_season_list
+        'series_season_list': series_season_list,
+        'avg_rating': avg_rating,
+        'total_ratings': total_ratings,
     })
 
 

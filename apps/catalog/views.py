@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from apps.tmdb.client import TMDBClient
 from apps.library.models import LibraryItem
+from apps.watch.models import UserRating
 
 def get_pagination_context(page, total_pages=500):
     try:
@@ -91,12 +92,23 @@ def movie_detail(request, tmdb_id):
     if 'recommendations' in movie and 'results' in movie['recommendations']:
         recommendations = movie['recommendations']['results'][:10]
 
+    # Get user's existing rating for this movie
+    user_rating = 0
+    if request.user.is_authenticated:
+        rating_obj = UserRating.objects.filter(
+            user=request.user, tmdb_id=tmdb_id, media_type='movie'
+        ).first()
+        if rating_obj:
+            user_rating = rating_obj.score
+
     return render(request, 'catalog/movie_detail.html', {
         'movie': movie,
         'in_library': in_library,
         'user_saved_ids': user_saved_ids,
         'cast': cast,
         'recommendations': recommendations,
+        'user_rating': user_rating,
+        'star_range': [1, 2, 3, 4, 5],
     })
 
 def series_browse(request):
@@ -212,6 +224,15 @@ def series_detail(request, tmdb_id):
     initial_season_runtime = seasons[0].get('total_hours_formatted', '') if seasons else ''
     initial_season_decimal = seasons[0].get('total_hours_decimal', '') if seasons else ''
 
+    # Get user's existing rating for this series
+    user_rating = 0
+    if request.user.is_authenticated:
+        rating_obj = UserRating.objects.filter(
+            user=request.user, tmdb_id=tmdb_id, media_type='tv'
+        ).first()
+        if rating_obj:
+            user_rating = rating_obj.score
+
     return render(request, 'catalog/series_detail.html', {
         'series': series,
         'in_library': in_library,
@@ -221,6 +242,8 @@ def series_detail(request, tmdb_id):
         'episodes': episodes,
         'initial_season_runtime': initial_season_runtime,
         'initial_season_decimal': initial_season_decimal,
+        'user_rating': user_rating,
+        'star_range': [1, 2, 3, 4, 5],
     })
 
 

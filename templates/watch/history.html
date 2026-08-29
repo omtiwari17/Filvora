@@ -98,6 +98,11 @@
                                 <div class="h-full bg-brand-500" style="width: {{ item.progress_percentage }}%;"></div>
                             </div>
                         </div>
+
+                        <!-- Inline Rating -->
+                        <div class="mt-1.5">
+                            {% include 'components/rating_stars.html' with tmdb_id=item.id media_type=item.media_type rating_score=item.rating_score star_range=star_range %}
+                        </div>
                     </div>
                 </div>
                 {% endfor %}

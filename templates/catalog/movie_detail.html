@@ -97,6 +97,14 @@
                     </button>
                 </div>
 
+                <!-- User Rating -->
+                {% if user.is_authenticated %}
+                <div class="flex items-center gap-3 pt-3">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Your Rating</span>
+                    {% include 'components/rating_stars.html' with tmdb_id=movie.id media_type='movie' rating_score=user_rating star_range=star_range %}
+                </div>
+                {% endif %}
+
                 <!-- Overview -->
                 <div class="pt-4 max-w-3xl">
                     <h2 class="text-lg sm:text-xl font-bold text-white mb-2 flex items-center gap-2">
