@@ -304,16 +304,26 @@ class TMDBClient:
 
         if category == 'trending':
             endpoint = "/trending/movie/day"
+            params = {}
         elif category == 'top_rated':
             endpoint = "/movie/top_rated"
+            params = {}
         elif category == 'now_playing':
             endpoint = "/movie/now_playing"
+            params = {}
         elif category == 'upcoming':
-            endpoint = "/movie/upcoming"
+            import datetime
+            today_str = datetime.date.today().isoformat()
+            endpoint = "/discover/movie"
+            params = {
+                'primary_release_date.gte': today_str,
+                'sort_by': 'popularity.desc'
+            }
         else:
             endpoint = "/movie/popular"
+            params = {}
 
-        return self._fetch_paginated_24(endpoint, {}, page=page, media_type='movie', kids_only=kids_only)
+        return self._fetch_paginated_24(endpoint, params, page=page, media_type='movie', kids_only=kids_only)
 
     def get_series_catalog(self, category='popular', genre_id=None, sort_by='popularity.desc', page=1, kids_only=False):
         if genre_id or sort_by != 'popularity.desc':
