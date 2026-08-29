@@ -89,7 +89,8 @@ def history_view(request):
 
     # Pre-fetch all user ratings for quick lookup
     user_ratings = {}
-    for r in UserRating.objects.filter(user=request.user):
+    rated_items_records = list(UserRating.objects.filter(user=request.user).order_by('-updated_at'))
+    for r in rated_items_records:
         user_ratings[(r.tmdb_id, r.media_type)] = r.score
 
     for p in items:
@@ -125,12 +126,36 @@ def history_view(request):
         else:
             grouped_history['Earlier'].append(data)
 
+    # Build standalone Rated Titles list (including unstreamed titles that were rated)
+    rated_titles = []
+    for r in rated_items_records:
+        if r.media_type == 'movie':
+            r_data = dict(client.get_movie(r.tmdb_id))
+            r_data['display_title'] = r_data.get('title', f"Movie {r.tmdb_id}")
+            r_data['sub_label'] = "Movie"
+            r_data['watch_url'] = f"/watch/movie/{r.tmdb_id}/"
+            r_data['detail_url'] = f"/movies/{r.tmdb_id}/"
+        else:
+            r_data = dict(client.get_tv(r.tmdb_id))
+            r_data['display_title'] = r_data.get('name', f"Series {r.tmdb_id}")
+            r_data['sub_label'] = "TV Series"
+            r_data['watch_url'] = f"/watch/tv/{r.tmdb_id}/1/1/"
+            r_data['detail_url'] = f"/series/{r.tmdb_id}/"
+
+        r_data['id'] = r.tmdb_id
+        r_data['media_type'] = r.media_type
+        r_data['rating_score'] = r.score
+        r_data['rated_at'] = r.updated_at
+        rated_titles.append(r_data)
+
     # Filter out empty date groups
     active_groups = {k: v for k, v in grouped_history.items() if v}
 
     return render(request, 'watch/history.html', {
         'grouped_history': active_groups,
         'total_items': len(items),
+        'rated_titles': rated_titles,
+        'total_rated': len(rated_titles),
         'star_range': [1, 2, 3, 4, 5],
     })
 
