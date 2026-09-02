@@ -70,68 +70,72 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {% for item in items %}
-                    <div class="history-item-card bg-gray-900/80 hover:bg-gray-900 border border-gray-800/80 hover:border-brand-500/60 rounded-2xl p-3.5 flex gap-3.5 transition group relative">
-                        <!-- Poster / Backdrop Thumbnail -->
-                        <div class="flex-none w-24 h-16 sm:w-28 sm:h-18 rounded-xl overflow-hidden bg-gray-950 relative">
-                            {% if item.backdrop_path %}
-                            <img src="https://image.tmdb.org/t/p/w300{{ item.backdrop_path }}" alt="{{ item.display_title }}" class="w-full h-full object-cover">
-                            {% elif item.poster_path %}
-                            <img src="https://image.tmdb.org/t/p/w185{{ item.poster_path }}" alt="{{ item.display_title }}" class="w-full h-full object-cover">
-                            {% else %}
-                            <div class="w-full h-full flex items-center justify-center text-gray-600 font-bold">
-                                <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg>
-                            </div>
-                            {% endif %}
-                            <!-- Play Overlay -->
-                            <a href="{{ item.watch_url }}" class="absolute inset-0 bg-black/40 hover:bg-black/20 flex items-center justify-center transition">
-                                <div class="w-7 h-7 rounded-full bg-brand-500 text-white flex items-center justify-center shadow-md">
-                                    <svg class="w-3.5 h-3.5 fill-white translate-x-0.5" viewBox="0 0 24 24">
-                                        <path d="M8 5v14l11-7z"/>
-                                    </svg>
+                    <div class="history-item-card bg-gray-900/80 hover:bg-gray-900/95 border border-gray-800/80 hover:border-brand-500/50 rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 shadow-md group relative gap-3">
+                        <!-- Top Row: Thumbnail + Info -->
+                        <div class="flex items-start gap-3">
+                            <!-- Poster / Backdrop Thumbnail -->
+                            <div class="flex-none w-24 h-16 sm:w-28 sm:h-18 rounded-xl overflow-hidden bg-gray-950 relative shadow-inner ring-1 ring-gray-800/80">
+                                {% if item.backdrop_path %}
+                                <img src="https://image.tmdb.org/t/p/w300{{ item.backdrop_path }}" alt="{{ item.display_title }}" class="w-full h-full object-cover">
+                                {% elif item.poster_path %}
+                                <img src="https://image.tmdb.org/t/p/w185{{ item.poster_path }}" alt="{{ item.display_title }}" class="w-full h-full object-cover">
+                                {% else %}
+                                <div class="w-full h-full flex items-center justify-center text-gray-600 font-bold">
+                                    <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg>
                                 </div>
-                            </a>
-                        </div>
+                                {% endif %}
+                                <!-- Play Overlay -->
+                                <a href="{{ item.watch_url }}" class="absolute inset-0 bg-black/40 hover:bg-black/20 flex items-center justify-center transition">
+                                    <div class="w-7 h-7 rounded-full bg-brand-500 text-white flex items-center justify-center shadow-md transform group-hover:scale-110 transition-transform">
+                                        <svg class="w-3.5 h-3.5 fill-white translate-x-0.5" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                    </div>
+                                </a>
+                            </div>
 
-                        <!-- Details -->
-                        <div class="flex-grow min-w-0 flex flex-col justify-between">
-                            <div>
-                                <div class="flex items-center justify-between gap-1">
-                                    <h4 class="text-xs sm:text-sm font-bold text-white truncate group-hover:text-brand-500 transition">{{ item.display_title }}</h4>
+                            <!-- Title & Sub label -->
+                            <div class="flex-grow min-w-0">
+                                <div class="flex items-start justify-between gap-1">
+                                    <h4 class="text-xs sm:text-sm font-bold text-white truncate group-hover:text-brand-500 transition" title="{{ item.display_title }}">{{ item.display_title }}</h4>
                                     <!-- Remove Single Item -->
                                     <button hx-post="/watch/remove/" 
                                             hx-vals='{"tmdb_id": "{{ item.id }}", "media_type": "{{ item.media_type }}"}'
                                             hx-target="closest .history-item-card"
                                             hx-swap="outerHTML swap:300ms"
                                             title="Remove from history"
-                                            class="text-gray-500 hover:text-red-400 p-1 transition">
+                                            class="text-gray-500 hover:text-red-400 p-0.5 transition shrink-0">
                                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                                         </svg>
                                     </button>
                                 </div>
-                                <p class="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1.5">
-                                    <span class="font-semibold text-gray-300">{{ item.sub_label }}</span>
+                                <div class="flex items-center gap-1.5 mt-1">
+                                    <span class="text-[10px] uppercase font-bold text-gray-400 bg-gray-950 px-1.5 py-0.5 rounded border border-gray-800">{{ item.sub_label }}</span>
                                     {% if item.completed %}
-                                    <span>•</span>
-                                    <span class="text-[9px] font-black text-emerald-400 bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.2 rounded">Watched</span>
+                                    <span class="text-[9px] font-black text-emerald-400 bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.5 rounded">Watched</span>
                                     {% endif %}
-                                </p>
+                                </div>
                             </div>
+                        </div>
 
+                        <!-- Bottom Row: Progress + Rating -->
+                        <div class="space-y-2 pt-1 border-t border-gray-800/60">
                             <!-- Progress Bar & Timings -->
-                            <div class="mt-2 space-y-1">
+                            <div class="space-y-1">
                                 <div class="flex items-center justify-between text-[10px] text-gray-400 font-mono">
                                     <span>{{ item.position_formatted }} / {{ item.duration_formatted }}</span>
-                                    <span>{{ item.progress_percentage }}%</span>
+                                    <span class="font-bold text-gray-300">{{ item.progress_percentage }}%</span>
                                 </div>
-                                <div class="h-1 bg-gray-800 rounded-full overflow-hidden">
-                                    <div class="h-full bg-brand-500" style="width: {{ item.progress_percentage }}%;"></div>
+                                <div class="h-1 bg-gray-950 rounded-full overflow-hidden border border-gray-800/60">
+                                    <div class="h-full bg-brand-500 rounded-full" style="width: {{ item.progress_percentage }}%;"></div>
                                 </div>
                             </div>
 
-                            <!-- Inline Rating -->
-                            <div class="mt-1.5">
-                                {% include 'components/rating_stars.html' with tmdb_id=item.id media_type=item.media_type rating_score=item.rating_score star_range=star_range %}
+                            <!-- Inline Rating Bar -->
+                            <div class="flex items-center justify-between pt-0.5">
+                                <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Your Rating:</span>
+                                {% include 'components/rating_stars.html' with tmdb_id=item.id media_type=item.media_type rating_score=item.rating_score star_range=star_range compact=True %}
                             </div>
                         </div>
                     </div>
