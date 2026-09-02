@@ -57,18 +57,59 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
         source = provider.get_episode_source(tmdb_id, s_num, ep_num)
         video_url = source.url
         
-        # Calculate next & previous episode
+        # Calculate accurate next & previous episode with season rollover
         if ep_num > 1:
             previous_episode = {
                 'season': s_num,
                 'episode': ep_num - 1,
                 'url': f"/watch/tv/{tmdb_id}/{s_num}/{ep_num - 1}/"
             }
-        next_episode = {
-            'season': s_num,
-            'episode': ep_num + 1,
-            'url': f"/watch/tv/{tmdb_id}/{s_num}/{ep_num + 1}/"
-        }
+
+        # Check season episodes to determine if next episode is in current season or next season
+        current_season_data = client.get_tv_season(tmdb_id, s_num)
+        episodes_in_season = current_season_data.get('episodes', [])
+        total_eps_in_season = len(episodes_in_season) if episodes_in_season else 99
+
+        next_ep_title = ""
+        next_ep_still = ""
+        next_s_num = s_num
+        next_e_num = ep_num + 1
+
+        if ep_num < total_eps_in_season:
+            next_s_num = s_num
+            next_e_num = ep_num + 1
+            # Find next episode metadata
+            for ep in episodes_in_season:
+                if ep.get('episode_number') == next_e_num:
+                    next_ep_title = ep.get('name', f"Episode {next_e_num}")
+                    next_ep_still = ep.get('still_path', '')
+                    break
+        else:
+            # Check if next season exists
+            seasons_list = [s for s in media.get('seasons', []) if s.get('season_number', 0) > s_num]
+            if seasons_list:
+                next_s_num = s_num + 1
+                next_e_num = 1
+                next_season_data = client.get_tv_season(tmdb_id, next_s_num)
+                next_season_eps = next_season_data.get('episodes', [])
+                if next_season_eps:
+                    next_ep_title = next_season_eps[0].get('name', "Episode 1")
+                    next_ep_still = next_season_eps[0].get('still_path', '')
+            else:
+                next_s_num = None
+                next_e_num = None
+
+        if next_s_num and next_e_num:
+            next_episode = {
+                'season': next_s_num,
+                'episode': next_e_num,
+                'title': next_ep_title or f"Episode {next_e_num}",
+                'still_path': next_ep_still,
+                'series_name': series_name,
+                'url': f"/watch/tv/{tmdb_id}/{next_s_num}/{next_e_num}/"
+            }
+        else:
+            next_episode = None
     
     # Check if user has saved watch progress to resume for active profile
     resume_position = 0

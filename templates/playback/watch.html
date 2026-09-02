@@ -277,22 +277,46 @@
     </div>
     {% endif %}
 
-    <!-- Autoplay Next Episode Countdown Overlay -->
+    <!-- Autoplay Next Episode Countdown Overlay (Cinematic Up Next Hub) -->
     {% if next_episode %}
-    <div id="autoplay-modal" class="hidden fixed bottom-12 right-6 z-50 bg-gray-950/95 border border-brand-500/40 rounded-2xl p-5 shadow-2xl backdrop-blur-2xl max-w-sm w-[90%] sm:w-full transition-all duration-300">
-        <div class="flex items-center justify-between gap-2 mb-2">
-            <span class="text-xs font-black uppercase text-brand-500 tracking-wider">Up Next</span>
-            <span id="autoplay-countdown" class="text-xs font-bold text-gray-400">Starting in 8s</span>
+    <div id="autoplay-modal" class="hidden fixed bottom-10 right-6 z-50 bg-gray-950/95 border border-brand-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-2xl max-w-sm w-[92%] sm:w-full transition-all duration-300 transform scale-100">
+        <div class="flex items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-brand-500 animate-ping"></span>
+                <span class="text-xs font-black uppercase text-brand-500 tracking-wider">Up Next</span>
+            </div>
+            <span id="autoplay-countdown" class="text-xs font-bold font-mono text-gray-300 bg-gray-900 border border-gray-700/80 px-2 py-0.5 rounded-full">Playing in 8s</span>
         </div>
-        <h4 class="text-sm font-bold text-white truncate">{{ title }}</h4>
-        <p class="text-xs text-gray-400 mt-0.5">Season {{ next_episode.season }} • Episode {{ next_episode.episode }}</p>
+
+        <div class="flex items-center gap-3.5">
+            {% if next_episode.still_path %}
+            <div class="w-24 h-14 rounded-xl overflow-hidden bg-gray-900 border border-gray-800 shrink-0 relative">
+                <img src="https://image.tmdb.org/t/p/w300{{ next_episode.still_path }}" alt="Next Episode" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+            </div>
+            {% endif %}
+            <div class="overflow-hidden">
+                <h4 class="text-sm font-bold text-white truncate drop-shadow">{{ next_episode.title }}</h4>
+                <p class="text-xs text-brand-500 font-semibold mt-0.5">S{{ next_episode.season }} : E{{ next_episode.episode }}</p>
+                <p class="text-[11px] text-gray-400 truncate">{{ next_episode.series_name }}</p>
+            </div>
+        </div>
+
+        <!-- Animated Progress Bar -->
+        <div class="w-full bg-gray-900 h-1 rounded-full overflow-hidden mt-3.5 border border-gray-800">
+            <div id="autoplay-progress-bar" class="bg-brand-500 h-full w-full transition-all duration-1000 ease-linear"></div>
+        </div>
+
         <div class="flex items-center gap-2.5 mt-3.5">
             <a id="autoplay-play-now" href="{{ next_episode.url }}{% if current_server %}?server={{ current_server }}{% endif %}" 
-               class="flex-1 bg-brand-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-xl text-xs text-center transition shadow-lg shadow-brand-500/25">
-                Play Now
+               class="flex-1 bg-brand-500 hover:bg-red-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs text-center transition shadow-lg shadow-brand-500/25 flex items-center justify-center gap-1.5 active:scale-95">
+                <svg class="w-3.5 h-3.5 fill-white translate-x-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <span>Play Now</span>
             </a>
             <button onclick="cancelAutoplay()" 
-                    class="px-3.5 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-xl text-xs transition border border-gray-700">
+                    class="px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white font-bold rounded-xl text-xs transition border border-gray-700/80 active:scale-95">
                 Cancel
             </button>
         </div>
@@ -400,18 +424,31 @@
         }
 
         let autoplayTimer = null;
+        let autoplayCancelled = false;
+
         function triggerAutoplayCountdown() {
+            if (autoplayCancelled) return;
             const modal = document.getElementById('autoplay-modal');
             if (!modal) return;
             modal.classList.remove('hidden');
 
-            let countdown = 8;
+            const totalDuration = 8;
+            let countdown = totalDuration;
             const countdownEl = document.getElementById('autoplay-countdown');
+            const progressBar = document.getElementById('autoplay-progress-bar');
             const playNowLink = document.getElementById('autoplay-play-now');
 
+            if (progressBar) progressBar.style.width = '100%';
+
+            if (autoplayTimer) clearInterval(autoplayTimer);
             autoplayTimer = setInterval(() => {
                 countdown--;
-                if (countdownEl) countdownEl.innerText = `Starting in ${countdown}s`;
+                if (countdownEl) countdownEl.innerText = `Playing in ${countdown}s`;
+                if (progressBar) {
+                    const pct = (countdown / totalDuration) * 100;
+                    progressBar.style.width = `${pct}%`;
+                }
+
                 if (countdown <= 0) {
                     clearInterval(autoplayTimer);
                     if (playNowLink && playNowLink.href) {
@@ -422,6 +459,7 @@
         }
 
         function cancelAutoplay() {
+            autoplayCancelled = true;
             if (autoplayTimer) clearInterval(autoplayTimer);
             const modal = document.getElementById('autoplay-modal');
             if (modal) modal.classList.add('hidden');
@@ -650,6 +688,21 @@
                     const dur = d.duration || (d.data && d.data.duration);
                     if (typeof pos === 'number' && pos >= 15) {
                         sendProgressBeacon(pos, dur);
+
+                        // Trigger Autoplay Up Next if within last 20 seconds or > 95% of episode
+                        if (dur && dur > 60 && (dur - pos <= 25 || pos / dur >= 0.95)) {
+                            {% if next_episode %}
+                            triggerAutoplayCountdown();
+                            {% endif %}
+                        }
+                    }
+
+                    // Check explicit ended events
+                    const eventName = d.event || d.type || (d.data && d.data.event);
+                    if (eventName === 'ended' || eventName === 'playback_ended' || d.ended === true) {
+                        {% if next_episode %}
+                        triggerAutoplayCountdown();
+                        {% endif %}
                     }
                 } catch (err) {}
             });
