@@ -78,9 +78,13 @@ class HomeView(TemplateView):
 
         # Continue watching for logged in user (deduplicated by media_type + tmdb_id)
         continue_watching = []
+        profile = None
         if self.request.user.is_authenticated:
+            from apps.accounts.utils import get_active_profile
+            profile = get_active_profile(self.request)
             progress_items = WatchProgress.objects.filter(
                 user=self.request.user,
+                profile=profile,
                 completed=False,
                 position_seconds__gt=5
             ).order_by('-updated_at')
@@ -119,8 +123,8 @@ class HomeView(TemplateView):
         context['continue_watching'] = continue_watching
 
         # Personalized recommendations & Explainable "Because You Watched"
-        context['recommended_for_you'] = engine.get_personalized_recommendations(self.request.user)
-        because_data = engine.get_because_you_watched(self.request.user)
+        context['recommended_for_you'] = engine.get_personalized_recommendations(self.request.user, profile=profile)
+        because_data = engine.get_because_you_watched(self.request.user, profile=profile)
         if because_data:
             context['because_title'] = because_data['title']
             context['because_items'] = because_data['items']

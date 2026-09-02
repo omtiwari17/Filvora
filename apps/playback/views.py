@@ -67,11 +67,14 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
             'url': f"/watch/tv/{tmdb_id}/{s_num}/{ep_num + 1}/"
         }
     
-    # Check if user has saved watch progress to resume
+    # Check if user has saved watch progress to resume for active profile
     resume_position = 0
     resume_formatted = ""
+    from apps.accounts.utils import get_active_profile
+    profile = get_active_profile(request)
     progress = WatchProgress.objects.filter(
         user=request.user,
+        profile=profile,
         tmdb_id=tmdb_id,
         media_type=media_type,
         season=s_num if media_type == 'tv' else None,

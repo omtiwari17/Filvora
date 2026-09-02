@@ -3,6 +3,7 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from .models import WatchProgress, UserRating
+from apps.accounts.utils import get_active_profile
 
 
 
@@ -25,18 +26,21 @@ def save_progress(request):
         season = int(data.get('season')) if data.get('season') else None
         episode = int(data.get('episode')) if data.get('episode') else None
 
-        # Ignore negligible positions (< 15s) that occur during page load or failed streams
-        if position_seconds < 15 and not completed:
-            return JsonResponse({'status': 'ignored', 'message': 'Position below threshold'})
-
         # Determine if video is completed (e.g. >90% watched or <=30s remaining)
         completed = False
         if duration_seconds > 0:
             if position_seconds >= (duration_seconds * 0.9) or (duration_seconds - position_seconds) <= 30:
                 completed = True
 
+        # Ignore negligible positions (< 15s) that occur during page load or failed streams
+        if position_seconds < 15 and not completed:
+            return JsonResponse({'status': 'ignored', 'message': 'Position below threshold'})
+
+        profile = get_active_profile(request)
+
         progress, _ = WatchProgress.objects.update_or_create(
             user=request.user,
+            profile=profile,
             tmdb_id=tmdb_id,
             media_type=media_type,
             season=season,
@@ -73,7 +77,8 @@ def format_time_str(seconds: float) -> str:
 @login_required
 def history_view(request):
     client = TMDBClient()
-    items = WatchProgress.objects.filter(user=request.user).order_by('-updated_at')
+    profile = get_active_profile(request)
+    items = WatchProgress.objects.filter(user=request.user, profile=profile).order_by('-updated_at')
     
     now = datetime.now(timezone.utc)
     today = now.date()
@@ -87,9 +92,9 @@ def history_view(request):
         'Earlier': []
     }
 
-    # Pre-fetch all user ratings for quick lookup
+    # Pre-fetch user ratings for active profile for quick lookup
     user_ratings = {}
-    rated_items_records = list(UserRating.objects.filter(user=request.user).order_by('-updated_at'))
+    rated_items_records = list(UserRating.objects.filter(user=request.user, profile=profile).order_by('-updated_at'))
     for r in rated_items_records:
         user_ratings[(r.tmdb_id, r.media_type)] = r.score
 
@@ -173,9 +178,11 @@ def remove_progress(request):
 
         tmdb_id = int(data.get('tmdb_id'))
         media_type = data.get('media_type', 'movie')
+        profile = get_active_profile(request)
 
         WatchProgress.objects.filter(
             user=request.user,
+            profile=profile,
             tmdb_id=tmdb_id,
             media_type=media_type
         ).delete()
@@ -191,14 +198,15 @@ def remove_progress(request):
 @login_required
 def clear_history(request):
     if request.method == 'POST':
-        WatchProgress.objects.filter(user=request.user).delete()
+        profile = get_active_profile(request)
+        WatchProgress.objects.filter(user=request.user, profile=profile).delete()
     return redirect('/watch/history/')
 
 
 @csrf_exempt
 @login_required
 def rate_content(request):
-    """HTMX endpoint: create or update a user rating (1-5 stars)."""
+    """HTMX endpoint: create or update a user rating (1-5 stars) for active profile."""
     if request.method != 'POST':
         return HttpResponseBadRequest("POST required")
 
@@ -215,8 +223,11 @@ def rate_content(request):
         if score < 1 or score > 5:
             return JsonResponse({'status': 'error', 'message': 'Score must be 1-5'}, status=400)
 
+        profile = get_active_profile(request)
+
         rating, created = UserRating.objects.update_or_create(
             user=request.user,
+            profile=profile,
             tmdb_id=tmdb_id,
             media_type=media_type,
             defaults={'score': score}
@@ -246,7 +257,7 @@ def rate_content(request):
 @csrf_exempt
 @login_required
 def remove_rating(request):
-    """HTMX endpoint: delete a user rating."""
+    """HTMX endpoint: delete a user rating for active profile."""
     if request.method != 'POST':
         return HttpResponseBadRequest("POST required")
 
@@ -258,9 +269,11 @@ def remove_rating(request):
 
         tmdb_id = int(data.get('tmdb_id'))
         media_type = data.get('media_type', 'movie')
+        profile = get_active_profile(request)
 
         UserRating.objects.filter(
             user=request.user,
+            profile=profile,
             tmdb_id=tmdb_id,
             media_type=media_type
         ).delete()
@@ -286,7 +299,8 @@ def remove_rating(request):
 def analytics_view(request):
     from collections import Counter
     client = TMDBClient()
-    items = list(WatchProgress.objects.filter(user=request.user).order_by('-updated_at'))
+    profile = get_active_profile(request)
+    items = list(WatchProgress.objects.filter(user=request.user, profile=profile).order_by('-updated_at'))
     
     total_seconds = sum(p.position_seconds for p in items)
     total_hours = round(total_seconds / 3600.0, 1)
@@ -397,7 +411,7 @@ def analytics_view(request):
             most_watched_title = data.get('name', f"Series {longest_p.tmdb_id}")
 
     # User rating stats
-    all_ratings = list(UserRating.objects.filter(user=request.user).values_list('score', flat=True))
+    all_ratings = list(UserRating.objects.filter(user=request.user, profile=profile).values_list('score', flat=True))
     total_ratings = len(all_ratings)
     avg_rating = round(sum(all_ratings) / total_ratings, 1) if total_ratings > 0 else 0
 

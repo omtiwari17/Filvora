@@ -7,15 +7,18 @@ class RecommendationEngine:
     def __init__(self):
         self.client = TMDBClient()
 
-    def get_user_affinity_genres(self, user):
-        """Calculates genre frequency weights from user's watch progress and library."""
+    def get_user_affinity_genres(self, user, profile=None):
+        """Calculates genre frequency weights from user's watch progress and library for active profile."""
         if not user or not user.is_authenticated:
             return []
 
         genre_counts = Counter()
         
         # 1. Signals from Watch Progress
-        progress_items = WatchProgress.objects.filter(user=user).order_by('-updated_at')[:20]
+        progress_qs = WatchProgress.objects.filter(user=user)
+        if profile:
+            progress_qs = progress_qs.filter(profile=profile)
+        progress_items = progress_qs.order_by('-updated_at')[:20]
         for p in progress_items:
             weight = 3 if p.completed else 1
             if p.media_type == 'movie':
@@ -42,7 +45,10 @@ class RecommendationEngine:
                     genre_counts[gid] += 2
 
         # 3. Signals from User Ratings (strongest personalization signal)
-        rated_items = UserRating.objects.filter(user=user).order_by('-updated_at')[:20]
+        rating_qs = UserRating.objects.filter(user=user)
+        if profile:
+            rating_qs = rating_qs.filter(profile=profile)
+        rated_items = rating_qs.order_by('-updated_at')[:20]
         for r in rated_items:
             if r.media_type == 'movie':
                 details = self.client.get_movie_details(r.tmdb_id)
@@ -65,12 +71,12 @@ class RecommendationEngine:
         # Return top genres sorted by frequency
         return [gid for gid, _ in genre_counts.most_common(3)]
 
-    def get_personalized_recommendations(self, user, limit=12):
+    def get_personalized_recommendations(self, user, limit=12, profile=None):
         """Returns deterministic curated recommendations tailored to user affinity."""
         if not user or not user.is_authenticated:
             return self.client.get_top_rated_movies()[:limit]
 
-        top_genres = self.get_user_affinity_genres(user)
+        top_genres = self.get_user_affinity_genres(user, profile=profile)
         if top_genres:
             primary_genre = top_genres[0]
             results = self.client.discover_content(
@@ -84,18 +90,24 @@ class RecommendationEngine:
 
         return self.client.get_top_rated_movies()[:limit]
 
-    def get_because_you_watched(self, user):
+    def get_because_you_watched(self, user, profile=None):
         """Returns recommendations based on the user's latest watched title."""
         if not user or not user.is_authenticated:
             return None
 
         # Priority 1: Top user-rated title (score >= 4)
-        top_rated = UserRating.objects.filter(user=user, score__gte=4).order_by('-updated_at').first()
+        rating_qs = UserRating.objects.filter(user=user, score__gte=4)
+        if profile:
+            rating_qs = rating_qs.filter(profile=profile)
+        top_rated = rating_qs.order_by('-updated_at').first()
         if top_rated:
             mtype = top_rated.media_type
             tid = top_rated.tmdb_id
         else:
-            latest_progress = WatchProgress.objects.filter(user=user, position_seconds__gt=30).order_by('-updated_at').first()
+            progress_qs = WatchProgress.objects.filter(user=user, position_seconds__gt=30)
+            if profile:
+                progress_qs = progress_qs.filter(profile=profile)
+            latest_progress = progress_qs.order_by('-updated_at').first()
             if not latest_progress:
                 # Fallback to latest library item
                 latest_lib = LibraryItem.objects.filter(user=user).order_by('-added_at').first()

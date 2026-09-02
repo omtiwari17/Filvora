@@ -95,8 +95,10 @@ def movie_detail(request, tmdb_id):
     # Get user's existing rating for this movie
     user_rating = 0
     if request.user.is_authenticated:
+        from apps.accounts.utils import get_active_profile
+        profile = get_active_profile(request)
         rating_obj = UserRating.objects.filter(
-            user=request.user, tmdb_id=tmdb_id, media_type='movie'
+            user=request.user, profile=profile, tmdb_id=tmdb_id, media_type='movie'
         ).first()
         if rating_obj:
             user_rating = rating_obj.score
@@ -192,10 +194,14 @@ def series_detail(request, tmdb_id):
         s['total_hours_decimal'] = f"{round(s_total_mins / 60.0, 1)} hrs" if s_total_mins else ""
 
     # Compute season-wise watch time if user is logged in
+    profile = None
     if request.user.is_authenticated:
+        from apps.accounts.utils import get_active_profile
+        profile = get_active_profile(request)
         from apps.watch.models import WatchProgress
         user_progress = WatchProgress.objects.filter(
             user=request.user,
+            profile=profile,
             tmdb_id=tmdb_id,
             media_type='tv'
         )
@@ -228,7 +234,7 @@ def series_detail(request, tmdb_id):
     user_rating = 0
     if request.user.is_authenticated:
         rating_obj = UserRating.objects.filter(
-            user=request.user, tmdb_id=tmdb_id, media_type='tv'
+            user=request.user, profile=profile, tmdb_id=tmdb_id, media_type='tv'
         ).first()
         if rating_obj:
             user_rating = rating_obj.score

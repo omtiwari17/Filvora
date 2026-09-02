@@ -245,6 +245,54 @@ class UserRatingTestCase(TestCase):
         )
         self.assertEqual(UserRating.objects.filter(user=self.user, tmdb_id=550, media_type='movie').count(), 1)
 
+    def test_multi_profile_history_and_ratings_isolation(self):
+        """Verify that WatchProgress and UserRatings are strictly segregated between profiles."""
+        from apps.accounts.models import UserProfile
+        p1 = UserProfile.objects.create(user=self.user, name='Profile One', is_kids=False)
+        p2 = UserProfile.objects.create(user=self.user, name='Profile Two', is_kids=True)
+
+        self.client.login(username='rateuser', password='password123')
+
+        # Select Profile 1
+        session = self.client.session
+        session['active_profile_id'] = p1.id
+        session.save()
+
+        # Save progress and rate title on Profile 1
+        self.client.post(
+            '/progress/save/',
+            data=json.dumps({'tmdb_id': 157336, 'media_type': 'movie', 'position': 300, 'duration': 6000}),
+            content_type='application/json'
+        )
+        self.client.post(
+            '/progress/rate/',
+            data=json.dumps({'tmdb_id': 157336, 'media_type': 'movie', 'score': 5}),
+            content_type='application/json'
+        )
+
+        # Verify Profile 1 has progress & rating
+        self.assertTrue(WatchProgress.objects.filter(user=self.user, profile=p1, tmdb_id=157336).exists())
+        self.assertTrue(UserRating.objects.filter(user=self.user, profile=p1, tmdb_id=157336, score=5).exists())
+
+        # Switch to Profile 2
+        session['active_profile_id'] = p2.id
+        session.save()
+
+        # Profile 2 history should be completely empty
+        res = self.client.get('/history/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.context['total_items'], 0)
+        self.assertEqual(res.context['total_rated'], 0)
+
+        # Rate on Profile 2 with a different score
+        self.client.post(
+            '/progress/rate/',
+            data=json.dumps({'tmdb_id': 157336, 'media_type': 'movie', 'score': 2}),
+            content_type='application/json'
+        )
+        self.assertEqual(UserRating.objects.get(user=self.user, profile=p1, tmdb_id=157336).score, 5)
+        self.assertEqual(UserRating.objects.get(user=self.user, profile=p2, tmdb_id=157336).score, 2)
+
 
 
 
