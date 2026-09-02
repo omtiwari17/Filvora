@@ -3,17 +3,19 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from .models import LibraryItem, CustomCollection, CustomCollectionItem
 from apps.tmdb.client import TMDBClient
+from apps.accounts.utils import get_active_profile
 
 @login_required
 def my_list(request):
-    items = LibraryItem.objects.filter(user=request.user).order_by('-added_at')
-    custom_collections = CustomCollection.objects.filter(user=request.user).prefetch_related('items')
+    profile = get_active_profile(request)
+    items = LibraryItem.objects.filter(user=request.user, profile=profile).order_by('-added_at')
+    custom_collections = CustomCollection.objects.filter(user=request.user, profile=profile).prefetch_related('items')
     client = TMDBClient()
     
     from apps.watch.models import UserRating
     user_ratings = {
         (r.tmdb_id, r.media_type): r.score
-        for r in UserRating.objects.filter(user=request.user)
+        for r in UserRating.objects.filter(user=request.user, profile=profile)
     }
 
     saved_items = []
@@ -42,13 +44,15 @@ def create_collection(request):
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
         description = request.POST.get('description', '').strip()
+        profile = get_active_profile(request)
         if name:
-            CustomCollection.objects.create(user=request.user, name=name, description=description)
+            CustomCollection.objects.create(user=request.user, profile=profile, name=name, description=description)
     return redirect('/library/')
 
 @login_required
 def delete_collection(request, collection_id):
-    collection = get_object_or_404(CustomCollection, id=collection_id, user=request.user)
+    profile = get_active_profile(request)
+    collection = get_object_or_404(CustomCollection, id=collection_id, user=request.user, profile=profile)
     if request.method == 'POST':
         collection.delete()
     return redirect('/library/')
@@ -61,8 +65,10 @@ def toggle_item(request):
         variant = request.POST.get('variant', 'hero')
         
         if tmdb_id and media_type:
+            profile = get_active_profile(request)
             item, created = LibraryItem.objects.get_or_create(
                 user=request.user,
+                profile=profile,
                 tmdb_id=int(tmdb_id),
                 media_type=media_type
             )

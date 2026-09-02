@@ -58,7 +58,9 @@ def movie_browse(request):
 
     user_saved_ids = set()
     if request.user.is_authenticated:
-        user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
+        from apps.accounts.utils import get_active_profile
+        profile = get_active_profile(request)
+        user_saved_ids = set(LibraryItem.objects.filter(user=request.user, profile=profile).values_list('tmdb_id', flat=True))
 
     pagination = get_pagination_context(page)
 
@@ -77,11 +79,14 @@ def movie_detail(request, tmdb_id):
     movie = client.get_movie_details(tmdb_id)
     movie['display_title'] = movie.get('title', f"Movie {tmdb_id}")
 
-    # Check if movie is saved in user's library
+    # Check if movie is saved in user's library for active profile
     in_library = False
     user_saved_ids = set()
+    profile = None
     if request.user.is_authenticated:
-        user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
+        from apps.accounts.utils import get_active_profile
+        profile = get_active_profile(request)
+        user_saved_ids = set(LibraryItem.objects.filter(user=request.user, profile=profile).values_list('tmdb_id', flat=True))
         in_library = int(tmdb_id) in user_saved_ids
 
     cast = []
@@ -132,7 +137,9 @@ def series_browse(request):
 
     user_saved_ids = set()
     if request.user.is_authenticated:
-        user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
+        from apps.accounts.utils import get_active_profile
+        profile = get_active_profile(request)
+        user_saved_ids = set(LibraryItem.objects.filter(user=request.user, profile=profile).values_list('tmdb_id', flat=True))
 
     pagination = get_pagination_context(page)
 
@@ -166,9 +173,13 @@ def series_detail(request, tmdb_id):
     series['display_title'] = series.get('name', f"Series {tmdb_id}")
 
     in_library = False
+    profile = None
     if request.user.is_authenticated:
+        from apps.accounts.utils import get_active_profile
+        profile = get_active_profile(request)
         in_library = LibraryItem.objects.filter(
             user=request.user,
+            profile=profile,
             tmdb_id=tmdb_id,
             media_type='tv'
         ).exists()
@@ -194,10 +205,7 @@ def series_detail(request, tmdb_id):
         s['total_hours_decimal'] = f"{round(s_total_mins / 60.0, 1)} hrs" if s_total_mins else ""
 
     # Compute season-wise watch time if user is logged in
-    profile = None
     if request.user.is_authenticated:
-        from apps.accounts.utils import get_active_profile
-        profile = get_active_profile(request)
         from apps.watch.models import WatchProgress
         user_progress = WatchProgress.objects.filter(
             user=request.user,
@@ -239,6 +247,10 @@ def series_detail(request, tmdb_id):
         if rating_obj:
             user_rating = rating_obj.score
 
+    recommendations = []
+    if 'recommendations' in series and 'results' in series['recommendations']:
+        recommendations = series['recommendations']['results'][:10]
+
     return render(request, 'catalog/series_detail.html', {
         'series': series,
         'in_library': in_library,
@@ -248,6 +260,7 @@ def series_detail(request, tmdb_id):
         'episodes': episodes,
         'initial_season_runtime': initial_season_runtime,
         'initial_season_decimal': initial_season_decimal,
+        'recommendations': recommendations,
         'user_rating': user_rating,
         'star_range': [1, 2, 3, 4, 5],
     })
@@ -327,7 +340,7 @@ def search_suggest(request):
         series = client.discover_content(media_type='tv', certification=rating_filter)[:4]
         categorized = {'movies': movies, 'series': series, 'people': []}
     else:
-        return HttpResponse('')
+        categorized = {'movies': [], 'series': [], 'people': []}
 
     return render(request, 'catalog/partials/search_suggestions.html', {
         'categorized': categorized,
@@ -370,7 +383,9 @@ def search_results(request):
 
     user_saved_ids = set()
     if request.user.is_authenticated:
-        user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
+        from apps.accounts.utils import get_active_profile
+        profile = get_active_profile(request)
+        user_saved_ids = set(LibraryItem.objects.filter(user=request.user, profile=profile).values_list('tmdb_id', flat=True))
 
     pagination = get_pagination_context(page, total_pages=total_pages)
 
@@ -386,13 +401,9 @@ def search_results(request):
 def is_kids_profile(request):
     if not request.user.is_authenticated:
         return False
-    from apps.accounts.models import UserProfile
-    profile_id = request.session.get('active_profile_id')
-    if profile_id:
-        p = UserProfile.objects.filter(id=profile_id, user=request.user).first()
-        if p and p.is_kids:
-            return True
-    return False
+    from apps.accounts.utils import get_active_profile
+    p = get_active_profile(request)
+    return bool(p and p.is_kids)
 
 def discover(request):
     client = TMDBClient()
@@ -425,7 +436,9 @@ def discover(request):
     genres = client.get_genres_list()
     user_saved_ids = set()
     if request.user.is_authenticated:
-        user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
+        from apps.accounts.utils import get_active_profile
+        profile = get_active_profile(request)
+        user_saved_ids = set(LibraryItem.objects.filter(user=request.user, profile=profile).values_list('tmdb_id', flat=True))
 
     total_pages = 1 if len(results) < 24 and str(page).strip() in ['1', ''] else 500
     pagination = get_pagination_context(page, total_pages=total_pages)
@@ -477,7 +490,9 @@ def person_detail(request, person_id):
 
     user_saved_ids = set()
     if request.user.is_authenticated:
-        user_saved_ids = set(LibraryItem.objects.filter(user=request.user).values_list('tmdb_id', flat=True))
+        from apps.accounts.utils import get_active_profile
+        profile = get_active_profile(request)
+        user_saved_ids = set(LibraryItem.objects.filter(user=request.user, profile=profile).values_list('tmdb_id', flat=True))
 
     return render(request, 'catalog/person_detail.html', {
         'person': person,

@@ -24,10 +24,13 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
     s_num = season if season is not None else (1 if media_type == 'tv' else None)
     ep_num = episode if episode is not None else (1 if media_type == 'tv' else None)
 
-    # If no server specified, check user's saved preferred server for this title
+    # If no server specified, check user's saved preferred server for this title & active profile
     if not server_id and request.user.is_authenticated:
+        from apps.accounts.utils import get_active_profile
+        profile = get_active_profile(request)
         pref = PlaybackServerPreference.objects.filter(
             user=request.user,
+            profile=profile,
             tmdb_id=tmdb_id,
             media_type=media_type,
             season=s_num,
@@ -108,7 +111,7 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
 @csrf_exempt
 @login_required
 def report_server_success(request):
-    """Saves the working server provider for this user & title for future instant load."""
+    """Saves the working server provider for this user profile & title for future instant load."""
     if request.method != 'POST':
         return HttpResponseBadRequest("POST required")
 
@@ -125,8 +128,11 @@ def report_server_success(request):
         episode = int(data.get('episode')) if data.get('episode') else None
 
         if provider_id:
+            from apps.accounts.utils import get_active_profile
+            profile = get_active_profile(request)
             PlaybackServerPreference.objects.update_or_create(
                 user=request.user,
+                profile=profile,
                 tmdb_id=tmdb_id,
                 media_type=media_type,
                 season=season,

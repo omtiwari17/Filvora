@@ -55,8 +55,10 @@ class HomeView(TemplateView):
         my_list_preview = []
         custom_collections = []
         if self.request.user.is_authenticated:
-            context['user_saved_ids'] = set(LibraryItem.objects.filter(user=self.request.user).values_list('tmdb_id', flat=True))
-            library_items = list(LibraryItem.objects.filter(user=self.request.user).order_by('-added_at')[:10])
+            from apps.accounts.utils import get_active_profile
+            profile = get_active_profile(self.request)
+            context['user_saved_ids'] = set(LibraryItem.objects.filter(user=self.request.user, profile=profile).values_list('tmdb_id', flat=True))
+            library_items = list(LibraryItem.objects.filter(user=self.request.user, profile=profile).order_by('-added_at')[:10])
             if library_items:
                 with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(library_items), 6)) as ex:
                     def _fetch_lib_item(item):
@@ -70,7 +72,7 @@ class HomeView(TemplateView):
                             return d
                     my_list_preview = list(ex.map(_fetch_lib_item, library_items))
             
-            custom_collections = list(CustomCollection.objects.filter(user=self.request.user).prefetch_related('items'))
+            custom_collections = list(CustomCollection.objects.filter(user=self.request.user, profile=profile).prefetch_related('items'))
         else:
             context['user_saved_ids'] = set()
         context['my_list_preview'] = my_list_preview

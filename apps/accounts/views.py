@@ -10,13 +10,14 @@ def register(request):
         if form.is_valid():
             user = form.save()
             # Create default profile
-            UserProfile.objects.create(
+            default_p = UserProfile.objects.create(
                 user=user,
                 name=user.username.capitalize(),
                 avatar=f"https://ui-avatars.com/api/?name={user.username}&background=111827&color=fff&bold=true",
                 is_kids=False
             )
             login(request, user)
+            request.session['active_profile_id'] = default_p.id
             return redirect('/')
     else:
         form = UserCreationForm()
@@ -67,9 +68,11 @@ def delete_profile(request, profile_id):
     if request.method == 'POST':
         # Don't delete if only 1 profile exists
         if UserProfile.objects.filter(user=request.user).count() > 1:
+            is_active = request.session.get('active_profile_id') == profile.id
             profile.delete()
-            # Reset active profile
-            remaining = UserProfile.objects.filter(user=request.user).first()
-            if remaining:
-                request.session['active_profile_id'] = remaining.id
+            # Only reassign active profile if the deleted profile was currently active
+            if is_active:
+                remaining = UserProfile.objects.filter(user=request.user).first()
+                if remaining:
+                    request.session['active_profile_id'] = remaining.id
     return redirect('/accounts/profiles/')

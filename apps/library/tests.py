@@ -48,3 +48,28 @@ class LibraryTestCase(TestCase):
         self.assertEqual(delete_res.status_code, 302)
         self.assertFalse(CustomCollection.objects.filter(id=col.id).exists())
 
+    def test_multi_profile_library_isolation(self):
+        """Verify that Watchlist and Collections are strictly segregated between profiles."""
+        from apps.accounts.models import UserProfile
+        p1 = UserProfile.objects.create(user=self.user, name='Parent Profile')
+        p2 = UserProfile.objects.create(user=self.user, name='Child Profile', is_kids=True)
+
+        self.client.login(username='libuser', password='password123')
+
+        # Select Profile 1 & save item
+        session = self.client.session
+        session['active_profile_id'] = p1.id
+        session.save()
+
+        self.client.post('/library/toggle/', {'tmdb_id': '157336', 'media_type': 'movie', 'variant': 'card'})
+        self.assertTrue(LibraryItem.objects.filter(user=self.user, profile=p1, tmdb_id=157336).exists())
+
+        # Switch to Profile 2 & check My List
+        session['active_profile_id'] = p2.id
+        session.save()
+
+        res = self.client.get('/library/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.context['saved_items']), 0)
+        self.assertFalse(LibraryItem.objects.filter(user=self.user, profile=p2, tmdb_id=157336).exists())
+
