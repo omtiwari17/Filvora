@@ -19,7 +19,7 @@
     <!-- Hero Content Box -->
     <div class="relative z-10 px-6 sm:px-12 md:px-16 lg:px-20 max-w-3xl space-y-6">
         <!-- Spotlight Badges -->
-        <div class="flex flex-wrap items-center gap-2.5">
+        <div class="flex items-center gap-2.5">
             <span class="bg-brand-500/20 text-brand-500 border border-brand-500/40 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
                 <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-ping"></span>
                 Filvora Spotlight
@@ -27,17 +27,6 @@
             <span class="bg-black/60 backdrop-blur-md border border-gray-700/80 text-gray-300 text-xs font-semibold px-2.5 py-1 rounded-full">
                 Full HD • Multi-Server
             </span>
-            {% if lan_access_url %}
-            <button onclick="navigator.clipboard.writeText('{{ lan_access_url }}'); showToast('Wi-Fi Access Link Copied: {{ lan_access_url }}');" 
-                    title="Click to copy Wi-Fi stream link" 
-                    class="bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 transition active:scale-95 cursor-pointer backdrop-blur-md">
-                <svg class="w-3.5 h-3.5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-                </svg>
-                <span class="hidden sm:inline">Wi-Fi Stream:</span>
-                <span class="font-mono text-[11px]">{{ lan_access_url }}</span>
-            </button>
-            {% endif %}
         </div>
 
         <h1 class="text-4xl sm:text-6xl md:text-7xl font-black drop-shadow-2xl text-white tracking-tight leading-none">{{ hero_movie.title }}</h1>
