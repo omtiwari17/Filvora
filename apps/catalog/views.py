@@ -120,6 +120,7 @@ def movie_detail(request, tmdb_id):
         'directors': directors,
         'recommendations': recommendations,
         'user_rating': user_rating,
+        'trailer_key': movie.get('trailer_key'),
         'star_range': [1, 2, 3, 4, 5],
     })
 
@@ -269,8 +270,16 @@ def series_detail(request, tmdb_id):
         'initial_season_decimal': initial_season_decimal,
         'recommendations': recommendations,
         'user_rating': user_rating,
+        'trailer_key': series.get('trailer_key'),
         'star_range': [1, 2, 3, 4, 5],
     })
+
+
+def trailer_api(request, media_type, tmdb_id):
+    """API endpoint to dynamically fetch the official YouTube trailer key for any title."""
+    client = TMDBClient()
+    trailer_key = client.get_official_trailer(tmdb_id, media_type)
+    return JsonResponse({'trailer_key': trailer_key, 'tmdb_id': tmdb_id, 'media_type': media_type})
 
 
 def season_episodes(request, tmdb_id, season_number):

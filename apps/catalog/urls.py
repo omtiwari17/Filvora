@@ -13,6 +13,7 @@ urlpatterns = [
     path('series/<int:tmdb_id>/', views.series_detail, name='series_detail'),
     path('series/<int:tmdb_id>/season/<int:season_number>/', views.season_episodes, name='season_episodes'),
     path('person/<int:person_id>/', views.person_detail, name='person_detail'),
+    path('trailer/<str:media_type>/<int:tmdb_id>/', views.trailer_api, name='trailer_api'),
     path('search/', views.search_results, name='search_results'),
     path('search/suggest/', views.search_suggest, name='search_suggest'),
 ]

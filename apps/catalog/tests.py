@@ -119,4 +119,17 @@ class CatalogViewsTestCase(TestCase):
         self.assertIn('person', response.context)
         self.assertIn('credits', response.context)
 
+    def test_trailer_api(self):
+        response = self.client.get('/trailer/movie/550/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('trailer_key', data)
+        self.assertEqual(data['tmdb_id'], 550)
+        self.assertEqual(data['media_type'], 'movie')
+
+    def test_movie_detail_trailer_context(self):
+        response = self.client.get('/movies/550/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('trailer_key', response.context)
+
 

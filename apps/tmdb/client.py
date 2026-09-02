@@ -250,6 +250,55 @@ class TMDBClient:
             return self._fetch(f"/tv/{tv_id}/season/{season}/videos")
         return self._fetch(f"/tv/{tv_id}/videos")
 
+    def extract_official_trailer(self, videos_data):
+        """Extract the best YouTube trailer key from TMDB videos payload."""
+        if not videos_data:
+            return None
+        videos = videos_data.get('results', []) if isinstance(videos_data, dict) else videos_data
+        if not isinstance(videos, list):
+            return None
+
+        youtube_vids = [v for v in videos if isinstance(v, dict) and v.get('site') == 'YouTube' and v.get('key')]
+        if not youtube_vids:
+            return None
+
+        # Priority 1: Official Trailer in English
+        for v in youtube_vids:
+            if v.get('type') == 'Trailer' and v.get('official') and v.get('iso_639_1') == 'en':
+                return v.get('key')
+
+        # Priority 2: Any Official Trailer
+        for v in youtube_vids:
+            if v.get('type') == 'Trailer' and v.get('official'):
+                return v.get('key')
+
+        # Priority 3: Any Trailer
+        for v in youtube_vids:
+            if v.get('type') == 'Trailer':
+                return v.get('key')
+
+        # Priority 4: Official Teaser
+        for v in youtube_vids:
+            if v.get('type') == 'Teaser' and v.get('official'):
+                return v.get('key')
+
+        # Priority 5: Any Teaser
+        for v in youtube_vids:
+            if v.get('type') == 'Teaser':
+                return v.get('key')
+
+        return youtube_vids[0].get('key')
+
+    def get_official_trailer(self, tmdb_id, media_type='movie'):
+        """Fetch and extract official trailer key for a movie or TV show."""
+        if str(tmdb_id) in ["1744462", "1222222"]:
+            return "QdBZY2fkU-0"
+        if media_type == 'tv':
+            v_data = self.get_tv_videos(tmdb_id)
+        else:
+            v_data = self.get_movie_videos(tmdb_id)
+        return self.extract_official_trailer(v_data)
+
     def _fetch_paginated_24(self, endpoint, base_params, page=1, media_type='movie', kids_only=False):
         try:
             curr_page = max(1, int(page or 1))
@@ -354,13 +403,14 @@ class TMDBClient:
 
     def get_movie_details(self, movie_id):
         if str(movie_id) in ["1744462", "1222222"]:
-            data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates"})
+            data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates,videos"})
             if data and (data.get('title') or data.get('poster_path')):
                 data['age_rating'] = self._extract_movie_rating(data) or '18+'
+                data['trailer_key'] = self.extract_official_trailer(data.get('videos')) or "QdBZY2fkU-0"
                 return data
             return self._get_gta_vi_special()
 
-        data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates"})
+        data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates,videos"})
         if data and (data.get('title') or data.get('poster_path')):
             data['age_rating'] = self._extract_movie_rating(data)
             if data['age_rating']:
@@ -369,6 +419,7 @@ class TMDBClient:
                 data['recommendations']['results'] = [
                     self._attach_age_rating(r, 'movie') for r in data['recommendations']['results']
                 ]
+            data['trailer_key'] = self.extract_official_trailer(data.get('videos'))
             return data
 
         # Check mock data fallback
@@ -391,14 +442,15 @@ class TMDBClient:
             "age_rating": "PG-13",
             "genres": [{"id": 28, "name": "Action"}, {"id": 18, "name": "Drama"}],
             "credits": {"cast": []},
-            "recommendations": {"results": []}
+            "recommendations": {"results": []},
+            "trailer_key": None
         }
 
     def get_tv(self, tv_id):
         return self.get_tv_details(tv_id)
 
     def get_tv_details(self, tv_id):
-        data = self._fetch(f"/tv/{tv_id}", {"append_to_response": "credits,recommendations,content_ratings"})
+        data = self._fetch(f"/tv/{tv_id}", {"append_to_response": "credits,recommendations,content_ratings,videos"})
         if data and (data.get('name') or data.get('poster_path')):
             data['age_rating'] = self._extract_tv_rating(data)
             if data['age_rating']:
@@ -407,6 +459,7 @@ class TMDBClient:
                 data['recommendations']['results'] = [
                     self._attach_age_rating(r, 'tv') for r in data['recommendations']['results']
                 ]
+            data['trailer_key'] = self.extract_official_trailer(data.get('videos'))
             return data
 
         # Check mock data fallback
