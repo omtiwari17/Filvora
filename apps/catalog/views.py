@@ -90,8 +90,12 @@ def movie_detail(request, tmdb_id):
         in_library = int(tmdb_id) in user_saved_ids
 
     cast = []
-    if 'credits' in movie and 'cast' in movie['credits']:
-        cast = movie['credits']['cast'][:12]
+    directors = []
+    if 'credits' in movie:
+        if 'cast' in movie['credits']:
+            cast = movie['credits']['cast'][:16]
+        if 'crew' in movie['credits']:
+            directors = [c for c in movie['credits']['crew'] if c.get('job') == 'Director']
 
     recommendations = []
     if 'recommendations' in movie and 'results' in movie['recommendations']:
@@ -113,6 +117,7 @@ def movie_detail(request, tmdb_id):
         'in_library': in_library,
         'user_saved_ids': user_saved_ids,
         'cast': cast,
+        'directors': directors,
         'recommendations': recommendations,
         'user_rating': user_rating,
         'star_range': [1, 2, 3, 4, 5],
@@ -185,8 +190,9 @@ def series_detail(request, tmdb_id):
         ).exists()
 
     cast = []
+    creators = series.get('created_by', [])
     if 'credits' in series and 'cast' in series['credits']:
-        cast = series['credits']['cast'][:12]
+        cast = series['credits']['cast'][:16]
 
     # Fetch seasons and compute total season runtime for each
     seasons = [s for s in series.get('seasons', []) if s.get('season_number', 0) > 0]
@@ -255,6 +261,7 @@ def series_detail(request, tmdb_id):
         'series': series,
         'in_library': in_library,
         'cast': cast,
+        'creators': creators,
         'seasons': seasons,
         'current_season': initial_season_num,
         'episodes': episodes,
