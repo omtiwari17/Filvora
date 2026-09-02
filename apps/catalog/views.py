@@ -1,6 +1,6 @@
 import re
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from apps.tmdb.client import TMDBClient
 from apps.library.models import LibraryItem
 from apps.watch.models import UserRating
