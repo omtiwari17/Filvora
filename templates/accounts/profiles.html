@@ -46,6 +46,33 @@
             <span class="text-sm font-bold text-gray-400 group-hover:text-white transition">Add Profile</span>
         </button>
     </div>
+
+    {% if lan_access_url %}
+    <!-- Wi-Fi / Local Network Access Link -->
+    <div class="bg-gray-900/70 border border-gray-800 backdrop-blur-md rounded-2xl p-4 sm:p-5 max-w-md w-full shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                </svg>
+            </div>
+            <div>
+                <div class="flex items-center justify-center sm:justify-start gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-xs font-bold text-gray-200">Local Wi-Fi Access</span>
+                </div>
+                <p class="text-[11px] text-gray-400 mt-0.5">Stream on TV, phone, or tablet on your network</p>
+            </div>
+        </div>
+        <button onclick="navigator.clipboard.writeText('{{ lan_access_url }}'); showToast('Wi-Fi Link Copied: {{ lan_access_url }}');"
+                class="bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-200 hover:text-white text-xs font-mono font-bold px-3.5 py-2 rounded-xl border border-gray-700 transition flex items-center gap-2 group shrink-0">
+            <span>{{ lan_access_url }}</span>
+            <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+            </svg>
+        </button>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Modal: Add Profile -->
