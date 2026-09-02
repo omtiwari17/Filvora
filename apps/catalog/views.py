@@ -486,14 +486,26 @@ def genres_view(request):
 def person_detail(request, person_id):
     client = TMDBClient()
     person = client.get_person(person_id)
-    credits = person.get('combined_credits', {}).get('cast', [])
+    combined = person.get('combined_credits', {})
+    cast_credits = combined.get('cast', [])
+    crew_credits = combined.get('crew', [])
     
-    # Sort credits by popularity or vote_count
-    credits = sorted(credits, key=lambda x: x.get('vote_count', 0), reverse=True)[:24]
-    for c in credits:
-        c['display_title'] = c.get('title') or c.get('name') or 'Unknown Title'
-        c['media_type'] = c.get('media_type', 'movie')
-        client._attach_age_rating(c, c['media_type'])
+    # Combine cast and crew credits, removing duplicate IDs
+    all_credits = []
+    seen_ids = set()
+    for c in (crew_credits + cast_credits):
+        cid = c.get('id')
+        if cid and cid not in seen_ids:
+            seen_ids.add(cid)
+            c['display_title'] = c.get('title') or c.get('name') or 'Unknown Title'
+            c['title'] = c['display_title']
+            c['name'] = c['display_title']
+            c['media_type'] = c.get('media_type', 'movie')
+            client._attach_age_rating(c, c['media_type'])
+            all_credits.append(c)
+
+    # Sort credits by vote_count and popularity
+    credits = sorted(all_credits, key=lambda x: (x.get('vote_count', 0), x.get('popularity', 0)), reverse=True)[:24]
 
     user_saved_ids = set()
     if request.user.is_authenticated:

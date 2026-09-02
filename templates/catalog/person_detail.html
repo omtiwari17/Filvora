@@ -54,9 +54,9 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-4 md:gap-6">
             {% for item in credits %}
                 {% if item.media_type == 'tv' %}
-                    {% include 'components/series_card.html' with item=item %}
+                    {% include 'components/series_card.html' with series=item item=item %}
                 {% else %}
-                    {% include 'components/movie_card.html' with item=item %}
+                    {% include 'components/movie_card.html' with movie=item item=item %}
                 {% endif %}
             {% endfor %}
         </div>
