@@ -130,9 +130,15 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-2 pt-1">
-                <input type="checkbox" id="is_kids" name="is_kids" class="w-4 h-4 text-brand-500 rounded border-gray-700 bg-gray-950">
-                <label for="is_kids" class="text-xs text-gray-300 font-medium cursor-pointer">Kid's Profile (Safe content only)</label>
+            <div class="flex items-center justify-between p-3 rounded-2xl bg-gray-950/80 border border-gray-800">
+                <div class="flex flex-col">
+                    <label for="is_kids" class="text-xs font-bold text-gray-200 cursor-pointer">Kid's Profile</label>
+                    <span class="text-[10px] text-gray-400">Restricts to PG & family titles only</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="is_kids" name="is_kids" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 shadow-inner"></div>
+                </label>
             </div>
             <div class="flex items-center justify-end gap-3 pt-2">
                 <button type="button" onclick="document.getElementById('add-profile-modal').classList.add('hidden')" class="px-5 py-2.5 text-xs font-bold text-gray-400 hover:text-white">Cancel</button>
@@ -185,9 +191,15 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-2 pt-1">
-                <input type="checkbox" id="edit-profile-kids" name="is_kids" class="w-4 h-4 text-brand-500 rounded border-gray-700 bg-gray-950">
-                <label for="edit-profile-kids" class="text-xs text-gray-300 font-medium cursor-pointer">Kid's Profile (Safe content only)</label>
+            <div class="flex items-center justify-between p-3 rounded-2xl bg-gray-950/80 border border-gray-800">
+                <div class="flex flex-col">
+                    <label for="edit-profile-kids" class="text-xs font-bold text-gray-200 cursor-pointer">Kid's Profile</label>
+                    <span class="text-[10px] text-gray-400">Restricts to PG & family titles only</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="edit-profile-kids" name="is_kids" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 shadow-inner"></div>
+                </label>
             </div>
 
             <div class="flex items-center justify-end gap-3 pt-2">
