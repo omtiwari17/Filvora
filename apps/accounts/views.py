@@ -63,6 +63,24 @@ def switch_profile(request, profile_id):
     return redirect('/')
 
 @login_required
+def update_profile(request, profile_id):
+    profile = get_object_or_404(UserProfile, id=profile_id, user=request.user)
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        is_kids = request.POST.get('is_kids') == 'on' or request.POST.get('is_kids') == 'true'
+        avatar_color = request.POST.get('avatar_color', '').strip().lstrip('#')
+        if not avatar_color:
+            avatar_color = "10b981" if is_kids else "e50914"
+
+        if name:
+            profile.name = name
+            profile.is_kids = is_kids
+            profile.avatar = f"https://ui-avatars.com/api/?name={name}&background={avatar_color}&color=fff&bold=true"
+            profile.save()
+
+    return redirect('/accounts/profiles/')
+
+@login_required
 def delete_profile(request, profile_id):
     profile = get_object_or_404(UserProfile, id=profile_id, user=request.user)
     if request.method == 'POST':

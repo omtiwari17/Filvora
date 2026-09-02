@@ -10,14 +10,26 @@
     <!-- Profiles Grid -->
     <div class="flex flex-wrap items-center justify-center gap-6 sm:gap-8 mb-12">
         {% for p in profiles %}
-        <div class="flex flex-col items-center gap-3 group">
-            <a href="/accounts/profiles/{{ p.id }}/switch/" 
-               class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden p-1 border-2 {% if p.id == active_profile_id %}border-brand-500 shadow-xl shadow-brand-500/30 scale-105{% else %}border-gray-800 hover:border-gray-600{% endif %} group-hover:scale-110 transition-all duration-300 relative bg-gray-900 flex items-center justify-center">
-                <img src="{{ p.avatar }}" alt="{{ p.name }}" class="w-full h-full rounded-xl object-cover">
-                {% if p.is_kids %}
-                <span class="absolute bottom-1 right-1 bg-emerald-500 text-[9px] font-black text-white px-1.5 py-0.2 rounded shadow">KIDS</span>
-                {% endif %}
-            </a>
+        <div class="flex flex-col items-center gap-3 group relative">
+            <div class="relative">
+                <a href="/accounts/profiles/{{ p.id }}/switch/" 
+                   class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden p-1 border-2 {% if p.id == active_profile_id %}border-brand-500 shadow-xl shadow-brand-500/30 scale-105{% else %}border-gray-800 hover:border-gray-600{% endif %} group-hover:scale-105 transition-all duration-300 relative bg-gray-900 flex items-center justify-center block">
+                    <img src="{{ p.avatar }}" alt="{{ p.name }}" class="w-full h-full rounded-xl object-cover">
+                    {% if p.is_kids %}
+                    <span class="absolute bottom-1 right-1 bg-emerald-500 text-[9px] font-black text-white px-1.5 py-0.2 rounded shadow">KIDS</span>
+                    {% endif %}
+                </a>
+                
+                <!-- Edit Button overlay -->
+                <button onclick="openEditProfile('{{ p.id }}', '{{ p.name|escapejs }}', {{ p.is_kids|yesno:'true,false' }})" 
+                        title="Edit Profile" 
+                        class="absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full bg-gray-800/95 hover:bg-brand-500 text-gray-300 hover:text-white border border-gray-700 flex items-center justify-center shadow-lg transition-all transform opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                </button>
+            </div>
+
             <div class="text-center">
                 <a href="/accounts/profiles/{{ p.id }}/switch/" class="text-sm font-bold text-gray-200 group-hover:text-white transition block">
                     {{ p.name }}
@@ -27,9 +39,9 @@
                 {% endif %}
             </div>
             {% if profiles|length > 1 %}
-            <form method="post" action="/accounts/profiles/{{ p.id }}/delete/" onsubmit="return confirm('Delete profile {{ p.name }}?');" class="opacity-0 group-hover:opacity-100 transition-opacity">
+            <form method="post" action="/accounts/profiles/{{ p.id }}/delete/" onsubmit="return confirm('Delete profile {{ p.name }}? All history and ratings for this profile will be permanently removed.');" class="opacity-0 group-hover:opacity-100 transition-opacity">
                 {% csrf_token %}
-                <button type="submit" class="text-[10px] text-gray-500 hover:text-red-500 transition">Delete</button>
+                <button type="submit" class="text-[10px] text-gray-500 hover:text-red-500 transition font-medium">Delete</button>
             </form>
             {% endif %}
         </div>
@@ -90,6 +102,34 @@
                 <label class="block text-xs font-bold text-gray-300 uppercase mb-1">Profile Name</label>
                 <input type="text" name="name" required placeholder="e.g. Om or Family" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
             </div>
+            
+            <!-- Avatar Theme Color Selection -->
+            <div>
+                <label class="block text-xs font-bold text-gray-300 uppercase mb-2">Avatar Theme</label>
+                <div class="flex items-center gap-2.5">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="avatar_color" value="e50914" checked class="hidden peer">
+                        <span class="w-7 h-7 rounded-full bg-red-600 block border-2 border-transparent peer-checked:border-white peer-checked:scale-110 shadow transition-all"></span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="avatar_color" value="3b82f6" class="hidden peer">
+                        <span class="w-7 h-7 rounded-full bg-blue-500 block border-2 border-transparent peer-checked:border-white peer-checked:scale-110 shadow transition-all"></span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="avatar_color" value="10b981" class="hidden peer">
+                        <span class="w-7 h-7 rounded-full bg-emerald-500 block border-2 border-transparent peer-checked:border-white peer-checked:scale-110 shadow transition-all"></span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="avatar_color" value="8b5cf6" class="hidden peer">
+                        <span class="w-7 h-7 rounded-full bg-purple-500 block border-2 border-transparent peer-checked:border-white peer-checked:scale-110 shadow transition-all"></span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="avatar_color" value="f59e0b" class="hidden peer">
+                        <span class="w-7 h-7 rounded-full bg-amber-500 block border-2 border-transparent peer-checked:border-white peer-checked:scale-110 shadow transition-all"></span>
+                    </label>
+                </div>
+            </div>
+
             <div class="flex items-center gap-2 pt-1">
                 <input type="checkbox" id="is_kids" name="is_kids" class="w-4 h-4 text-brand-500 rounded border-gray-700 bg-gray-950">
                 <label for="is_kids" class="text-xs text-gray-300 font-medium cursor-pointer">Kid's Profile (Safe content only)</label>
@@ -101,4 +141,75 @@
         </form>
     </div>
 </div>
+
+<!-- Modal: Edit Profile -->
+<div id="edit-profile-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl space-y-6">
+        <div class="flex items-center justify-between">
+            <h3 class="text-xl font-black text-white">Edit Profile</h3>
+            <button onclick="document.getElementById('edit-profile-modal').classList.add('hidden')" class="text-gray-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form id="edit-profile-form" method="post" action="" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-bold text-gray-300 uppercase mb-1">Profile Name</label>
+                <input type="text" id="edit-profile-name" name="name" required class="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
+            </div>
+
+            <!-- Avatar Theme Color Selection -->
+            <div>
+                <label class="block text-xs font-bold text-gray-300 uppercase mb-2">Avatar Theme</label>
+                <div class="flex items-center gap-2.5">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="avatar_color" value="e50914" class="hidden peer">
+                        <span class="w-7 h-7 rounded-full bg-red-600 block border-2 border-transparent peer-checked:border-white peer-checked:scale-110 shadow transition-all"></span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="avatar_color" value="3b82f6" class="hidden peer">
+                        <span class="w-7 h-7 rounded-full bg-blue-500 block border-2 border-transparent peer-checked:border-white peer-checked:scale-110 shadow transition-all"></span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="avatar_color" value="10b981" class="hidden peer">
+                        <span class="w-7 h-7 rounded-full bg-emerald-500 block border-2 border-transparent peer-checked:border-white peer-checked:scale-110 shadow transition-all"></span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="avatar_color" value="8b5cf6" class="hidden peer">
+                        <span class="w-7 h-7 rounded-full bg-purple-500 block border-2 border-transparent peer-checked:border-white peer-checked:scale-110 shadow transition-all"></span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="avatar_color" value="f59e0b" class="hidden peer">
+                        <span class="w-7 h-7 rounded-full bg-amber-500 block border-2 border-transparent peer-checked:border-white peer-checked:scale-110 shadow transition-all"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+                <input type="checkbox" id="edit-profile-kids" name="is_kids" class="w-4 h-4 text-brand-500 rounded border-gray-700 bg-gray-950">
+                <label for="edit-profile-kids" class="text-xs text-gray-300 font-medium cursor-pointer">Kid's Profile (Safe content only)</label>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="button" onclick="document.getElementById('edit-profile-modal').classList.add('hidden')" class="px-5 py-2.5 text-xs font-bold text-gray-400 hover:text-white">Cancel</button>
+                <button type="submit" class="px-6 py-2.5 bg-brand-500 hover:bg-red-600 text-white rounded-full font-bold text-xs shadow-lg shadow-brand-500/25">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEditProfile(profileId, name, isKids) {
+        const modal = document.getElementById('edit-profile-modal');
+        const form = document.getElementById('edit-profile-form');
+        const nameInput = document.getElementById('edit-profile-name');
+        const kidsInput = document.getElementById('edit-profile-kids');
+
+        if (form) form.action = `/accounts/profiles/${profileId}/update/`;
+        if (nameInput) nameInput.value = name;
+        if (kidsInput) kidsInput.checked = isKids;
+
+        if (modal) modal.classList.remove('hidden');
+    }
+</script>
 {% endblock %}

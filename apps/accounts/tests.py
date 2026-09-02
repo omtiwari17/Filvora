@@ -39,3 +39,17 @@ class AccountsTestCase(TestCase):
         response = self.client.post(f'/accounts/profiles/{p2.id}/delete/')
         self.assertEqual(response.status_code, 302)
         self.assertFalse(UserProfile.objects.filter(id=p2.id).exists())
+
+    def test_update_profile(self):
+        self.client.login(username='accountuser', password='password123')
+        p = UserProfile.objects.create(user=self.user, name='Original Name', is_kids=False)
+        response = self.client.post(f'/accounts/profiles/{p.id}/update/', {
+            'name': 'Updated Name',
+            'is_kids': 'on',
+            'avatar_color': '3b82f6'
+        })
+        self.assertEqual(response.status_code, 302)
+        p.refresh_from_db()
+        self.assertEqual(p.name, 'Updated Name')
+        self.assertTrue(p.is_kids)
+        self.assertIn('3b82f6', p.avatar)
