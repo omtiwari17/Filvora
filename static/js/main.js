@@ -344,3 +344,89 @@ function initStarRatingHover() {
     });
 }
 initStarRatingHover();
+
+// --- Mobile & Click Dropdown Handlers (Vibe & Profile) ---
+function toggleVibeDropdown(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    const menu = document.getElementById('vibe-dropdown-menu');
+    const btn = document.getElementById('vibe-dropdown-btn');
+    const chevron = document.getElementById('vibe-chevron');
+    if (!menu) return;
+
+    const isOpen = menu.classList.contains('dropdown-force-open');
+    closeProfileDropdown();
+
+    if (isOpen) {
+        closeVibeDropdown();
+    } else {
+        menu.classList.remove('dropdown-force-closed');
+        menu.classList.add('dropdown-force-open');
+        if (chevron) chevron.classList.add('rotate-180');
+    }
+}
+
+function closeVibeDropdown() {
+    const menu = document.getElementById('vibe-dropdown-menu');
+    const btn = document.getElementById('vibe-dropdown-btn');
+    const chevron = document.getElementById('vibe-chevron');
+    if (!menu) return;
+
+    menu.classList.remove('dropdown-force-open');
+    menu.classList.add('dropdown-force-closed');
+    if (chevron) chevron.classList.remove('rotate-180');
+    if (btn) btn.blur();
+
+    setTimeout(() => {
+        menu.classList.remove('dropdown-force-closed');
+    }, 200);
+}
+
+function toggleProfileDropdown(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    const menu = document.getElementById('profile-dropdown-menu');
+    const btn = document.getElementById('profile-dropdown-btn');
+    if (!menu) return;
+
+    const isOpen = menu.classList.contains('dropdown-force-open');
+    closeVibeDropdown();
+
+    if (isOpen) {
+        closeProfileDropdown();
+    } else {
+        menu.classList.remove('dropdown-force-closed');
+        menu.classList.add('dropdown-force-open');
+    }
+}
+
+function closeProfileDropdown() {
+    const menu = document.getElementById('profile-dropdown-menu');
+    const btn = document.getElementById('profile-dropdown-btn');
+    if (!menu) return;
+
+    menu.classList.remove('dropdown-force-open');
+    menu.classList.add('dropdown-force-closed');
+    if (btn) btn.blur();
+
+    setTimeout(() => {
+        menu.classList.remove('dropdown-force-closed');
+    }, 200);
+}
+
+// Global click-outside listener to dismiss dropdowns
+document.addEventListener('click', (e) => {
+    const vibeWrapper = document.getElementById('vibe-dropdown-wrapper');
+    if (vibeWrapper && !vibeWrapper.contains(e.target)) {
+        closeVibeDropdown();
+    }
+
+    const profileWrapper = document.getElementById('profile-dropdown-wrapper');
+    if (profileWrapper && !profileWrapper.contains(e.target)) {
+        closeProfileDropdown();
+    }
+});

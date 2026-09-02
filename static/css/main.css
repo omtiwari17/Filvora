@@ -195,3 +195,18 @@ button, a, input, select {
 .star-rating-btn:active {
     transform: scale(0.95);
 }
+
+/* Mobile & Click Toggle Utilities for Dropdowns */
+.dropdown-force-open {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+    pointer-events: auto !important;
+}
+
+.dropdown-force-closed {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transform: translateY(4px) !important;
+    pointer-events: none !important;
+}
