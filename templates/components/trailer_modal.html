@@ -1,56 +1,59 @@
-﻿<!-- 🎬 Filvora Cinematic Official Trailer Modal (Zero-Emoji, Strict SVG, Instant Audio Cutoff) -->
+﻿<!-- 🎬 Filvora Cinematic Official Trailer Modal (Zero-Emoji, Strict SVG, Adaptive Viewport Engine) -->
 <div id="trailer-modal" 
-     class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-2xl hidden flex items-center justify-center p-3 sm:p-6 transition-all duration-300 opacity-0 pointer-events-none"
+     class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-2xl hidden flex items-center justify-center p-3 sm:p-5 md:p-6 transition-all duration-300 opacity-0 pointer-events-none"
      role="dialog" 
      aria-modal="true"
      aria-labelledby="trailer-modal-title">
 
-    <div class="relative w-full max-w-5xl bg-gray-950 border border-gray-800/90 rounded-3xl shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-all duration-300" id="trailer-modal-dialog">
-        <!-- Modal Top Bar -->
-        <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-800/80 bg-gray-900/80">
-            <div class="flex items-center gap-3 min-w-0 pr-4">
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-500/20 border border-brand-500/40 text-brand-400 text-[11px] font-black tracking-wider uppercase shrink-0">
-                    <svg class="w-3 h-3 fill-brand-400 translate-x-0.5" viewBox="0 0 24 24">
+    <div class="relative bg-gray-950 border border-gray-800/90 ring-1 ring-white/10 rounded-2xl sm:rounded-3xl shadow-[0_20px_70px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col my-auto transform scale-95 transition-all duration-300 mx-auto" 
+         id="trailer-modal-dialog"
+         style="width: min(94vw, 980px, calc((84vh - 52px) * 16 / 9)); max-width: 980px;">
+        
+        <!-- Modal Top Bar (Proportional & Responsive across all screen sizes) -->
+        <div class="flex items-center justify-between px-3.5 py-2.5 sm:px-5 sm:py-3 border-b border-gray-800/80 bg-gradient-to-r from-gray-900/95 via-gray-900/90 to-gray-950/95 select-none">
+            <div class="flex items-center gap-2 sm:gap-3 min-w-0 pr-2 sm:pr-4">
+                <span class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-brand-500/15 border border-brand-500/30 text-brand-400 text-[9px] sm:text-[11px] font-black tracking-wider uppercase shrink-0">
+                    <svg class="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-brand-400 translate-x-0.5" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z"/>
                     </svg>
                     Official Trailer
                 </span>
-                <h3 id="trailer-modal-title" class="text-sm sm:text-base font-bold text-white truncate drop-shadow"></h3>
+                <h3 id="trailer-modal-title" class="text-xs sm:text-sm md:text-base font-bold text-white truncate drop-shadow"></h3>
             </div>
             
-            <div class="flex items-center gap-2.5 shrink-0">
+            <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
                 <a id="trailer-external-link" 
                    href="#" 
                    target="_blank" 
                    rel="noopener noreferrer" 
-                   class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg text-xs font-semibold border border-gray-700/80 transition"
+                   class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg text-xs font-semibold border border-gray-700/80 hover:border-gray-500 transition"
                    title="Open on YouTube">
                     <span>YouTube</span>
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                 </a>
-                <span class="hidden sm:inline text-[10px] text-gray-500 font-mono bg-gray-900 px-2 py-1 rounded border border-gray-800">ESC</span>
+                <span class="hidden md:inline text-[9px] sm:text-[10px] text-gray-400 font-mono bg-black/50 px-2 py-0.5 sm:py-1 rounded border border-gray-800">ESC</span>
                 <button type="button" 
                         onclick="closeTrailerModal()" 
                         aria-label="Close trailer"
-                        class="w-8 h-8 rounded-full bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-700/80 hover:border-gray-500 transition flex items-center justify-center shadow focus:outline-none">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-900 hover:bg-red-500/20 text-gray-400 hover:text-red-400 border border-gray-700/80 hover:border-red-500/40 transition flex items-center justify-center shadow focus:outline-none">
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
         </div>
 
-        <!-- 16:9 Cinema Container -->
-        <div class="relative w-full aspect-video bg-black flex items-center justify-center">
-            <!-- Loading Indicator -->
+        <!-- 16:9 Cinema Container (Always perfectly proportioned to avoid letterboxing) -->
+        <div class="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
+            <!-- Loading State -->
             <div id="trailer-loader" class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-950 z-10 hidden">
-                <div class="w-10 h-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                <div class="w-8 h-8 sm:w-10 sm:h-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
                 <p class="text-xs font-semibold text-gray-400">Loading official trailer...</p>
             </div>
 
-            <!-- YouTube Video Iframe with Strict Origin Policy to eliminate Configuration Error 153 -->
+            <!-- YouTube Video Iframe with Strict Origin Policy -->
             <iframe id="trailer-iframe" 
                     class="w-full h-full border-0" 
                     src="" 
@@ -83,7 +86,6 @@
         if (loader) loader.classList.add('hidden');
         if (extLink) extLink.href = 'https://www.youtube.com/watch?v=' + youtubeKey;
 
-        // Compliant standard YouTube embed with strict-origin policy & matching origin parameter
         iframe.src = buildYoutubeEmbedUrl(youtubeKey);
 
         modal.classList.remove('hidden', 'pointer-events-none');
@@ -108,7 +110,7 @@
 
         if (titleEl) titleEl.textContent = title || 'Official Trailer';
         if (loader) {
-            loader.innerHTML = '<div class=\"w-10 h-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin\"></div><p class=\"text-xs font-semibold text-gray-400\">Loading official trailer...</p>';
+            loader.innerHTML = '<div class=\"w-8 h-8 sm:w-10 sm:h-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin\"></div><p class=\"text-xs font-semibold text-gray-400\">Loading official trailer...</p>';
             loader.classList.remove('hidden');
         }
         iframe.src = '';
@@ -132,7 +134,7 @@
                     iframe.src = buildYoutubeEmbedUrl(data.trailer_key);
                 } else {
                     if (loader) {
-                        loader.innerHTML = '<div class=\"text-center space-y-2 p-6\"><svg class=\"w-10 h-10 text-gray-500 mx-auto\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z\" /></svg><p class=\"text-sm font-bold text-white\">Trailer Unavailable</p><p class=\"text-xs text-gray-400\">An official trailer is not currently available for this title.</p></div>';
+                        loader.innerHTML = '<div class=\"text-center space-y-2 p-6\"><svg class=\"w-8 h-8 sm:w-10 sm:h-10 text-gray-500 mx-auto\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z\" /></svg><p class=\"text-xs sm:text-sm font-bold text-white\">Trailer Unavailable</p><p class=\"text-[11px] sm:text-xs text-gray-400\">An official trailer is not currently available for this title.</p></div>';
                     }
                 }
             })
@@ -157,11 +159,11 @@
         document.body.classList.remove('overflow-hidden');
 
         setTimeout(function() {
-            iframe.src = ''; // Stops audio and streaming immediately
+            iframe.src = '';
             modal.classList.add('hidden', 'pointer-events-none');
             var loader = document.getElementById('trailer-loader');
             if (loader) {
-                loader.innerHTML = '<div class=\"w-10 h-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin\"></div><p class=\"text-xs font-semibold text-gray-400\">Loading official trailer...</p>';
+                loader.innerHTML = '<div class=\"w-8 h-8 sm:w-10 sm:h-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin\"></div><p class=\"text-xs font-semibold text-gray-400\">Loading official trailer...</p>';
                 loader.classList.add('hidden');
             }
         }, 220);
