@@ -110,6 +110,15 @@
             height: 8.5rem !important;
             background: rgba(0, 0, 0, 0.002) !important;
         }
+        .is-fullscreen #embed-fullscreen-hotspot,
+        :fullscreen #embed-fullscreen-hotspot {
+            z-index: 2147483645 !important;
+            position: fixed !important;
+            bottom: 0 !important;
+            right: 0 !important;
+            width: 4.5rem !important;
+            height: 4.5rem !important;
+        }
         /* Ripple seek animations */
         @keyframes ripple-seek {
             0% { opacity: 1; transform: scale(0.85); }
@@ -570,12 +579,16 @@
             id="filvora-embed-frame"
             src="{{ video_url }}"
             class="w-full h-full border-0 absolute inset-0 bg-black"
-            allow="accelerometer *; autoplay *; clipboard-write *; encrypted-media *; gyroscope *; picture-in-picture *; web-share *; fullscreen *; display-capture *"
-            allowfullscreen="true"
-            webkitallowfullscreen="true"
-            mozallowfullscreen="true"
+            allow="accelerometer *; autoplay *; clipboard-write *; encrypted-media *; gyroscope *; picture-in-picture *; web-share *; display-capture *"
             referrerpolicy="origin"
         ></iframe>
+
+        <!-- Embed Player Fullscreen Button Hotspot (Routes clicks on the embed's bottom-right ⛶ button to Filvora's cinema fullscreen) -->
+        <div id="embed-fullscreen-hotspot" 
+             onclick="toggleFullscreen()" 
+             title="Toggle Fullscreen (F)" 
+             class="fixed bottom-0 right-0 w-16 h-16 z-30 cursor-pointer pointer-events-auto"
+             style="background: rgba(0, 0, 0, 0.001) !important;"></div>
         {% endif %}
     </div>
 
