@@ -111,6 +111,12 @@ DATABASES = {
     'default': dj_database_url.config(default='sqlite:///db.sqlite3')
 }
 
+if DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
+    DATABASES['default']['OPTIONS'] = {
+        'timeout': 30,  # 30s busy timeout to prevent "database table is locked"
+        'init_command': 'PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;',
+    }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -141,5 +147,15 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Session & Authentication Persistence (Long-Lived Netflix-Style Sessions)
+LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+# 1-Year Persistent Sessions (Never randomly expire during movies or on restart)
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 365  # 365 days (1 year)
+SESSION_SAVE_EVERY_REQUEST = True        # Auto-refresh session on every request
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep logged in when closing browser/tab
+SESSION_COOKIE_HTTPONLY = True           # XSS protection
+SESSION_COOKIE_SAMESITE = 'Lax'          # Safe top-level navigation cookie passing
+SESSION_COOKIE_SECURE = False            # Allow local HTTP access (127.0.0.1 & 192.168.1.x)

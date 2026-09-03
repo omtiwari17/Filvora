@@ -467,3 +467,10 @@ document.addEventListener('click', (e) => {
         closeProfileDropdown();
     }
 });
+
+// Ensure bfcache (back-forward cache) always restores fresh authenticated state when navigating back from video
+window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+        window.location.reload();
+    }
+});
