@@ -1322,30 +1322,32 @@
             if (topNotch) {
                 topNotch.style.opacity = '0';
                 topNotch.style.pointerEvents = 'none';
+                topNotch.style.transform = 'translate(-50%, -100%)';
             }
             if (quickContainer) {
                 quickContainer.style.opacity = '0';
                 quickContainer.style.pointerEvents = 'none';
             }
             clearTimeout(hideTimeout);
-            if (!isInteractiveMenuOpen() && !isPlaybackPaused) {
-                scheduleHide(2500);
+            if (!isInteractiveMenuOpen()) {
+                scheduleHide(3000);
             }
         }
 
         function hideOverlay() {
-            if (isInteractiveMenuOpen() || isPlaybackPaused) return;
+            if (isInteractiveMenuOpen()) return;
             const overlay = document.getElementById('player-overlay');
             const quickContainer = document.getElementById('quick-server-container');
             const topNotch = document.getElementById('top-notch-trigger');
             if (overlay) {
                 overlay.style.opacity = '0';
                 overlay.style.pointerEvents = 'none';
-                overlay.style.transform = 'translateY(-10px)';
+                overlay.style.transform = 'translateY(-100%)';
             }
             if (topNotch) {
                 topNotch.style.opacity = '0.9';
                 topNotch.style.pointerEvents = 'auto';
+                topNotch.style.transform = 'translate(-50%, 0)';
             }
             if (quickContainer) {
                 quickContainer.style.opacity = '0.9';
@@ -1353,9 +1355,9 @@
             }
         }
 
-        function scheduleHide(ms = 2500) {
+        function scheduleHide(ms = 3000) {
             clearTimeout(hideTimeout);
-            if (isInteractiveMenuOpen() || isPlaybackPaused) return;
+            if (isInteractiveMenuOpen()) return;
             hideTimeout = setTimeout(() => {
                 hideOverlay();
             }, ms);
@@ -1387,7 +1389,7 @@
                     showOverlay();
                 });
                 topSensor.addEventListener('mouseleave', () => {
-                    if (!isPlaybackPaused) scheduleHide(1200);
+                    scheduleHide(1500);
                 });
             }
 
@@ -1397,7 +1399,7 @@
                     showOverlay();
                 });
                 quickContainer.addEventListener('mouseleave', () => {
-                    if (!isPlaybackPaused) scheduleHide(1200);
+                    scheduleHide(1500);
                 });
             }
 
@@ -1410,7 +1412,7 @@
                     showOverlay();
                 });
                 overlay.addEventListener('mouseleave', () => {
-                    if (!isPlaybackPaused) scheduleHide(1200);
+                    scheduleHide(1500);
                 });
             }
 
@@ -1422,7 +1424,7 @@
 
             document.addEventListener('click', (e) => {
                 if (!isInteractiveMenuOpen() && !e.target.closest('#player-overlay') && !e.target.closest('#bookmark-modal') && !e.target.closest('#sleep-timer-container')) {
-                    if (!isPlaybackPaused) scheduleHide(1000);
+                    scheduleHide(1000);
                 }
             });
 
