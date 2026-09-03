@@ -19,7 +19,7 @@
   - All active routes (`/`, `/movies/`, `/series/`, `/discover/`, `/genres/`, `/history/`, `/analytics/`, `/library/`, `/search/`, `/watch/`) return `200 OK`.
 - **One-Click Launcher**:
   - `Start Filvora.bat` located at root: verifies venv, silently checks database migrations, auto-opens browser, and runs dev server bound to `0.0.0.0:8000`.
-- **Automated Test Suite**: **105 tests** across all 8 apps (`apps.core`, `apps.catalog`, `apps.playback`, `apps.library`, `apps.watch`, `apps.tmdb`, `apps.accounts`, `apps.downloads`), **100% passing**.
+- **Automated Test Suite**: **106 tests** across all 8 apps (`apps.core`, `apps.catalog`, `apps.playback`, `apps.library`, `apps.watch`, `apps.tmdb`, `apps.accounts`, `apps.downloads`), **100% passing**.
 
 ---
 
@@ -27,6 +27,9 @@
 
 ### 2.1 ✅ Active & 100% Working Features (v2.4 Production State)
 
+| **True Cinema Fullscreen & Controls Overlay** | `apps/playback/`, `templates/playback/watch.html` | Hardware-composited fullscreen engine. Resolves the W3C isolated iframe spec trap via the **Embedded Fullscreen Hotspot Router** (`#embed-fullscreen-hotspot`), ensuring clicks on server player default `⛶` buttons, top bar buttons, or <kbd>F</kbd> trigger `#player-wrapper` cinema fullscreen. Full Filvora controls, persistent top pull-down notch (`#top-notch-trigger`), and server switchers remain accessible in fullscreen DOM. |
+| **Snappy 3-Second Controls Auto-Hide Engine** | `templates/playback/watch.html`, `static/js/main.js` | Unconditional inactivity auto-hide sliding controls off-screen (`translateY(-100%)`) after 3 seconds of no mouse movement. Fast dismissal (1s-1.5s) on click or cursor exit. Reveal triggers via top sensor (`#top-sensor`), pull-down notch, or <kbd>C</kbd> key. Automatically suspends hide timer when interactive modals (Bookmarks, Sleep Timer) are open. |
+| **1-Year Persistent Sessions & WAL Concurrency** | `config/settings.py`, `static/js/main.js` | Long-lived Netflix-style sessions (`SESSION_COOKIE_AGE = 31536000`, `SESSION_SAVE_EVERY_REQUEST = True`, `SESSION_EXPIRE_AT_BROWSER_CLOSE = False`). SQLite converted to **Write-Ahead Logging (WAL)** mode with 30s busy timeout, eliminating table lockouts during background tasks. Automated `pageshow` bfcache sync preventing stale unauthenticated snapshots on back-navigation. |
 | **Custom Timestamp Bookmarks & Scene Notes** | `apps/library/`, `apps/playback/`, `templates/playback/watch.html`, `templates/library/list.html` | Save bookmarks at exact playback seconds with personal scene notes for movies and TV episodes. Scoped per user profile (`SceneBookmark` model). Features in-player Bookmark modal (shortcut <kbd>B</kbd>), direct URL timestamp jumps (`?t=<sec>`), and a dedicated "Scene Bookmarks" tab in My Library with responsive cards, preview banners, digital timestamp badges, quick jump, and in-place deletion. |
 | **Player Sleep Timer & Theater Mode Engine** | `apps/playback/`, `templates/playback/watch.html` | Sleep timer dropdown (15m, 30m, 45m, 60m, End of Episode) with live countdown badge, automatic playback fadeout/pause, and cozy sleep overlay. Theater Mode (<kbd>T</kbd>) ambient velvet black dimming focusing 100% attention on the cinema canvas. Picture-in-Picture (<kbd>P</kbd>) support with Document PiP and HTML5 Video PiP. |
 | **Official Franchise & Saga Universe Rail** | `apps/tmdb/`, `apps/catalog/`, `templates/catalog/movie_detail.html` | Auto-detects if a movie belongs to an official TMDB collection/franchise (e.g. *Dune, Harry Potter, Spider-Man, John Wick, Avatar, Marvel*). Fetches all installments chronologically ordered by release date, displays saga overview and total film count, assigns chronological order badges (`#1`, `#2`, `#3`...), highlights the currently viewed film with a glowing border and `Now Viewing` indicator, and provides instant play/details actions. |
@@ -47,19 +50,49 @@
 | **Multi-Page Discover Engine** | `apps/catalog/` | Faceted multi-page discovery filtering by Media Type (`movie`/`tv`), Mood, Genre, Language, Score, Certification (`G`, `PG`, `PG-13`, `R`, `NC-17`), and Sort Order with preserved query parameters across pagination. |
 | **Homepage Cinematic Billboard** | `templates/home/index.html` | Hero spotlight billboard with backdrop image blending, action buttons (Play Now, In My List, Details), and responsive spacing avoiding overlap with the "Continue Watching" rail. |
 | **Mobile-First UX & App Navigation** | `templates/base.html`, `static/css/main.css` | Native app-like mobile experience with iOS/Android safe area insets (`env(safe-area-inset-bottom)`), active pill bottom navigation, mobile poster rating badges, full-width touch CTA buttons on detail views, horizontal touch-swipe season selector rails, and search bar boundary bounds. |
-| **Zero Emojis / Strict SVG Design** | `static/css/`, `static/js/`, `templates/` | 100% clean Tailwind SVGs across all components (metrics, badges, fallback posters, dropdowns, bat launcher, buttons). Suppressed native horizontal scrollbars on carousels/rails, rail drag-scroll, keyboard shortcuts (<kbd>F</kbd> for fullscreen, <kbd>Space</kbd> for play/pause, <kbd>M</kbd> for mute, <kbd>Alt</kbd>+<kbd>S</kbd> for server switch). |
+| **Zero Emojis / Strict SVG Design** | `static/css/`, `static/js/`, `templates/` | 100% clean Tailwind SVGs across all components (metrics, badges, fallback posters, dropdowns, bat launcher, buttons). Suppressed native horizontal scrollbars on carousels/rails, rail drag-scroll, keyboard shortcuts (<kbd>F</kbd> for fullscreen, <kbd>C</kbd> for controls, <kbd>Space</kbd> for play/pause, <kbd>M</kbd> for mute, <kbd>Alt</kbd>+<kbd>S</kbd> for server switch, <kbd>B</kbd> for bookmark, <kbd>Z</kbd> for sleep timer, <kbd>T</kbd> for theater mode, <kbd>P</kbd> for PiP). |
 
 ---
 
-### 2.2 📺 Playback Architecture & Embed Mechanics (`apps/playback/`)
+### 2.2 📺 Deep Playback & Fullscreen Architecture (`apps/playback/`)
 
-#### Streaming Providers Matrix:
+#### 2.2.1 The Fullscreen Overlay Isolation Dilemma & Permanent Solution
+- **The W3C Fullscreen Isolation Trap**: Under standard browser security and W3C HTML5 Fullscreen API specs, when an `<iframe>` is placed into fullscreen directly by its internal controls, the browser renders **only the iframe element** on a hardware compositor swapchain. The entire parent document DOM (including upper controls, bookmark dialogs, and navigation) is completely omitted by the GPU renderer.
+- **The Hotspot Click Router**: To provide a seamless experience where the embed player's own bottom-right `⛶` button works without breaking overlays:
+  - We position `#embed-fullscreen-hotspot` (`w-16 h-16`, `bottom-0 right-0`, `z-30`) directly over the embed player's bottom-right fullscreen button.
+  - Clicks hit the hotspot, executing Filvora's `toggleFullscreen()` directly with an authorized user gesture.
+  - Fullscreen is requested on `#player-wrapper`, elevating the video canvas and all parent overlays into native fullscreen.
+  - The `<iframe>` is excluded from native `allowfullscreen`, preventing isolated fallback.
+  - Clicks on the bottom-right corner while in fullscreen cleanly exit fullscreen.
+
+#### 2.2.2 Controls Auto-Hide & Compositor Hit-Testing
+- **Compositor Hit-Testing (`#top-sensor`)**: Windows DirectComposition optimization can omit transparent `<div>` layers over hardware-accelerated video frames. Adding `background: rgba(0, 0, 0, 0.002) !important;` forces a painted compositor quad, ensuring hover and clicks near the top 136px register reliably over embed frames.
+- **Persistent Pull-Down Notch (`#top-notch-trigger`)**: When the upper bar auto-hides, a styled glassmorphic notch (`[ 🔴 Controls ▾ ]`) remains visible at top-center (`z-[2147483647]`), giving the user a direct handle to drop controls back down.
+- **Clean Slide Animation**: Uses `translateY(-100%)` and `opacity: 0` for complete off-screen translation without visual remnants.
+
+#### 2.2.3 Streaming Providers Matrix:
 1. **Server 1 (VidLink)** ⭐: Primary fast 1080p Full HD default server with reliable CDN routing and zero buffer stalls.
 2. **Server 2 (VidFast)**: High-bitrate 4K Ultra HD & 1080p streaming node. Runs on automatic adaptive bitrate (ABR); its internal UI exposes playback speed while serving peak source resolution.
 3. **Server 3 (AutoEmbed)**: Multi-source failover streaming node.
 4. **Server 4 (VidSrc)**: High-definition embed mirror (`vidsrc.pm`).
 5. **Server 5 (2Embed)**: Secondary backup stream node.
 6. **Server 6 (NontonGo)**: Alternative multi-server backup.
+
+---
+
+### 2.3 🔐 Authentication, Concurrency & Session Persistence Architecture (`config/settings.py`)
+
+- **1-Year Long-Lived Sessions**:
+  - `SESSION_COOKIE_AGE = 31536000` (1 full year, Netflix-style)
+  - `SESSION_SAVE_EVERY_REQUEST = True` (Session cookie is refreshed on each request)
+  - `SESSION_EXPIRE_AT_BROWSER_CLOSE = False` (Preserves session across browser restarts)
+  - `SESSION_COOKIE_HTTPONLY = True`, `SESSION_COOKIE_SAMESITE = 'Lax'`, `SESSION_COOKIE_SECURE = False` (permitting local IP `192.168.1.x` and `127.0.0.1` streaming).
+- **SQLite Concurrency & WAL Engine**:
+  - Default SQLite `delete` journal mode causes table lockouts on concurrent reads/writes (e.g. running test suites or progress beacons simultaneously).
+  - Configured Write-Ahead Logging: `PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;`
+  - Configured `OPTIONS['timeout'] = 30` in `DATABASES['default']` to prevent `database table is locked` exceptions.
+- **bfcache Back-Navigation Sync**:
+  - Modern browsers cache navigation DOM snapshots (bfcache). When users navigate back from the video player, `pageshow` listener detects `event.persisted` and reloads the document, ensuring authenticated UI and active profiles are always up to date.
 
 ---
 
@@ -77,23 +110,23 @@ Filvora/
 │   ├── tmdb/                  # TMDB API client with curl/requests fallback & caching
 │   └── accounts/              # Authentication, UserProfile multi-profile switcher & QR pairing
 ├── config/
-│   ├── settings.py            # Hardened Django settings & remote proxy configurations
+│   ├── settings.py            # Hardened Django settings, SQLite WAL, 1-year persistent sessions & proxy configs
 │   ├── urls.py                # Main URL routing definitions
 │   └── wsgi.py / asgi.py      # WSGI/ASGI application gateways
 ├── static/
 │   ├── css/main.css           # Glassmorphism, animations, scrollbar-hide styles, star cascade hover CSS
-│   ├── js/main.js             # Rail drag-scroll, keyboard shortcuts, toast engine, star rating hover engine (v2.3)
+│   ├── js/main.js             # Rail drag-scroll, keyboard shortcuts, toast engine, star rating hover, bfcache sync (v2.4)
 │   ├── manifest.json          # PWA Web App Manifest
 │   └── sw.js                  # PWA Service Worker caching
 ├── Start Filvora.bat          # Double-clickable launcher for Windows (venv check, migrations, browser launch)
 └── templates/
-    ├── base.html              # Base layout with navbar, footer, PWA meta & bottom nav (v2.3)
-    ├── components/            # Reusable partials (movie_card, series_card, empty_state, rating_stars)
-    ├── catalog/               # Browse, discover, genres, and person detail views
+    ├── base.html              # Base layout with navbar, footer, PWA meta & bottom nav (v2.4)
+    ├── components/            # Reusable partials (movie_card, series_card, empty_state, rating_stars, trailer_modal)
+    ├── catalog/               # Browse, discover, genres, franchise saga universe rail, and person detail views
     ├── watch/                 # History (Streamed & Rated tabs) and Personal Analytics (Wrapped) templates
-    ├── library/               # Watchlist (live search & star filters) and custom collections manager
-    ├── accounts/              # Sign in, registration (v2.3), profile switcher with QR code pairing & edit modals
-    ├── playback/              # Immersive cinematic player view with Up Next autoplay overlay (v2.3)
+    ├── library/               # Watchlist, Scene Bookmarks hub, and custom collections manager
+    ├── accounts/              # Sign in, registration, profile switcher with QR code pairing & edit modals
+    ├── playback/              # Immersive cinematic player view, notch trigger, sleep timer & autoplay overlay (v2.4)
     ├── 404.html               # Custom cinematic 404 error page
     └── 500.html               # Custom cinematic 500 error page
 ```
@@ -141,7 +174,7 @@ Filvora/
 # Run Development Server manually
 .\venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000
 
-# Run Automated Test Suite (97 tests across 8 apps)
+# Run Automated Test Suite (106 tests across 8 apps)
 .\venv\Scripts\python.exe manage.py test apps.core apps.catalog apps.playback apps.library apps.watch apps.tmdb apps.accounts apps.downloads
 
 # Backup Local Database
