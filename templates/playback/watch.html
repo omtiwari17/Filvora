@@ -570,7 +570,10 @@
             id="filvora-embed-frame"
             src="{{ video_url }}"
             class="w-full h-full border-0 absolute inset-0 bg-black"
-            allow="accelerometer *; autoplay *; clipboard-write *; encrypted-media *; gyroscope *; picture-in-picture *; web-share *; display-capture *"
+            allow="accelerometer *; autoplay *; clipboard-write *; encrypted-media *; gyroscope *; picture-in-picture *; web-share *; fullscreen *; display-capture *"
+            allowfullscreen="true"
+            webkitallowfullscreen="true"
+            mozallowfullscreen="true"
             referrerpolicy="origin"
         ></iframe>
         {% endif %}
@@ -1284,8 +1287,15 @@
         }
 
         let hideTimeout = null;
-        let isHoveredOverTop = false;
         let isPlaybackPaused = false;
+
+        function isInteractiveMenuOpen() {
+            const bm = document.getElementById('bookmark-modal');
+            if (bm && !bm.classList.contains('hidden')) return true;
+            const st = document.getElementById('sleep-timer-menu');
+            if (st && !st.classList.contains('hidden')) return true;
+            return false;
+        }
 
         function showOverlay() {
             const overlay = document.getElementById('player-overlay');
@@ -1305,13 +1315,13 @@
                 quickContainer.style.pointerEvents = 'none';
             }
             clearTimeout(hideTimeout);
-            if (!isHoveredOverTop && !isPlaybackPaused) {
-                scheduleHide(4500);
+            if (!isInteractiveMenuOpen() && !isPlaybackPaused) {
+                scheduleHide(2500);
             }
         }
 
         function hideOverlay() {
-            if (isHoveredOverTop || isPlaybackPaused) return;
+            if (isInteractiveMenuOpen() || isPlaybackPaused) return;
             const overlay = document.getElementById('player-overlay');
             const quickContainer = document.getElementById('quick-server-container');
             const topNotch = document.getElementById('top-notch-trigger');
@@ -1321,18 +1331,18 @@
                 overlay.style.transform = 'translateY(-10px)';
             }
             if (topNotch) {
-                topNotch.style.opacity = '0.95';
+                topNotch.style.opacity = '0.9';
                 topNotch.style.pointerEvents = 'auto';
             }
             if (quickContainer) {
-                quickContainer.style.opacity = '0.95';
+                quickContainer.style.opacity = '0.9';
                 quickContainer.style.pointerEvents = 'auto';
             }
         }
 
-        function scheduleHide(ms = 4000) {
+        function scheduleHide(ms = 2500) {
             clearTimeout(hideTimeout);
-            if (isPlaybackPaused) return;
+            if (isInteractiveMenuOpen() || isPlaybackPaused) return;
             hideTimeout = setTimeout(() => {
                 hideOverlay();
             }, ms);
@@ -1355,55 +1365,51 @@
             const currentServerId = '{{ current_server }}';
             const nextServerId = '{% if next_provider %}{{ next_provider.id }}{% else %}{% endif %}';
 
-            // Top sensor hover triggers & window focus recovery
+            // Top sensor hover triggers
             if (topSensor) {
                 topSensor.addEventListener('mouseenter', () => {
-                    isHoveredOverTop = true;
                     showOverlay();
-                    window.focus();
-                });
-                topSensor.addEventListener('mouseleave', () => {
-                    isHoveredOverTop = false;
-                    if (!isPlaybackPaused) scheduleHide(3500);
                 });
                 topSensor.addEventListener('mousemove', () => {
-                    isHoveredOverTop = true;
                     showOverlay();
+                });
+                topSensor.addEventListener('mouseleave', () => {
+                    if (!isPlaybackPaused) scheduleHide(1200);
                 });
             }
 
-            // Quick server container hover keep-alive
+            // Quick server container hover
             if (quickContainer) {
                 quickContainer.addEventListener('mouseenter', () => {
-                    isHoveredOverTop = true;
-                    clearTimeout(hideTimeout);
-                    window.focus();
+                    showOverlay();
                 });
                 quickContainer.addEventListener('mouseleave', () => {
-                    isHoveredOverTop = false;
-                    if (!isPlaybackPaused) scheduleHide(3000);
+                    if (!isPlaybackPaused) scheduleHide(1200);
                 });
             }
 
             // Overlay hover keep-alive
             if (overlay) {
                 overlay.addEventListener('mouseenter', () => {
-                    isHoveredOverTop = true;
                     showOverlay();
-                    window.focus();
+                });
+                overlay.addEventListener('mousemove', () => {
+                    showOverlay();
                 });
                 overlay.addEventListener('mouseleave', () => {
-                    isHoveredOverTop = false;
-                    if (!isPlaybackPaused) scheduleHide(3000);
+                    if (!isPlaybackPaused) scheduleHide(1200);
                 });
             }
 
             document.addEventListener('mousemove', (e) => {
-                if (e.clientY <= 120) {
+                if (e.clientY <= 100) {
                     showOverlay();
-                    window.focus();
-                } else if (!isHoveredOverTop && !isPlaybackPaused) {
-                    showOverlay();
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!isInteractiveMenuOpen() && !e.target.closest('#player-overlay') && !e.target.closest('#bookmark-modal') && !e.target.closest('#sleep-timer-container')) {
+                    if (!isPlaybackPaused) scheduleHide(1000);
                 }
             });
 
@@ -1514,6 +1520,13 @@
                     const pos = d.currentTime || d.time || d.position || (d.data && d.data.currentTime);
                     const dur = d.duration || (d.data && d.data.duration);
                     if (typeof pos === 'number' && pos >= 0) {
+                        // If playback position is advancing, video is playing!
+                        if (pos > currentPlaybackPosition) {
+                            if (isPlaybackPaused) {
+                                isPlaybackPaused = false;
+                                scheduleHide(2000);
+                            }
+                        }
                         currentPlaybackPosition = pos;
                     }
                     if (typeof pos === 'number' && pos >= 15) {
@@ -1534,7 +1547,7 @@
                         showOverlay();
                     } else if (eventName.includes('play') || eventName.includes('start') || d.paused === false || (d.data && d.data.paused === false)) {
                         isPlaybackPaused = false;
-                        scheduleHide(3500);
+                        scheduleHide(2000);
                     }
 
                     if (eventName.includes('fullscreen')) {
@@ -1778,7 +1791,7 @@
                 // Show top overlay and server switcher on fullscreen changes
                 player.on('fullscreenchange', () => {
                     showOverlay();
-                    scheduleHide(3500);
+                    scheduleHide(2000);
                 });
 
                 // When paused, keep player controls visible so user can access bookmarks, sleep timer, servers
@@ -1790,11 +1803,15 @@
                 player.on('play', () => {
                     isPlaybackPaused = false;
                     showOverlay();
-                    scheduleHide(3500);
+                    scheduleHide(2000);
                 });
 
                 player.on('timeupdate', () => {
                     if (!player.paused()) {
+                        if (isPlaybackPaused) {
+                            isPlaybackPaused = false;
+                            scheduleHide(2000);
+                        }
                         const cur = player.currentTime();
                         const dur = player.duration();
                         if (cur >= 15) {
@@ -1804,9 +1821,7 @@
                 });
 
                 player.on('userinactive', () => {
-                    if (!isHoveredOverTop) {
-                        hideOverlay();
-                    }
+                    hideOverlay();
                 });
 
                 player.on('useractive', () => {
