@@ -67,7 +67,7 @@
         .video-js .vjs-big-play-button {
             transition: opacity 0.4s ease !important;
         }
-        /* Fullscreen support for overlays */
+        /* Fullscreen & overlay layering */
         #player-overlay,
         #quick-server-container,
         #top-notch-trigger {
@@ -75,42 +75,40 @@
         }
         #top-sensor {
             z-index: 2147483646 !important;
+            background: rgba(0, 0, 0, 0.002) !important;
         }
-        :fullscreen #player-overlay,
-        :-webkit-full-screen #player-overlay,
-        .video-js.vjs-fullscreen #player-overlay {
+        .is-fullscreen #player-overlay,
+        :fullscreen #player-overlay {
             z-index: 2147483647 !important;
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             width: 100% !important;
         }
-        :fullscreen #top-notch-trigger,
-        :-webkit-full-screen #top-notch-trigger,
-        .video-js.vjs-fullscreen #top-notch-trigger {
+        .is-fullscreen #top-notch-trigger,
+        :fullscreen #top-notch-trigger {
             z-index: 2147483647 !important;
             position: fixed !important;
             top: 0 !important;
             left: 50% !important;
             transform: translateX(-50%) !important;
         }
-        :fullscreen #quick-server-container,
-        :-webkit-full-screen #quick-server-container,
-        .video-js.vjs-fullscreen #quick-server-container {
+        .is-fullscreen #quick-server-container,
+        :fullscreen #quick-server-container {
             z-index: 2147483647 !important;
             position: fixed !important;
             top: 1rem !important;
             right: 1rem !important;
         }
-        :fullscreen #top-sensor,
-        :-webkit-full-screen #top-sensor,
-        .video-js.vjs-fullscreen #top-sensor {
+        .is-fullscreen #top-sensor,
+        :fullscreen #top-sensor {
             z-index: 2147483646 !important;
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             width: 100% !important;
-            height: 7rem !important;
+            height: 8.5rem !important;
+            background: rgba(0, 0, 0, 0.002) !important;
         }
         /* Ripple seek animations */
         @keyframes ripple-seek {
@@ -135,19 +133,25 @@
     <!-- Theater Mode Ambient Velvet Curtain Backdrop -->
     <div id="theater-curtain" onclick="toggleTheaterMode()" title="Click to Exit Theater Mode" class="fixed inset-0 bg-black z-40 opacity-0 pointer-events-none transition-opacity duration-500 cursor-pointer"></div>
 
-    <!-- Top Hover Detection Sensor (112px tall detection zone) -->
-    <div id="top-sensor" class="fixed top-0 left-0 w-full h-28 z-40 pointer-events-auto"></div>
+    <!-- Top Hover & Click Detection Sensor (136px tall zone across the monitor with compositor quad) -->
+    <div id="top-sensor" 
+         onclick="showOverlay()" 
+         onmouseenter="showOverlay()" 
+         style="background: rgba(0, 0, 0, 0.002) !important;" 
+         title="Move cursor or click near top to reveal controls" 
+         class="fixed top-0 left-0 w-full h-32 z-[2147483646] cursor-pointer pointer-events-auto"></div>
 
-    <!-- Top Notch Trigger (Reveals upper controls anytime with 1 click or hover in fullscreen or normal mode) -->
+    <!-- Top Notch Trigger (Always visible at top center when upper bar is hidden) -->
     <div id="top-notch-trigger" 
          onclick="showOverlay()" 
          onmouseenter="showOverlay()" 
-         title="Click or hover to reveal controls (Z: Sleep, T: Theater, P: PiP, B: Bookmark)"
-         class="fixed top-0 left-1/2 -translate-x-1/2 z-50 px-4 py-1 rounded-b-2xl bg-gray-950/90 hover:bg-gray-900 border-b border-x border-gray-700/90 text-gray-300 hover:text-white cursor-pointer transition-all duration-300 backdrop-blur-xl opacity-0 pointer-events-none hover:opacity-100 flex items-center gap-1.5 text-[11px] font-bold shadow-2xl">
-        <svg class="w-3.5 h-3.5 text-brand-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+         title="Click or hover to reveal controls (F: Fullscreen, B: Bookmark, Z: Sleep, T: Theater, P: PiP)"
+         class="fixed top-0 left-1/2 -translate-x-1/2 z-[2147483647] px-4 py-1.5 rounded-b-2xl bg-gray-950/90 hover:bg-black border-b border-x border-gray-700/90 text-gray-300 hover:text-white cursor-pointer transition-all duration-300 backdrop-blur-2xl flex items-center gap-2 text-xs font-bold shadow-2xl group opacity-90 hover:opacity-100">
+        <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
+        <span>Controls</span>
+        <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-white transition-transform group-hover:translate-y-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
         </svg>
-        <span>Controls</span>
     </div>
 
     <!-- Floating Quick Server Switcher & Direct Dropdown Menu on Hover -->
@@ -360,12 +364,12 @@
             <button id="fullscreen-toggle-btn"
                     type="button"
                     onclick="toggleFullscreen()" 
-                    title="Toggle Fullscreen (F)" 
-                    class="bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer">
-                <svg id="fullscreen-icon" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    title="Toggle Cinema Fullscreen (F)" 
+                    class="bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
+                <svg id="fullscreen-icon" class="h-4 w-4 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                 </svg>
-                <span id="fullscreen-label" class="hidden md:inline">Fullscreen</span>
+                <span id="fullscreen-label" class="hidden sm:inline">Fullscreen</span>
             </button>
         </div>
     </div>
@@ -566,12 +570,7 @@
             id="filvora-embed-frame"
             src="{{ video_url }}"
             class="w-full h-full border-0 absolute inset-0 bg-black"
-            allow="accelerometer *; autoplay *; clipboard-write *; encrypted-media *; gyroscope *; picture-in-picture *; web-share *; fullscreen *; display-capture *"
-            allowfullscreen="true"
-            webkitallowfullscreen="true"
-            mozallowfullscreen="true"
-            oallowfullscreen="true"
-            msallowfullscreen="true"
+            allow="accelerometer *; autoplay *; clipboard-write *; encrypted-media *; gyroscope *; picture-in-picture *; web-share *; display-capture *"
             referrerpolicy="origin"
         ></iframe>
         {% endif %}
@@ -1322,11 +1321,11 @@
                 overlay.style.transform = 'translateY(-10px)';
             }
             if (topNotch) {
-                topNotch.style.opacity = '0.85';
+                topNotch.style.opacity = '0.95';
                 topNotch.style.pointerEvents = 'auto';
             }
             if (quickContainer) {
-                quickContainer.style.opacity = '1';
+                quickContainer.style.opacity = '0.95';
                 quickContainer.style.pointerEvents = 'auto';
             }
         }
@@ -1412,12 +1411,49 @@
                 showOverlay();
             });
 
-            document.addEventListener('fullscreenchange', () => {
+            function handleFullscreenChange() {
+                const fsEl = document.fullscreenElement || 
+                             document.webkitFullscreenElement || 
+                             document.mozFullScreenElement || 
+                             document.msFullscreenElement;
+                const iframe = document.getElementById('filvora-embed-frame');
+                const wrapper = document.getElementById('player-wrapper') || document.documentElement;
+
+                const isFull = !!fsEl;
+                if (isFull) {
+                    document.body.classList.add('is-fullscreen');
+                } else {
+                    document.body.classList.remove('is-fullscreen');
+                }
+
+                // Update fullscreen toggle button state
+                const label = document.getElementById('fullscreen-label');
+                const icon = document.getElementById('fullscreen-icon');
+                if (label) {
+                    label.innerText = isFull ? 'Exit' : 'Fullscreen';
+                }
+                if (icon) {
+                    if (isFull) {
+                        icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />`;
+                    } else {
+                        icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />`;
+                    }
+                }
+
+                // If iframe itself went fullscreen directly, upgrade to wrapper
+                if (fsEl && fsEl === iframe && wrapper) {
+                    try {
+                        wrapper.requestFullscreen().catch(() => {});
+                    } catch(e) {}
+                }
+
                 showOverlay();
-            });
-            document.addEventListener('webkitfullscreenchange', () => {
-                showOverlay();
-            });
+            }
+
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 
             // Initial display on load
             showOverlay();
@@ -1491,14 +1527,18 @@
                         }
                     }
 
-                    // Check explicit pause, play, and ended events from embed player
-                    const eventName = ((d.event || d.type || (d.data && d.data.event) || '') + '').toLowerCase();
-                    if (eventName === 'pause' || eventName === 'paused' || d.paused === true) {
+                    // Check explicit pause, play, fullscreen, and ended events from embed player
+                    const eventName = ((d.event || d.type || d.action || d.status || (d.data && d.data.event) || (d.data && d.data.type) || '') + '').toLowerCase();
+                    if (eventName.includes('pause') || d.paused === true || (d.data && d.data.paused === true)) {
                         isPlaybackPaused = true;
                         showOverlay();
-                    } else if (eventName === 'play' || eventName === 'playing' || d.paused === false) {
+                    } else if (eventName.includes('play') || eventName.includes('start') || d.paused === false || (d.data && d.data.paused === false)) {
                         isPlaybackPaused = false;
                         scheduleHide(3500);
+                    }
+
+                    if (eventName.includes('fullscreen')) {
+                        toggleFullscreen();
                     }
 
                     if (eventName === 'ended' || eventName === 'playback_ended' || d.ended === true) {
@@ -1519,6 +1559,13 @@
                 if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
 
                 const key = e.key ? e.key.toLowerCase() : '';
+
+                // Controls Menu shortcut (C key)
+                if (key === 'c') {
+                    e.preventDefault();
+                    toggleOverlay();
+                    return;
+                }
 
                 // Bookmark shortcut (B key)
                 if (key === 'b') {
