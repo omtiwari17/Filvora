@@ -175,8 +175,18 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
+                // Purge any stale legacy HTML caches that could cause unauthenticated snapshots
+                if ('caches' in window) {
+                    caches.keys().then((keys) => {
+                        keys.forEach((key) => {
+                            if (key.includes('shell') || key.includes('v2')) {
+                                caches.delete(key);
+                            }
+                        });
+                    });
+                }
                 navigator.serviceWorker.register('/static/sw.js')
-                    .then((reg) => console.log('PWA ServiceWorker registered'))
+                    .then((reg) => console.log('PWA ServiceWorker active (Static v3)'))
                     .catch((err) => console.log('PWA ServiceWorker registration failed: ', err));
             });
         }

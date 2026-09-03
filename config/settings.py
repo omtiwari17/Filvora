@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-gp+r6=ybm(pm)e3@lu^@ll*7)+i^sa=nd3txhnw#ah+pe+q2a*')
+SECRET_KEY = os.getenv('SECRET_KEY') or os.getenv('DJANGO_SECRET_KEY') or 'django-insecure-gp+r6=ybm(pm)e3@lu^@ll*7)+i^sa=nd3txhnw#ah+pe+q2a*'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
@@ -154,7 +154,7 @@ LOGOUT_REDIRECT_URL = '/'
 
 # 1-Year Persistent Sessions (Never randomly expire during movies or on restart)
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 365  # 365 days (1 year)
-SESSION_SAVE_EVERY_REQUEST = True        # Auto-refresh session on every request
+SESSION_SAVE_EVERY_REQUEST = False       # Do NOT save on read-only requests (avoids SQLite lockouts & cookie drops)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep logged in when closing browser/tab
 SESSION_COOKIE_HTTPONLY = True           # XSS protection
 SESSION_COOKIE_SAMESITE = 'Lax'          # Safe top-level navigation cookie passing

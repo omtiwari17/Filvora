@@ -29,7 +29,7 @@
 
 | **True Cinema Fullscreen & Controls Overlay** | `apps/playback/`, `templates/playback/watch.html` | Hardware-composited fullscreen engine. Resolves the W3C isolated iframe spec trap via the **Embedded Fullscreen Hotspot Router** (`#embed-fullscreen-hotspot`), ensuring clicks on server player default `⛶` buttons, top bar buttons, or <kbd>F</kbd> trigger `#player-wrapper` cinema fullscreen. Full Filvora controls, persistent top pull-down notch (`#top-notch-trigger`), and server switchers remain accessible in fullscreen DOM. |
 | **Snappy 3-Second Controls Auto-Hide Engine** | `templates/playback/watch.html`, `static/js/main.js` | Unconditional inactivity auto-hide sliding controls off-screen (`translateY(-100%)`) after 3 seconds of no mouse movement. Fast dismissal (1s-1.5s) on click or cursor exit. Reveal triggers via top sensor (`#top-sensor`), pull-down notch, or <kbd>C</kbd> key. Automatically suspends hide timer when interactive modals (Bookmarks, Sleep Timer) are open. |
-| **1-Year Persistent Sessions & WAL Concurrency** | `config/settings.py`, `static/js/main.js` | Long-lived Netflix-style sessions (`SESSION_COOKIE_AGE = 31536000`, `SESSION_SAVE_EVERY_REQUEST = True`, `SESSION_EXPIRE_AT_BROWSER_CLOSE = False`). SQLite converted to **Write-Ahead Logging (WAL)** mode with 30s busy timeout, eliminating table lockouts during background tasks. Automated `pageshow` bfcache sync preventing stale unauthenticated snapshots on back-navigation. |
+| **1-Year Persistent Sessions & Isolated Cache Boundaries** | `config/settings.py`, `static/sw.js`, `static/js/main.js` | Long-lived Netflix-style persistent sessions (`SESSION_COOKIE_AGE = 31536000`, `SESSION_SAVE_EVERY_REQUEST = False`, `SESSION_EXPIRE_AT_BROWSER_CLOSE = False`). SQLite converted to **Write-Ahead Logging (WAL)** mode with 30s busy timeout, preventing table lockouts during background tasks. Strict Service Worker caching boundary (`filvora-static-v3`) that only caches `/static/` assets and bypasses dynamic HTML navigation, preventing ghost sign-outs and unauthenticated cache snapshot rollbacks. |
 | **Custom Timestamp Bookmarks & Scene Notes** | `apps/library/`, `apps/playback/`, `templates/playback/watch.html`, `templates/library/list.html` | Save bookmarks at exact playback seconds with personal scene notes for movies and TV episodes. Scoped per user profile (`SceneBookmark` model). Features in-player Bookmark modal (shortcut <kbd>B</kbd>), direct URL timestamp jumps (`?t=<sec>`), and a dedicated "Scene Bookmarks" tab in My Library with responsive cards, preview banners, digital timestamp badges, quick jump, and in-place deletion. |
 | **Player Sleep Timer & Theater Mode Engine** | `apps/playback/`, `templates/playback/watch.html` | Sleep timer dropdown (15m, 30m, 45m, 60m, End of Episode) with live countdown badge, automatic playback fadeout/pause, and cozy sleep overlay. Theater Mode (<kbd>T</kbd>) ambient velvet black dimming focusing 100% attention on the cinema canvas. Picture-in-Picture (<kbd>P</kbd>) support with Document PiP and HTML5 Video PiP. |
 | **Official Franchise & Saga Universe Rail** | `apps/tmdb/`, `apps/catalog/`, `templates/catalog/movie_detail.html` | Auto-detects if a movie belongs to an official TMDB collection/franchise (e.g. *Dune, Harry Potter, Spider-Man, John Wick, Avatar, Marvel*). Fetches all installments chronologically ordered by release date, displays saga overview and total film count, assigns chronological order badges (`#1`, `#2`, `#3`...), highlights the currently viewed film with a glowing border and `Now Viewing` indicator, and provides instant play/details actions. |
@@ -82,17 +82,24 @@
 
 ### 2.3 🔐 Authentication, Concurrency & Session Persistence Architecture (`config/settings.py`)
 
-- **1-Year Long-Lived Sessions**:
-  - `SESSION_COOKIE_AGE = 31536000` (1 full year, Netflix-style)
-  - `SESSION_SAVE_EVERY_REQUEST = True` (Session cookie is refreshed on each request)
-  - `SESSION_EXPIRE_AT_BROWSER_CLOSE = False` (Preserves session across browser restarts)
+- **1-Year Long-Lived Sessions (Netflix-Style)**:
+  - `SESSION_COOKIE_AGE = 31536000` (1 full year, 365 days).
+  - `SESSION_SAVE_EVERY_REQUEST = False` (MANDATORY: Must remain `False`! When cookie age is 1 year, saving on every read request causes massive SQLite lock contention, race conditions with concurrent beacons/HTMX requests, and triggers silent session drops when `SessionStore.load()` encounters locked tables).
+  - `SESSION_EXPIRE_AT_BROWSER_CLOSE = False` (Preserves session across browser and tab restarts).
   - `SESSION_COOKIE_HTTPONLY = True`, `SESSION_COOKIE_SAMESITE = 'Lax'`, `SESSION_COOKIE_SECURE = False` (permitting local IP `192.168.1.x` and `127.0.0.1` streaming).
+- **Environment & Secret Key Parity**:
+  - `SECRET_KEY = os.getenv('SECRET_KEY') or os.getenv('DJANGO_SECRET_KEY') or ...` guarantees stable HMAC session hashing across CLI, background tasks, and dev server processes, preventing unexpected `request.session.flush()` logouts.
 - **SQLite Concurrency & WAL Engine**:
   - Default SQLite `delete` journal mode causes table lockouts on concurrent reads/writes (e.g. running test suites or progress beacons simultaneously).
   - Configured Write-Ahead Logging: `PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;`
   - Configured `OPTIONS['timeout'] = 30` in `DATABASES['default']` to prevent `database table is locked` exceptions.
+- **Strict Service Worker Cache Boundary (`static/sw.js` — `filvora-static-v3`)**:
+  - **Golden Rule**: Never cache dynamic HTML responses (`/`, `/movies/*`, `/series/*`, `/library/*`, `/accounts/*`, etc.) in the Service Worker. Dynamic HTML contains user-specific authentication state, active profile context, and CSRF tokens. Caching dynamic pages causes unauthenticated snapshot rollbacks (appearing as random sign-outs).
+  - `static/sw.js` exclusively handles `/static/` assets (CSS, JS, fonts, manifest). All navigation and dynamic routes bypass the Service Worker directly to the network stack.
+  - Legacy shell caches (`filvora-shell-v1`, `filvora-shell-v2`) are aggressively purged on activation and on page load in `templates/base.html`.
 - **bfcache Back-Navigation Sync**:
   - Modern browsers cache navigation DOM snapshots (bfcache). When users navigate back from the video player, `pageshow` listener detects `event.persisted` and reloads the document, ensuring authenticated UI and active profiles are always up to date.
+
 
 ---
 
@@ -162,6 +169,8 @@ Filvora/
    - Nested action buttons inside clickable cards must include `onclick="event.preventDefault(); event.stopPropagation();"`.
 6. **No Fake / Deceptive Content**:
    - Never download trailer clips or dummy files and label them as full movies. Keep features genuine and honest.
+7. **Leverage Specialized Subagents When Required (MANDATORY FOR SUPERIOR RESULTS)**:
+   - For complex refactors, multi-file searches, architecture migrations, deep debugging, or parallel task execution, always employ specialized subagents (such as the `research` subagent for deep code analysis and document lookups, or `self` for isolated sub-tasks) when required. Using dedicated subagents preserves context clarity, eliminates token bloat, and delivers dramatically higher precision, speed, and overall engineering quality.
 
 ---
 
