@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
-from .models import LibraryItem, CustomCollection, CustomCollectionItem
+from .models import LibraryItem, CustomCollection, CustomCollectionItem, SceneBookmark
 from apps.tmdb.client import TMDBClient
 from apps.accounts.utils import get_active_profile
 
@@ -10,6 +10,7 @@ def my_list(request):
     profile = get_active_profile(request)
     items = LibraryItem.objects.filter(user=request.user, profile=profile).order_by('-added_at')
     custom_collections = CustomCollection.objects.filter(user=request.user, profile=profile).prefetch_related('items')
+    bookmarks = SceneBookmark.objects.filter(user=request.user, profile=profile).order_by('-created_at')
     client = TMDBClient()
     
     from apps.watch.models import UserRating
@@ -36,6 +37,7 @@ def my_list(request):
     return render(request, 'library/list.html', {
         'saved_items': saved_items,
         'custom_collections': custom_collections,
+        'bookmarks': bookmarks,
         'star_range': [1, 2, 3, 4, 5],
     })
 
@@ -91,5 +93,69 @@ def toggle_item(request):
                 return HttpResponse(f"""<button hx-post="/library/toggle/" hx-vals='{{"tmdb_id": "{tmdb_id}", "media_type": "{media_type}"}}' hx-swap="outerHTML" class="bg-gray-500/50 text-white px-8 py-3 rounded font-bold text-lg flex items-center gap-2 hover:bg-gray-500/70 transition backdrop-blur-sm"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg> My List</button>""")
             
     return HttpResponse("Invalid", status=400)
+
+
+@login_required
+def add_bookmark(request):
+    """Save a scene timestamp bookmark with user note for active profile."""
+    if request.method == 'POST':
+        try:
+            import json
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+            else:
+                data = request.POST
+
+            tmdb_id = int(data.get('tmdb_id'))
+            media_type = data.get('media_type', 'movie')
+            title = data.get('title', '').strip() or ('Movie' if media_type == 'movie' else 'Series')
+            raw_s = data.get('season')
+            raw_e = data.get('episode')
+            season = int(raw_s) if raw_s not in (None, '', 'null') else None
+            episode = int(raw_e) if raw_e not in (None, '', 'null') else None
+            pos_sec = float(data.get('position', 0))
+            note = data.get('note', '').strip()
+            poster_path = data.get('poster_path', '').strip()
+
+            profile = get_active_profile(request)
+
+            bookmark = SceneBookmark.objects.create(
+                user=request.user,
+                profile=profile,
+                tmdb_id=tmdb_id,
+                media_type=media_type,
+                title=title,
+                season=season,
+                episode=episode,
+                position_seconds=pos_sec,
+                note=note,
+                poster_path=poster_path
+            )
+
+            return JsonResponse({
+                'status': 'success',
+                'id': bookmark.id,
+                'title': bookmark.title,
+                'timestamp': bookmark.formatted_timestamp,
+                'seconds': bookmark.position_seconds,
+                'note': bookmark.note,
+                'play_url': bookmark.play_url
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'POST required'}, status=405)
+
+
+@login_required
+def delete_bookmark(request, bookmark_id):
+    """Deletes a scene bookmark scoped to active user profile."""
+    if request.method == 'POST':
+        profile = get_active_profile(request)
+        bookmark = get_object_or_404(SceneBookmark, id=bookmark_id, user=request.user, profile=profile)
+        bookmark.delete()
+        if request.headers.get('HX-Request'):
+            return HttpResponse("")
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error', 'message': 'POST required'}, status=405)
 
 

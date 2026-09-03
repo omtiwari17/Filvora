@@ -73,3 +73,67 @@ class LibraryTestCase(TestCase):
         self.assertEqual(len(res.context['saved_items']), 0)
         self.assertFalse(LibraryItem.objects.filter(user=self.user, profile=p2, tmdb_id=157336).exists())
 
+    def test_add_and_delete_scene_bookmark(self):
+        from apps.library.models import SceneBookmark
+        self.client.login(username='libuser', password='password123')
+        
+        # 1. Add Bookmark
+        response = self.client.post('/library/bookmark/add/', {
+            'tmdb_id': 157336,
+            'media_type': 'movie',
+            'title': 'Interstellar',
+            'position': 5055, # 01:24:15
+            'note': 'Docking sequence scene',
+            'poster_path': '/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg'
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['status'], 'success')
+        self.assertEqual(data['timestamp'], '01:24:15')
+        self.assertIn('?t=5055', data['play_url'])
+
+        bm = SceneBookmark.objects.filter(user=self.user, tmdb_id=157336).first()
+        self.assertIsNotNone(bm)
+        self.assertEqual(bm.formatted_timestamp, '01:24:15')
+        self.assertEqual(bm.note, 'Docking sequence scene')
+
+        # 2. Check in Library view
+        lib_res = self.client.get('/library/')
+        self.assertEqual(lib_res.status_code, 200)
+        self.assertIn('bookmarks', lib_res.context)
+        self.assertEqual(len(lib_res.context['bookmarks']), 1)
+
+        # 3. Delete Bookmark
+        del_res = self.client.post(f'/library/bookmark/{bm.id}/delete/')
+        self.assertEqual(del_res.status_code, 200)
+        self.assertFalse(SceneBookmark.objects.filter(id=bm.id).exists())
+
+    def test_multi_profile_bookmark_isolation(self):
+        from apps.accounts.models import UserProfile
+        from apps.library.models import SceneBookmark
+        p1 = UserProfile.objects.create(user=self.user, name='Viewer 1')
+        p2 = UserProfile.objects.create(user=self.user, name='Viewer 2')
+
+        self.client.login(username='libuser', password='password123')
+        session = self.client.session
+        session['active_profile_id'] = p1.id
+        session.save()
+
+        # Add bookmark on Profile 1
+        self.client.post('/library/bookmark/add/', {
+            'tmdb_id': 245891,
+            'media_type': 'movie',
+            'title': 'John Wick',
+            'position': 1200,
+            'note': 'Red Circle scene'
+        })
+        self.assertTrue(SceneBookmark.objects.filter(user=self.user, profile=p1, tmdb_id=245891).exists())
+
+        # Switch to Profile 2
+        session['active_profile_id'] = p2.id
+        session.save()
+
+        lib_res = self.client.get('/library/')
+        self.assertEqual(lib_res.status_code, 200)
+        self.assertEqual(len(lib_res.context['bookmarks']), 0)
+

@@ -1,5 +1,5 @@
 /**
- * Filvora v2.3 - Core Application JavaScript
+ * Filvora v2.4 - Core Application JavaScript
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -89,7 +89,7 @@ function toggleShortcutsModal() {
             <div class="bg-gray-900 border border-gray-700/80 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
                 <div class="flex items-center justify-between border-b border-gray-800 pb-3">
                     <div class="flex items-center gap-2">
-                        <span class="bg-brand-500 text-white text-xs font-black px-2 py-0.5 rounded">v2.3</span>
+                        <span class="bg-brand-500 text-white text-xs font-black px-2 py-0.5 rounded">v2.4</span>
                         <h3 class="text-lg font-bold text-white">Keyboard Shortcuts</h3>
                     </div>
                     <button onclick="document.getElementById('shortcuts-modal').classList.add('hidden');" class="text-gray-400 hover:text-white text-xl font-bold p-1">&times;</button>
@@ -118,6 +118,26 @@ function toggleShortcutsModal() {
                     <div class="flex items-center justify-between p-2 rounded bg-gray-950/60 border border-gray-800">
                         <span class="text-gray-300">Seek 10s</span>
                         <kbd class="px-2 py-0.5 bg-gray-800 border border-gray-700 rounded text-xs text-gray-300 font-mono font-bold">&larr; / &rarr;</kbd>
+                    </div>
+                    <div class="flex items-center justify-between p-2 rounded bg-gray-950/60 border border-gray-800">
+                        <span class="text-gray-300">Bookmark Scene</span>
+                        <kbd class="px-2 py-0.5 bg-gray-800 border border-gray-700 rounded text-xs text-amber-400 font-mono font-bold">B</kbd>
+                    </div>
+                    <div class="flex items-center justify-between p-2 rounded bg-gray-950/60 border border-gray-800">
+                        <span class="text-gray-300">Sleep Timer</span>
+                        <kbd class="px-2 py-0.5 bg-gray-800 border border-gray-700 rounded text-xs text-cyan-400 font-mono font-bold">Z</kbd>
+                    </div>
+                    <div class="flex items-center justify-between p-2 rounded bg-gray-950/60 border border-gray-800">
+                        <span class="text-gray-300">Theater Mode</span>
+                        <kbd class="px-2 py-0.5 bg-gray-800 border border-gray-700 rounded text-xs text-purple-400 font-mono font-bold">T</kbd>
+                    </div>
+                    <div class="flex items-center justify-between p-2 rounded bg-gray-950/60 border border-gray-800">
+                        <span class="text-gray-300">Picture-in-Pic</span>
+                        <kbd class="px-2 py-0.5 bg-gray-800 border border-gray-700 rounded text-xs text-emerald-400 font-mono font-bold">P</kbd>
+                    </div>
+                    <div class="flex items-center justify-between p-2 rounded bg-gray-950/60 border border-gray-800">
+                        <span class="text-gray-300">Next Server</span>
+                        <kbd class="px-2 py-0.5 bg-gray-800 border border-gray-700 rounded text-xs text-gray-300 font-mono font-bold">Alt + S</kbd>
                     </div>
                 </div>
                 <div class="text-center pt-2">

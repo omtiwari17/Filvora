@@ -109,9 +109,21 @@
         .animate-ripple {
             animation: ripple-seek 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+        /* Cinematic Theater Mode Dimming */
+        .theater-mode-active #theater-curtain {
+            opacity: 0.94 !important;
+            pointer-events: auto !important;
+        }
+        .theater-mode-active #video-container {
+            z-index: 45 !important;
+            box-shadow: 0 0 120px rgba(0, 0, 0, 0.98), 0 0 40px rgba(229, 9, 20, 0.2) !important;
+        }
     </style>
 </head>
 <body id="player-wrapper" class="bg-black text-white h-screen w-screen overflow-hidden select-none relative">
+    <!-- Theater Mode Ambient Velvet Curtain Backdrop -->
+    <div id="theater-curtain" onclick="toggleTheaterMode()" title="Click to Exit Theater Mode" class="fixed inset-0 bg-black z-40 opacity-0 pointer-events-none transition-opacity duration-500 cursor-pointer"></div>
+
     <!-- Top Invisible Hover Detection Sensor -->
     <div id="top-sensor" class="fixed top-0 left-0 w-full h-24 z-40 pointer-events-auto"></div>
 
@@ -164,7 +176,7 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="text-base sm:text-xl md:text-2xl font-black drop-shadow text-white truncate max-w-[180px] sm:max-w-md md:max-w-lg">{{ title }}</h1>
-                    <span class="hidden sm:inline-block bg-brand-500/20 border border-brand-500/40 text-brand-500 text-[10px] font-black px-1.5 py-0.5 rounded">v2.3</span>
+                    <span class="hidden sm:inline-block bg-brand-500/20 border border-brand-500/40 text-brand-500 text-[10px] font-black px-1.5 py-0.5 rounded">v2.4</span>
                 </div>
                 <div class="flex items-center gap-2 text-[11px] sm:text-xs text-gray-400 mt-0.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -233,6 +245,91 @@
                 <span class="hidden sm:inline">My List</span>
             </button>
 
+            <!-- Bookmark Scene Button -->
+            <button type="button"
+                    onclick="openBookmarkModal()" 
+                    title="Bookmark Scene (B)" 
+                    class="bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
+                <svg class="h-4 w-4 text-amber-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                <span class="hidden sm:inline">Bookmark</span>
+                {% if saved_bookmarks %}
+                <span id="saved-bookmarks-count-badge" class="w-4 h-4 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-black flex items-center justify-center border border-amber-500/30">{{ saved_bookmarks|length }}</span>
+                {% endif %}
+            </button>
+
+            <!-- Sleep Timer Dropdown -->
+            <div class="relative inline-block text-left" id="sleep-timer-container">
+                <button type="button"
+                        id="sleep-timer-btn"
+                        onclick="toggleSleepTimerMenu()" 
+                        title="Sleep Timer (Z)" 
+                        class="bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
+                    <svg class="h-4 w-4 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span id="sleep-timer-label" class="hidden sm:inline">Sleep</span>
+                    <span id="sleep-timer-countdown" class="hidden font-mono text-cyan-300 font-black text-[10px] bg-cyan-950/90 border border-cyan-500/40 px-1.5 py-0.5 rounded-md shadow-sm"></span>
+                </button>
+
+                <!-- Sleep Timer Dropdown Options -->
+                <div id="sleep-timer-menu" class="hidden absolute right-0 mt-2 w-48 rounded-2xl bg-gray-950/95 border border-gray-800 shadow-2xl backdrop-blur-2xl p-2 z-[90] space-y-1">
+                    <div class="px-2.5 py-1.5 border-b border-gray-800/80 mb-1 flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-gray-400">Sleep Timer</span>
+                        <span id="sleep-timer-active-indicator" class="hidden w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                    </div>
+                    <button type="button" onclick="setSleepTimer(0)" class="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold text-gray-300 hover:bg-gray-900 hover:text-white transition flex items-center justify-between cursor-pointer">
+                        <span>Turn Off</span>
+                        <span class="text-[10px] text-gray-500">None</span>
+                    </button>
+                    <button type="button" onclick="setSleepTimer(15)" class="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold text-gray-300 hover:bg-gray-900 hover:text-white transition flex items-center justify-between cursor-pointer">
+                        <span>15 Minutes</span>
+                        <span class="text-[10px] text-cyan-400 font-mono">15m</span>
+                    </button>
+                    <button type="button" onclick="setSleepTimer(30)" class="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold text-gray-300 hover:bg-gray-900 hover:text-white transition flex items-center justify-between cursor-pointer">
+                        <span>30 Minutes</span>
+                        <span class="text-[10px] text-cyan-400 font-mono">30m</span>
+                    </button>
+                    <button type="button" onclick="setSleepTimer(45)" class="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold text-gray-300 hover:bg-gray-900 hover:text-white transition flex items-center justify-between cursor-pointer">
+                        <span>45 Minutes</span>
+                        <span class="text-[10px] text-cyan-400 font-mono">45m</span>
+                    </button>
+                    <button type="button" onclick="setSleepTimer(60)" class="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold text-gray-300 hover:bg-gray-900 hover:text-white transition flex items-center justify-between cursor-pointer">
+                        <span>60 Minutes</span>
+                        <span class="text-[10px] text-cyan-400 font-mono">1h</span>
+                    </button>
+                    <button type="button" onclick="setSleepTimer('end_of_episode')" class="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold text-gray-300 hover:bg-gray-900 hover:text-white transition flex items-center justify-between cursor-pointer">
+                        <span>End of Episode</span>
+                        <span class="text-[10px] text-amber-400 font-mono">End</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Theater Mode Dimming Toggle -->
+            <button type="button"
+                    id="theater-mode-btn"
+                    onclick="toggleTheaterMode()" 
+                    title="Theater Mode (T)" 
+                    class="bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
+                <svg id="theater-mode-icon" class="h-4 w-4 text-purple-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                </svg>
+                <span id="theater-mode-label" class="hidden md:inline">Theater</span>
+            </button>
+
+            <!-- Picture in Picture Button -->
+            <button type="button"
+                    id="pip-toggle-btn"
+                    onclick="togglePictureInPicture()" 
+                    title="Picture in Picture (P)" 
+                    class="bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
+                <svg class="h-4 w-4 text-emerald-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 13v-1m4 1v-3m4 3V8M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z" />
+                </svg>
+                <span class="hidden lg:inline">PiP</span>
+            </button>
+
             <!-- Fullscreen Toggle Button -->
             <button id="fullscreen-toggle-btn"
                     type="button"
@@ -245,6 +342,104 @@
                 <span id="fullscreen-label" class="hidden md:inline">Fullscreen</span>
             </button>
         </div>
+    </div>
+
+    <!-- Bookmark Scene Modal -->
+    <div id="bookmark-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md transition-opacity">
+        <div class="bg-gray-950 border border-gray-800 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 relative animate-in fade-in zoom-in-95 duration-200">
+            <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black text-white tracking-tight">Bookmark Current Scene</h3>
+                        <p class="text-[11px] text-gray-400 truncate max-w-[220px] sm:max-w-xs">{{ title }}</p>
+                    </div>
+                </div>
+                <button onclick="closeBookmarkModal()" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-900 transition">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Current Timestamp Highlight -->
+            <div class="p-3.5 rounded-2xl bg-gray-900/90 border border-gray-800/90 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Captured Timestamp</span>
+                    <div id="bookmark-display-time" class="text-2xl font-black text-amber-400 font-mono tracking-tight mt-0.5">00:00:00</div>
+                </div>
+                <button type="button" onclick="syncCurrentTimestamp()" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold rounded-xl border border-gray-700 transition flex items-center gap-1.5 shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>Sync Live</span>
+                </button>
+            </div>
+
+            <!-- Note Input -->
+            <div>
+                <label class="block text-xs font-bold text-gray-300 uppercase mb-1.5">Scene Description / Note</label>
+                <input type="text" id="bookmark-note-input" maxlength="200" placeholder="e.g. Epic fight scene, favorite quote, plot twist..." class="w-full bg-gray-900 border border-gray-800 focus:border-amber-500 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white focus:outline-none transition placeholder-gray-500">
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-1">
+                <button type="button" onclick="closeBookmarkModal()" class="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white transition">Cancel</button>
+                <button type="button" onclick="saveSceneBookmark()" id="save-bookmark-btn" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-black font-black text-xs rounded-xl shadow-lg shadow-amber-500/25 transition active:scale-95 flex items-center gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4 fill-black" viewBox="0 0 24 24">
+                        <path d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7l-4-4zm2 16H5V5h11.17L19 7.83V19zm-7-7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                    </svg>
+                    <span>Save Bookmark</span>
+                </button>
+            </div>
+
+            <!-- Existing Saved Bookmarks for this title -->
+            <div class="border-t border-gray-800/80 pt-3">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Saved Scenes for this Title</span>
+                    <span class="text-[11px] text-gray-500 font-bold" id="modal-bookmark-count">{{ saved_bookmarks|length }} saved</span>
+                </div>
+                <div id="modal-bookmarks-list" class="space-y-1.5 max-h-36 overflow-y-auto scrollbar-hide">
+                    {% for bm in saved_bookmarks %}
+                    <div id="modal-bm-{{ bm.id }}" class="flex items-center justify-between p-2.5 rounded-xl bg-gray-900/60 border border-gray-800 hover:border-gray-700 transition">
+                        <button type="button" onclick="jumpToBookmark({{ bm.position_seconds }})" class="flex items-center gap-2 text-left flex-1 min-w-0">
+                            <span class="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/30 text-amber-400 font-mono text-[11px] font-bold shrink-0">
+                                {{ bm.formatted_timestamp }}
+                            </span>
+                            <span class="text-xs text-gray-300 truncate hover:text-white transition">{{ bm.note|default:"Saved Scene" }}</span>
+                        </button>
+                        <button type="button" onclick="deleteModalBookmark({{ bm.id }})" class="text-gray-500 hover:text-red-400 p-1 transition ml-2" title="Delete">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                    {% empty %}
+                    <div id="no-modal-bookmarks" class="text-center py-4 text-xs text-gray-500">No scenes bookmarked yet. Hit Save above!</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sleep Timer Sweet Dreams Overlay -->
+    <div id="sleep-timer-overlay" class="hidden fixed inset-0 z-[120] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center text-center p-6 space-y-5 animate-in fade-in duration-500">
+        <div class="w-16 h-16 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+        </div>
+        <div class="space-y-1">
+            <h3 class="text-2xl font-black text-white tracking-tight">Sleep Timer Triggered</h3>
+            <p class="text-xs text-gray-400 max-w-sm">Playback was gently paused so you can rest. Sweet dreams!</p>
+        </div>
+        <button type="button" onclick="dismissSleepOverlay()" class="px-6 py-2.5 bg-cyan-500 hover:bg-cyan-600 text-black font-black text-xs rounded-xl shadow-lg shadow-cyan-500/25 transition active:scale-95 flex items-center gap-2 cursor-pointer">
+            <svg class="w-4 h-4 fill-black" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <span>Resume Watching</span>
+        </button>
     </div>
 
     <!-- Interactive Resume Prompt Banner (Shown when user has past progress) -->
@@ -324,7 +519,7 @@
     {% endif %}
 
     <!-- Active Video Player Container -->
-    <div class="absolute inset-0 w-full h-full bg-black z-0">
+    <div id="video-container" class="absolute inset-0 w-full h-full bg-black z-0 transition-all duration-500">
         {% if ".m3u8" in video_url or ".mp4" in video_url %}
         <!-- Direct HLS / MP4 Stream (Local Video.js) -->
         <video-js
@@ -400,27 +595,431 @@
     <script src="{% static 'js/videojs/video.min.js' %}"></script>
     
     <script>
-        // Global functions for resume prompt
+        // Global playback position & resume prompt handlers
+        let currentPlaybackPosition = {{ resume_position|default:0 }};
+
+        function formatTimestamp(seconds) {
+            const s = Math.floor(seconds || 0);
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = s % 60;
+            if (h > 0) {
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+            }
+            return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+        }
+
         function resumePlayback(pos) {
             const prompt = document.getElementById('resume-prompt');
             if (prompt) prompt.style.display = 'none';
+            currentPlaybackPosition = pos;
             const videoEl = document.getElementById('filvora-player');
             if (videoEl && typeof videojs !== 'undefined') {
-                const player = videojs('filvora-player');
-                player.currentTime(pos);
-                player.play().catch(() => {});
+                try {
+                    const player = videojs('filvora-player');
+                    player.currentTime(pos);
+                    player.play().catch(() => {});
+                } catch(e) {}
+            } else {
+                const iframe = document.querySelector('iframe');
+                if (iframe) {
+                    try {
+                        iframe.contentWindow.postMessage(JSON.stringify({event: 'seek', time: pos, currentTime: pos}), '*');
+                        iframe.contentWindow.postMessage({event: 'seek', time: pos, currentTime: pos}, '*');
+                    } catch (e) {}
+                    try {
+                        const url = new URL(iframe.src, window.location.origin);
+                        url.searchParams.set('t', Math.floor(pos));
+                        iframe.src = url.toString();
+                    } catch(e) {}
+                }
             }
         }
 
         function startOverPlayback() {
             const prompt = document.getElementById('resume-prompt');
             if (prompt) prompt.style.display = 'none';
+            currentPlaybackPosition = 0;
             const videoEl = document.getElementById('filvora-player');
             if (videoEl && typeof videojs !== 'undefined') {
-                const player = videojs('filvora-player');
-                player.currentTime(0);
-                player.play().catch(() => {});
+                try {
+                    const player = videojs('filvora-player');
+                    player.currentTime(0);
+                    player.play().catch(() => {});
+                } catch(e) {}
+            } else {
+                const iframe = document.querySelector('iframe');
+                if (iframe) {
+                    try {
+                        iframe.contentWindow.postMessage(JSON.stringify({event: 'seek', time: 0, currentTime: 0}), '*');
+                    } catch (e) {}
+                }
             }
+        }
+
+        // Bookmark Modal & Management Functions
+        function openBookmarkModal() {
+            const modal = document.getElementById('bookmark-modal');
+            if (!modal) return;
+            syncCurrentTimestamp();
+            modal.classList.remove('hidden');
+            const input = document.getElementById('bookmark-note-input');
+            if (input) {
+                input.value = '';
+                setTimeout(() => input.focus(), 120);
+            }
+        }
+
+        function closeBookmarkModal() {
+            const modal = document.getElementById('bookmark-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function syncCurrentTimestamp() {
+            const videoEl = document.getElementById('filvora-player');
+            if (videoEl && typeof videojs !== 'undefined') {
+                try {
+                    const player = videojs('filvora-player');
+                    if (player && typeof player.currentTime === 'function') {
+                        const ct = player.currentTime();
+                        if (ct > 0) currentPlaybackPosition = ct;
+                    }
+                } catch(e) {}
+            }
+            const display = document.getElementById('bookmark-display-time');
+            if (display) {
+                display.innerText = formatTimestamp(currentPlaybackPosition);
+            }
+        }
+
+        function jumpToBookmark(seconds) {
+            closeBookmarkModal();
+            resumePlayback(seconds);
+            if (typeof showToast === 'function') {
+                showToast(`Jumped to scene @ ${formatTimestamp(seconds)}`);
+            }
+        }
+
+        async function saveSceneBookmark() {
+            const noteInput = document.getElementById('bookmark-note-input');
+            const note = (noteInput ? noteInput.value : '').trim();
+            const btn = document.getElementById('save-bookmark-btn');
+            if (btn) btn.disabled = true;
+
+            try {
+                const payload = {
+                    tmdb_id: {{ tmdb_id }},
+                    media_type: '{{ media_type }}',
+                    title: '{{ title|escapejs }}',
+                    season: {% if season %}{{ season }}{% else %}null{% endif %},
+                    episode: {% if episode %}{{ episode }}{% else %}null{% endif %},
+                    position: currentPlaybackPosition,
+                    note: note,
+                    poster_path: '{{ media.poster_path|default:""|escapejs }}'
+                };
+
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                                  getCookie('csrftoken') || '';
+
+                const resp = await fetch('/library/bookmark/add/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    closeBookmarkModal();
+                    
+                    const noBm = document.getElementById('no-modal-bookmarks');
+                    if (noBm) noBm.remove();
+                    
+                    const list = document.getElementById('modal-bookmarks-list');
+                    if (list) {
+                        const item = document.createElement('div');
+                        item.id = `modal-bm-${data.id}`;
+                        item.className = 'flex items-center justify-between p-2.5 rounded-xl bg-gray-900/60 border border-gray-800 hover:border-gray-700 transition';
+                        item.innerHTML = `
+                            <button type="button" onclick="jumpToBookmark(${data.seconds})" class="flex items-center gap-2 text-left flex-1 min-w-0">
+                                <span class="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/30 text-amber-400 font-mono text-[11px] font-bold shrink-0">
+                                    ${data.timestamp}
+                                </span>
+                                <span class="text-xs text-gray-300 truncate hover:text-white transition">${data.note || "Saved Scene"}</span>
+                            </button>
+                            <button type="button" onclick="deleteModalBookmark(${data.id})" class="text-gray-500 hover:text-red-400 p-1 transition ml-2" title="Delete">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        `;
+                        list.prepend(item);
+                    }
+
+                    const badge = document.getElementById('saved-bookmarks-count-badge');
+                    if (badge) {
+                        const count = parseInt(badge.innerText || '0', 10) + 1;
+                        badge.innerText = count;
+                    }
+                    const modalCount = document.getElementById('modal-bookmark-count');
+                    if (modalCount) {
+                        modalCount.innerText = "Updated";
+                    }
+
+                    if (typeof showToast === 'function') {
+                        showToast(`Scene bookmarked @ ${data.timestamp}!`);
+                    }
+                } else {
+                    alert('Could not save bookmark: ' + (data.message || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error('Bookmark error:', err);
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        async function deleteModalBookmark(id) {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                              getCookie('csrftoken') || '';
+            try {
+                const resp = await fetch(`/library/bookmark/${id}/delete/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken }
+                });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    const el = document.getElementById(`modal-bm-${id}`);
+                    if (el) el.remove();
+                    const badge = document.getElementById('saved-bookmarks-count-badge');
+                    if (badge) {
+                        const count = Math.max(0, parseInt(badge.innerText || '1', 10) - 1);
+                        if (count === 0) badge.remove();
+                        else badge.innerText = count;
+                    }
+                }
+            } catch(err) {}
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // ==========================================
+        // Sleep Timer Engine
+        // ==========================================
+        let sleepTimerMinutes = 0;
+        let sleepTimerSecondsRemaining = 0;
+        let sleepTimerInterval = null;
+        let sleepTimerMode = null; // 'minutes' | 'end_of_episode' | null
+
+        function toggleSleepTimerMenu() {
+            const menu = document.getElementById('sleep-timer-menu');
+            if (menu) menu.classList.toggle('hidden');
+        }
+
+        function setSleepTimer(val) {
+            const menu = document.getElementById('sleep-timer-menu');
+            if (menu) menu.classList.add('hidden');
+
+            if (sleepTimerInterval) {
+                clearInterval(sleepTimerInterval);
+                sleepTimerInterval = null;
+            }
+
+            const label = document.getElementById('sleep-timer-label');
+            const countdownEl = document.getElementById('sleep-timer-countdown');
+            const activeIndicator = document.getElementById('sleep-timer-active-indicator');
+
+            if (val === 0 || !val) {
+                sleepTimerMode = null;
+                sleepTimerMinutes = 0;
+                sleepTimerSecondsRemaining = 0;
+                if (countdownEl) countdownEl.classList.add('hidden');
+                if (activeIndicator) activeIndicator.classList.add('hidden');
+                if (label) label.innerText = 'Sleep';
+                if (typeof showToast === 'function') showToast('Sleep timer turned off');
+                return;
+            }
+
+            if (val === 'end_of_episode') {
+                sleepTimerMode = 'end_of_episode';
+                if (countdownEl) {
+                    countdownEl.innerText = 'End';
+                    countdownEl.classList.remove('hidden');
+                }
+                if (activeIndicator) activeIndicator.classList.remove('hidden');
+                if (typeof showToast === 'function') showToast('Sleep timer: End of Episode');
+                return;
+            }
+
+            const mins = parseInt(val, 10);
+            sleepTimerMode = 'minutes';
+            sleepTimerMinutes = mins;
+            sleepTimerSecondsRemaining = mins * 60;
+
+            if (activeIndicator) activeIndicator.classList.remove('hidden');
+            if (countdownEl) {
+                countdownEl.innerText = `${mins}m`;
+                countdownEl.classList.remove('hidden');
+            }
+
+            if (typeof showToast === 'function') showToast(`Sleep timer set for ${mins} minutes`);
+
+            sleepTimerInterval = setInterval(() => {
+                sleepTimerSecondsRemaining--;
+                if (countdownEl) {
+                    const m = Math.floor(sleepTimerSecondsRemaining / 60);
+                    const s = sleepTimerSecondsRemaining % 60;
+                    countdownEl.innerText = `${m}:${String(s).padStart(2, '0')}`;
+                }
+
+                if (sleepTimerSecondsRemaining <= 0) {
+                    clearInterval(sleepTimerInterval);
+                    sleepTimerInterval = null;
+                    triggerSleepTimer();
+                }
+            }, 1000);
+        }
+
+        function triggerSleepTimer() {
+            // Cancel next autoplay
+            cancelAutoplay();
+
+            // Pause local video
+            const videoEl = document.getElementById('filvora-player');
+            if (videoEl && typeof videojs !== 'undefined') {
+                try {
+                    const player = videojs('filvora-player');
+                    player.pause();
+                } catch(e) {}
+            }
+
+            // Pause iframe embed if postMessage is supported
+            const iframe = document.querySelector('iframe');
+            if (iframe) {
+                try {
+                    iframe.contentWindow.postMessage(JSON.stringify({event: 'pause', action: 'pause'}), '*');
+                    iframe.contentWindow.postMessage({event: 'pause', action: 'pause'}, '*');
+                } catch(e) {}
+            }
+
+            // Reset badges
+            const countdownEl = document.getElementById('sleep-timer-countdown');
+            const activeIndicator = document.getElementById('sleep-timer-active-indicator');
+            if (countdownEl) countdownEl.classList.add('hidden');
+            if (activeIndicator) activeIndicator.classList.add('hidden');
+            sleepTimerMode = null;
+
+            // Show Gentle Sleep Overlay
+            const overlay = document.getElementById('sleep-timer-overlay');
+            if (overlay) overlay.classList.remove('hidden');
+        }
+
+        function dismissSleepOverlay() {
+            const overlay = document.getElementById('sleep-timer-overlay');
+            if (overlay) overlay.classList.add('hidden');
+            // Resume video
+            const videoEl = document.getElementById('filvora-player');
+            if (videoEl && typeof videojs !== 'undefined') {
+                try {
+                    const player = videojs('filvora-player');
+                    player.play().catch(() => {});
+                } catch(e) {}
+            }
+            const iframe = document.querySelector('iframe');
+            if (iframe) {
+                try {
+                    iframe.contentWindow.postMessage(JSON.stringify({event: 'play', action: 'play'}), '*');
+                    iframe.contentWindow.postMessage({event: 'play', action: 'play'}, '*');
+                } catch(e) {}
+            }
+        }
+
+        // ==========================================
+        // Cinematic Theater Mode & Ambient Dimming
+        // ==========================================
+        let isTheaterMode = false;
+
+        function toggleTheaterMode() {
+            isTheaterMode = !isTheaterMode;
+            const body = document.body;
+            const btn = document.getElementById('theater-mode-btn');
+            const icon = document.getElementById('theater-mode-icon');
+            const label = document.getElementById('theater-mode-label');
+
+            if (isTheaterMode) {
+                body.classList.add('theater-mode-active');
+                if (btn) btn.classList.add('bg-purple-900/60', 'border-purple-500/50');
+                if (icon) icon.classList.add('text-purple-300');
+                if (typeof showToast === 'function') showToast('Theater Mode enabled (Press T or Esc to exit)');
+            } else {
+                body.classList.remove('theater-mode-active');
+                if (btn) btn.classList.remove('bg-purple-900/60', 'border-purple-500/50');
+                if (icon) icon.classList.remove('text-purple-300');
+            }
+        }
+
+        // ==========================================
+        // Picture-in-Picture (PiP) Engine
+        // ==========================================
+        async function togglePictureInPicture() {
+            // 1. Direct HTML5 video / Video.js PiP
+            const videoEl = document.querySelector('video');
+            if (videoEl) {
+                try {
+                    if (document.pictureInPictureElement) {
+                        await document.exitPictureInPicture();
+                    } else if (document.pictureInPictureEnabled) {
+                        await videoEl.requestPictureInPicture();
+                    }
+                    return;
+                } catch(e) {
+                    console.warn('PiP video request:', e);
+                }
+            }
+
+            // 2. Document Picture-in-Picture API (Chrome 116+ / modern Edge)
+            if ('documentPictureInPicture' in window) {
+                try {
+                    if (window.documentPictureInPicture.window) {
+                        window.documentPictureInPicture.window.close();
+                        return;
+                    }
+                    const pipWindow = await window.documentPictureInPicture.requestWindow({
+                        width: 720,
+                        height: 405
+                    });
+                    const container = document.getElementById('video-container');
+                    if (container) {
+                        pipWindow.document.body.style.margin = '0';
+                        pipWindow.document.body.style.backgroundColor = '#000';
+                        pipWindow.document.body.appendChild(container);
+                        pipWindow.addEventListener('pagehide', () => {
+                            document.getElementById('player-wrapper').prepend(container);
+                        });
+                        return;
+                    }
+                } catch(err) {
+                    console.warn('Document PiP request:', err);
+                }
+            }
+
+            // 3. Fallback: activate Theater Mode for maximum immersive focus
+            toggleTheaterMode();
         }
 
         let autoplayTimer = null;
@@ -686,6 +1285,9 @@
                     }
                     const pos = d.currentTime || d.time || d.position || (d.data && d.data.currentTime);
                     const dur = d.duration || (d.data && d.data.duration);
+                    if (typeof pos === 'number' && pos >= 0) {
+                        currentPlaybackPosition = pos;
+                    }
                     if (typeof pos === 'number' && pos >= 15) {
                         sendProgressBeacon(pos, dur);
 
@@ -700,6 +1302,10 @@
                     // Check explicit ended events
                     const eventName = d.event || d.type || (d.data && d.data.event);
                     if (eventName === 'ended' || eventName === 'playback_ended' || d.ended === true) {
+                        if (sleepTimerMode === 'end_of_episode') {
+                            triggerSleepTimer();
+                            return;
+                        }
                         {% if next_episode %}
                         triggerAutoplayCountdown();
                         {% endif %}
@@ -713,6 +1319,34 @@
                 if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
 
                 const key = e.key ? e.key.toLowerCase() : '';
+
+                // Bookmark shortcut (B key)
+                if (key === 'b') {
+                    e.preventDefault();
+                    openBookmarkModal();
+                    return;
+                }
+
+                // Sleep Timer shortcut (Z key)
+                if (key === 'z') {
+                    e.preventDefault();
+                    toggleSleepTimerMenu();
+                    return;
+                }
+
+                // Theater Mode shortcut (T key)
+                if (key === 't') {
+                    e.preventDefault();
+                    toggleTheaterMode();
+                    return;
+                }
+
+                // Picture-in-Picture shortcut (P key)
+                if (key === 'p') {
+                    e.preventDefault();
+                    togglePictureInPicture();
+                    return;
+                }
 
                 // Fullscreen toggle (F key)
                 if (key === 'f') {
@@ -730,8 +1364,14 @@
                     return;
                 }
 
-                // Escape key to exit fullscreen
+                // Escape key to exit theater mode, dialogs or fullscreen
                 if (key === 'escape') {
+                    if (isTheaterMode) {
+                        toggleTheaterMode();
+                        return;
+                    }
+                    closeBookmarkModal();
+                    document.getElementById('sleep-timer-menu')?.classList.add('hidden');
                     const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
                     if (isFull) {
                         if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
@@ -875,6 +1515,10 @@
                         if (fallbackModal && !pEl.contains(fallbackModal)) pEl.appendChild(fallbackModal);
                         if (seekLeft && !pEl.contains(seekLeft)) pEl.appendChild(seekLeft);
                         if (seekRight && !pEl.contains(seekRight)) pEl.appendChild(seekRight);
+                        const sleepOverlay = document.getElementById('sleep-timer-overlay');
+                        const bookmarkModal = document.getElementById('bookmark-modal');
+                        if (sleepOverlay && !pEl.contains(sleepOverlay)) pEl.appendChild(sleepOverlay);
+                        if (bookmarkModal && !pEl.contains(bookmarkModal)) pEl.appendChild(bookmarkModal);
                     }
 
                     if (initialResumePosition > 0 && !document.getElementById('resume-prompt')) {
@@ -926,8 +1570,12 @@
                     showOverlay();
                 });
 
-                // Detect ended event for TV Series Autoplay
+                // Detect ended event for TV Series Autoplay & Sleep Timer
                 player.on('ended', () => {
+                    if (sleepTimerMode === 'end_of_episode') {
+                        triggerSleepTimer();
+                        return;
+                    }
                     {% if next_episode %}
                     triggerAutoplayCountdown();
                     {% endif %}
@@ -939,6 +1587,14 @@
                     if (modal) modal.classList.remove('hidden');
                 });
             }
+
+            // Outside click listener to dismiss sleep timer menu
+            document.addEventListener('click', (e) => {
+                const sleepContainer = document.getElementById('sleep-timer-container');
+                if (sleepContainer && !sleepContainer.contains(e.target)) {
+                    document.getElementById('sleep-timer-menu')?.classList.add('hidden');
+                }
+            });
         });
     </script>
 </body>

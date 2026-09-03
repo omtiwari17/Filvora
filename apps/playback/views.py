@@ -129,6 +129,28 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
         resume_position = round(progress.position_seconds, 1)
         resume_formatted = format_time(progress.position_seconds)
 
+    # Direct timestamp requested via query param (e.g. ?t=3420 from bookmarks)
+    requested_t = request.GET.get('t')
+    if requested_t:
+        try:
+            t_float = float(requested_t)
+            if t_float >= 0:
+                resume_position = round(t_float, 1)
+                resume_formatted = format_time(t_float)
+        except (ValueError, TypeError):
+            pass
+
+    # Fetch existing saved scene bookmarks for this specific title
+    from apps.library.models import SceneBookmark
+    saved_bookmarks = SceneBookmark.objects.filter(
+        user=request.user,
+        profile=profile,
+        tmdb_id=tmdb_id,
+        media_type=media_type,
+        season=s_num if media_type == 'tv' else None,
+        episode=ep_num if media_type == 'tv' else None
+    ).order_by('position_seconds')
+
     return render(request, 'playback/watch.html', {
         'media': media,
         'title': title,
@@ -140,6 +162,7 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
         'episode': ep_num or '',
         'resume_position': resume_position,
         'resume_formatted': resume_formatted,
+        'saved_bookmarks': saved_bookmarks,
         'providers': ordered_providers,
         'current_server': provider.id,
         'current_provider': provider,
