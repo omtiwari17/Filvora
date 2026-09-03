@@ -108,6 +108,19 @@ class LibraryTestCase(TestCase):
         self.assertEqual(del_res.status_code, 200)
         self.assertFalse(SceneBookmark.objects.filter(id=bm.id).exists())
 
+    def test_unauthenticated_scene_bookmark_returns_401(self):
+        self.client.logout()
+        response = self.client.post('/library/bookmark/add/', {
+            'tmdb_id': 157336,
+            'media_type': 'movie',
+            'title': 'Interstellar',
+            'position': 5055,
+            'note': 'Test note',
+        })
+        self.assertEqual(response.status_code, 401)
+        data = response.json()
+        self.assertEqual(data['status'], 'error')
+
     def test_multi_profile_bookmark_isolation(self):
         from apps.accounts.models import UserProfile
         from apps.library.models import SceneBookmark

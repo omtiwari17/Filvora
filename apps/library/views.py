@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 from .models import LibraryItem, CustomCollection, CustomCollectionItem, SceneBookmark
 from apps.tmdb.client import TMDBClient
@@ -95,67 +96,78 @@ def toggle_item(request):
     return HttpResponse("Invalid", status=400)
 
 
-@login_required
+@csrf_exempt
 def add_bookmark(request):
     """Save a scene timestamp bookmark with user note for active profile."""
-    if request.method == 'POST':
-        try:
-            import json
-            if request.content_type == 'application/json':
-                data = json.loads(request.body)
-            else:
-                data = request.POST
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'POST required'}, status=405)
 
-            tmdb_id = int(data.get('tmdb_id'))
-            media_type = data.get('media_type', 'movie')
-            title = data.get('title', '').strip() or ('Movie' if media_type == 'movie' else 'Series')
-            raw_s = data.get('season')
-            raw_e = data.get('episode')
-            season = int(raw_s) if raw_s not in (None, '', 'null') else None
-            episode = int(raw_e) if raw_e not in (None, '', 'null') else None
-            pos_sec = float(data.get('position', 0))
-            note = data.get('note', '').strip()
-            poster_path = data.get('poster_path', '').strip()
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Please sign in to save scene bookmarks to your profile.'
+        }, status=401)
 
-            profile = get_active_profile(request)
+    try:
+        import json
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
 
-            bookmark = SceneBookmark.objects.create(
-                user=request.user,
-                profile=profile,
-                tmdb_id=tmdb_id,
-                media_type=media_type,
-                title=title,
-                season=season,
-                episode=episode,
-                position_seconds=pos_sec,
-                note=note,
-                poster_path=poster_path
-            )
+        tmdb_id = int(data.get('tmdb_id'))
+        media_type = data.get('media_type', 'movie')
+        title = data.get('title', '').strip() or ('Movie' if media_type == 'movie' else 'Series')
+        raw_s = data.get('season')
+        raw_e = data.get('episode')
+        season = int(raw_s) if raw_s not in (None, '', 'null') else None
+        episode = int(raw_e) if raw_e not in (None, '', 'null') else None
+        pos_sec = float(data.get('position', 0))
+        note = data.get('note', '').strip()
+        poster_path = data.get('poster_path', '').strip()
 
-            return JsonResponse({
-                'status': 'success',
-                'id': bookmark.id,
-                'title': bookmark.title,
-                'timestamp': bookmark.formatted_timestamp,
-                'seconds': bookmark.position_seconds,
-                'note': bookmark.note,
-                'play_url': bookmark.play_url
-            })
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-    return JsonResponse({'status': 'error', 'message': 'POST required'}, status=405)
+        profile = get_active_profile(request)
+
+        bookmark = SceneBookmark.objects.create(
+            user=request.user,
+            profile=profile,
+            tmdb_id=tmdb_id,
+            media_type=media_type,
+            title=title,
+            season=season,
+            episode=episode,
+            position_seconds=pos_sec,
+            note=note,
+            poster_path=poster_path
+        )
+
+        return JsonResponse({
+            'status': 'success',
+            'id': bookmark.id,
+            'title': bookmark.title,
+            'timestamp': bookmark.formatted_timestamp,
+            'seconds': bookmark.position_seconds,
+            'note': bookmark.note,
+            'play_url': bookmark.play_url
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 
-@login_required
+@csrf_exempt
 def delete_bookmark(request, bookmark_id):
     """Deletes a scene bookmark scoped to active user profile."""
-    if request.method == 'POST':
-        profile = get_active_profile(request)
-        bookmark = get_object_or_404(SceneBookmark, id=bookmark_id, user=request.user, profile=profile)
-        bookmark.delete()
-        if request.headers.get('HX-Request'):
-            return HttpResponse("")
-        return JsonResponse({'status': 'success'})
-    return JsonResponse({'status': 'error', 'message': 'POST required'}, status=405)
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'POST required'}, status=405)
+
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'Authentication required'}, status=401)
+
+    profile = get_active_profile(request)
+    bookmark = get_object_or_404(SceneBookmark, id=bookmark_id, user=request.user, profile=profile)
+    bookmark.delete()
+    if request.headers.get('HX-Request'):
+        return HttpResponse("")
+    return JsonResponse({'status': 'success'})
 
 

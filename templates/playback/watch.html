@@ -69,7 +69,8 @@
         }
         /* Fullscreen support for overlays */
         #player-overlay,
-        #quick-server-container {
+        #quick-server-container,
+        #top-notch-trigger {
             z-index: 2147483647 !important;
         }
         #top-sensor {
@@ -83,6 +84,15 @@
             top: 0 !important;
             left: 0 !important;
             width: 100% !important;
+        }
+        :fullscreen #top-notch-trigger,
+        :-webkit-full-screen #top-notch-trigger,
+        .video-js.vjs-fullscreen #top-notch-trigger {
+            z-index: 2147483647 !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
         }
         :fullscreen #quick-server-container,
         :-webkit-full-screen #quick-server-container,
@@ -100,6 +110,7 @@
             top: 0 !important;
             left: 0 !important;
             width: 100% !important;
+            height: 7rem !important;
         }
         /* Ripple seek animations */
         @keyframes ripple-seek {
@@ -124,8 +135,20 @@
     <!-- Theater Mode Ambient Velvet Curtain Backdrop -->
     <div id="theater-curtain" onclick="toggleTheaterMode()" title="Click to Exit Theater Mode" class="fixed inset-0 bg-black z-40 opacity-0 pointer-events-none transition-opacity duration-500 cursor-pointer"></div>
 
-    <!-- Top Invisible Hover Detection Sensor -->
-    <div id="top-sensor" class="fixed top-0 left-0 w-full h-24 z-40 pointer-events-auto"></div>
+    <!-- Top Hover Detection Sensor (112px tall detection zone) -->
+    <div id="top-sensor" class="fixed top-0 left-0 w-full h-28 z-40 pointer-events-auto"></div>
+
+    <!-- Top Notch Trigger (Reveals upper controls anytime with 1 click or hover in fullscreen or normal mode) -->
+    <div id="top-notch-trigger" 
+         onclick="showOverlay()" 
+         onmouseenter="showOverlay()" 
+         title="Click or hover to reveal controls (Z: Sleep, T: Theater, P: PiP, B: Bookmark)"
+         class="fixed top-0 left-1/2 -translate-x-1/2 z-50 px-4 py-1 rounded-b-2xl bg-gray-950/90 hover:bg-gray-900 border-b border-x border-gray-700/90 text-gray-300 hover:text-white cursor-pointer transition-all duration-300 backdrop-blur-xl opacity-0 pointer-events-none hover:opacity-100 flex items-center gap-1.5 text-[11px] font-bold shadow-2xl">
+        <svg class="w-3.5 h-3.5 text-brand-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+        </svg>
+        <span>Controls</span>
+    </div>
 
     <!-- Floating Quick Server Switcher & Direct Dropdown Menu on Hover -->
     <div id="quick-server-container" class="fixed top-4 right-4 z-50 group">
@@ -261,6 +284,9 @@
 
             <!-- Sleep Timer Dropdown -->
             <div class="relative inline-block text-left" id="sleep-timer-container">
+                <!-- Transparent click-capture backdrop covering entire screen (even above embed iframe) -->
+                <div id="sleep-timer-backdrop" onclick="closeSleepTimerMenu()" class="hidden fixed inset-0 z-[85]"></div>
+
                 <button type="button"
                         id="sleep-timer-btn"
                         onclick="toggleSleepTimerMenu()" 
@@ -347,6 +373,8 @@
     <!-- Bookmark Scene Modal -->
     <div id="bookmark-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md transition-opacity">
         <div class="bg-gray-950 border border-gray-800 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 relative animate-in fade-in zoom-in-95 duration-200">
+            {% csrf_token %}
+            <input type="hidden" id="bookmark-csrf-token" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
             <div class="flex items-center justify-between border-b border-gray-800 pb-3">
                 <div class="flex items-center gap-2.5">
                     <div class="p-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30">
@@ -699,12 +727,22 @@
                 showToast(`Jumped to scene @ ${formatTimestamp(seconds)}`);
             }
         }
-
         async function saveSceneBookmark() {
             const noteInput = document.getElementById('bookmark-note-input');
             const note = (noteInput ? noteInput.value : '').trim();
             const btn = document.getElementById('save-bookmark-btn');
-            if (btn) btn.disabled = true;
+
+            const origBtnHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `
+                    <svg class="animate-spin -ml-0.5 mr-1.5 h-3.5 w-3.5 text-black" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Saving...</span>
+                `;
+            }
 
             try {
                 const payload = {
@@ -718,7 +756,9 @@
                     poster_path: '{{ media.poster_path|default:""|escapejs }}'
                 };
 
-                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                const csrfToken = document.getElementById('bookmark-csrf-token')?.value ||
+                                  document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                                  '{{ csrf_token }}' ||
                                   getCookie('csrftoken') || '';
 
                 const resp = await fetch('/library/bookmark/add/', {
@@ -730,9 +770,23 @@
                     body: JSON.stringify(payload)
                 });
 
+                if (resp.status === 401) {
+                    const data = await resp.json().catch(() => ({}));
+                    alert(data.message || 'Please sign in to save scene bookmarks to your profile.');
+                    window.location.href = '/accounts/login/?next=' + encodeURIComponent(window.location.pathname + window.location.search);
+                    return;
+                }
+
+                if (!resp.ok) {
+                    const errData = await resp.json().catch(() => ({}));
+                    alert('Could not save bookmark: ' + (errData.message || `Server error (${resp.status})`));
+                    return;
+                }
+
                 const data = await resp.json();
                 if (data.status === 'success') {
                     closeBookmarkModal();
+                    if (noteInput) noteInput.value = '';
                     
                     const noBm = document.getElementById('no-modal-bookmarks');
                     if (noBm) noBm.remove();
@@ -743,13 +797,13 @@
                         item.id = `modal-bm-${data.id}`;
                         item.className = 'flex items-center justify-between p-2.5 rounded-xl bg-gray-900/60 border border-gray-800 hover:border-gray-700 transition';
                         item.innerHTML = `
-                            <button type="button" onclick="jumpToBookmark(${data.seconds})" class="flex items-center gap-2 text-left flex-1 min-w-0">
+                            <button type="button" onclick="jumpToBookmark(${data.seconds})" class="flex items-center gap-2 text-left flex-1 min-w-0 cursor-pointer">
                                 <span class="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/30 text-amber-400 font-mono text-[11px] font-bold shrink-0">
                                     ${data.timestamp}
                                 </span>
                                 <span class="text-xs text-gray-300 truncate hover:text-white transition">${data.note || "Saved Scene"}</span>
                             </button>
-                            <button type="button" onclick="deleteModalBookmark(${data.id})" class="text-gray-500 hover:text-red-400 p-1 transition ml-2" title="Delete">
+                            <button type="button" onclick="deleteModalBookmark(${data.id})" class="text-gray-500 hover:text-red-400 p-1 transition ml-2 cursor-pointer" title="Delete">
                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                 </svg>
@@ -776,13 +830,24 @@
                 }
             } catch (err) {
                 console.error('Bookmark error:', err);
+                alert('Could not connect to server to save bookmark. Please try again.');
             } finally {
-                if (btn) btn.disabled = false;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origBtnHtml || `
+                        <svg class="w-4 h-4 fill-black" viewBox="0 0 24 24">
+                            <path d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7l-4-4zm2 16H5V5h11.17L19 7.83V19zm-7-7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                        </svg>
+                        <span>Save Bookmark</span>
+                    `;
+                }
             }
         }
 
         async function deleteModalBookmark(id) {
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+            const csrfToken = document.getElementById('bookmark-csrf-token')?.value ||
+                              document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                              '{{ csrf_token }}' ||
                               getCookie('csrftoken') || '';
             try {
                 const resp = await fetch(`/library/bookmark/${id}/delete/`, {
@@ -799,8 +864,13 @@
                         if (count === 0) badge.remove();
                         else badge.innerText = count;
                     }
+                    if (typeof showToast === 'function') {
+                        showToast('Scene bookmark removed');
+                    }
                 }
-            } catch(err) {}
+            } catch(e) {
+                console.error('Delete bookmark error:', e);
+            }
         }
 
         function getCookie(name) {
@@ -828,12 +898,27 @@
 
         function toggleSleepTimerMenu() {
             const menu = document.getElementById('sleep-timer-menu');
-            if (menu) menu.classList.toggle('hidden');
+            const backdrop = document.getElementById('sleep-timer-backdrop');
+            if (!menu) return;
+            const isHidden = menu.classList.contains('hidden');
+            if (isHidden) {
+                menu.classList.remove('hidden');
+                if (backdrop) backdrop.classList.remove('hidden');
+            } else {
+                menu.classList.add('hidden');
+                if (backdrop) backdrop.classList.add('hidden');
+            }
+        }
+
+        function closeSleepTimerMenu() {
+            const menu = document.getElementById('sleep-timer-menu');
+            const backdrop = document.getElementById('sleep-timer-backdrop');
+            if (menu) menu.classList.add('hidden');
+            if (backdrop) backdrop.classList.add('hidden');
         }
 
         function setSleepTimer(val) {
-            const menu = document.getElementById('sleep-timer-menu');
-            if (menu) menu.classList.add('hidden');
+            closeSleepTimerMenu();
 
             if (sleepTimerInterval) {
                 clearInterval(sleepTimerInterval);
@@ -880,6 +965,13 @@
             if (typeof showToast === 'function') showToast(`Sleep timer set for ${mins} minutes`);
 
             sleepTimerInterval = setInterval(() => {
+                // If playback is paused, freeze countdown so time is not wasted while paused!
+                if (isPlaybackPaused) {
+                    if (countdownEl) countdownEl.classList.add('opacity-50');
+                    return;
+                }
+                if (countdownEl) countdownEl.classList.remove('opacity-50');
+
                 sleepTimerSecondsRemaining--;
                 if (countdownEl) {
                     const m = Math.floor(sleepTimerSecondsRemaining / 60);
@@ -979,7 +1071,7 @@
         async function togglePictureInPicture() {
             // 1. Direct HTML5 video / Video.js PiP
             const videoEl = document.querySelector('video');
-            if (videoEl) {
+            if (videoEl && typeof videoEl.requestPictureInPicture === 'function') {
                 try {
                     if (document.pictureInPictureElement) {
                         await document.exitPictureInPicture();
@@ -992,25 +1084,103 @@
                 }
             }
 
-            // 2. Document Picture-in-Picture API (Chrome 116+ / modern Edge)
+            // 2. Modern Document Picture-in-Picture API (Chrome 116+ / Edge)
             if ('documentPictureInPicture' in window) {
                 try {
                     if (window.documentPictureInPicture.window) {
                         window.documentPictureInPicture.window.close();
                         return;
                     }
+
                     const pipWindow = await window.documentPictureInPicture.requestWindow({
-                        width: 720,
-                        height: 405
+                        width: 854,
+                        height: 480
                     });
+
+                    // Inject full-viewport responsive CSS into the PiP window document head
+                    const style = pipWindow.document.createElement('style');
+                    style.textContent = `
+                        * {
+                            box-sizing: border-box !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                        }
+                        html, body {
+                            width: 100vw !important;
+                            height: 100vh !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            overflow: hidden !important;
+                            background-color: #000000 !important;
+                        }
+                        #video-container {
+                            width: 100vw !important;
+                            height: 100vh !important;
+                            position: fixed !important;
+                            inset: 0 !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            background-color: #000000 !important;
+                            z-index: 99999 !important;
+                        }
+                        #video-container iframe,
+                        #video-container video,
+                        #video-container .video-js {
+                            width: 100vw !important;
+                            height: 100vh !important;
+                            max-width: 100% !important;
+                            max-height: 100% !important;
+                            border: 0 !important;
+                            display: block !important;
+                            object-fit: contain !important;
+                        }
+                    `;
+                    pipWindow.document.head.appendChild(style);
+
                     const container = document.getElementById('video-container');
-                    if (container) {
-                        pipWindow.document.body.style.margin = '0';
-                        pipWindow.document.body.style.backgroundColor = '#000';
+                    const mainWrapper = document.getElementById('player-wrapper');
+
+                    if (container && mainWrapper) {
+                        // Create placeholder in main window while PiP is active
+                        const placeholder = document.createElement('div');
+                        placeholder.id = 'pip-active-placeholder';
+                        placeholder.className = 'fixed inset-0 z-10 flex flex-col items-center justify-center bg-gray-950 text-center p-6 space-y-4';
+                        placeholder.innerHTML = `
+                            <div class="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 animate-pulse">
+                                <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 13v-1m4 1v-3m4 3V8M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z" />
+                                </svg>
+                            </div>
+                            <div class="space-y-1">
+                                <h3 class="text-xl font-black text-white">Playing in Picture-in-Picture</h3>
+                                <p class="text-xs text-gray-400 max-w-sm">Video is currently playing in your floating Picture-in-Picture window.</p>
+                            </div>
+                            <button type="button" onclick="window.documentPictureInPicture.window?.close()" class="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs rounded-xl border border-gray-700 transition flex items-center gap-2 shadow-lg cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                </svg>
+                                <span>Bring Player Back</span>
+                            </button>
+                        `;
+                        mainWrapper.appendChild(placeholder);
+
+                        // Move container into PiP window
                         pipWindow.document.body.appendChild(container);
-                        pipWindow.addEventListener('pagehide', () => {
-                            document.getElementById('player-wrapper').prepend(container);
-                        });
+
+                        // Restore container when PiP window closes
+                        const restorePlayer = () => {
+                            if (!mainWrapper.contains(container)) {
+                                mainWrapper.prepend(container);
+                            }
+                            const ph = document.getElementById('pip-active-placeholder');
+                            if (ph) ph.remove();
+                        };
+
+                        pipWindow.addEventListener('pagehide', restorePlayer);
+                        pipWindow.addEventListener('unload', restorePlayer);
                         return;
                     }
                 } catch(err) {
@@ -1018,8 +1188,11 @@
                 }
             }
 
-            // 3. Fallback: activate Theater Mode for maximum immersive focus
+            // 3. Fallback: activate Theater Mode
             toggleTheaterMode();
+            if (typeof showToast === 'function') {
+                showToast('PiP not supported by browser. Activated Cinema Theater Mode.');
+            }
         }
 
         let autoplayTimer = null;
@@ -1079,7 +1252,7 @@
                 } catch (e) {}
             }
 
-            // 2. Cross-browser Document Fullscreen
+            // 2. Cross-browser Document / Wrapper Fullscreen
             const isFull = !!(
                 document.fullscreenElement ||
                 document.webkitFullscreenElement ||
@@ -1087,7 +1260,7 @@
                 document.msFullscreenElement
             );
 
-            const docEl = document.documentElement;
+            const docEl = document.getElementById('player-wrapper') || document.documentElement;
             if (!isFull) {
                 const req = docEl.requestFullscreen ||
                             docEl.webkitRequestFullscreen ||
@@ -1113,42 +1286,54 @@
 
         let hideTimeout = null;
         let isHoveredOverTop = false;
+        let isPlaybackPaused = false;
 
         function showOverlay() {
             const overlay = document.getElementById('player-overlay');
             const quickContainer = document.getElementById('quick-server-container');
+            const topNotch = document.getElementById('top-notch-trigger');
             if (overlay) {
                 overlay.style.opacity = '1';
                 overlay.style.pointerEvents = 'auto';
                 overlay.style.transform = 'translateY(0)';
             }
+            if (topNotch) {
+                topNotch.style.opacity = '0';
+                topNotch.style.pointerEvents = 'none';
+            }
             if (quickContainer) {
                 quickContainer.style.opacity = '0';
                 quickContainer.style.pointerEvents = 'none';
             }
             clearTimeout(hideTimeout);
-            if (!isHoveredOverTop) {
+            if (!isHoveredOverTop && !isPlaybackPaused) {
                 scheduleHide(4500);
             }
         }
 
         function hideOverlay() {
-            if (isHoveredOverTop) return;
+            if (isHoveredOverTop || isPlaybackPaused) return;
             const overlay = document.getElementById('player-overlay');
             const quickContainer = document.getElementById('quick-server-container');
+            const topNotch = document.getElementById('top-notch-trigger');
             if (overlay) {
                 overlay.style.opacity = '0';
                 overlay.style.pointerEvents = 'none';
                 overlay.style.transform = 'translateY(-10px)';
             }
+            if (topNotch) {
+                topNotch.style.opacity = '0.85';
+                topNotch.style.pointerEvents = 'auto';
+            }
             if (quickContainer) {
-                quickContainer.style.opacity = '0';
-                quickContainer.style.pointerEvents = 'none';
+                quickContainer.style.opacity = '1';
+                quickContainer.style.pointerEvents = 'auto';
             }
         }
 
         function scheduleHide(ms = 4000) {
             clearTimeout(hideTimeout);
+            if (isPlaybackPaused) return;
             hideTimeout = setTimeout(() => {
                 hideOverlay();
             }, ms);
@@ -1180,7 +1365,7 @@
                 });
                 topSensor.addEventListener('mouseleave', () => {
                     isHoveredOverTop = false;
-                    scheduleHide(3500);
+                    if (!isPlaybackPaused) scheduleHide(3500);
                 });
                 topSensor.addEventListener('mousemove', () => {
                     isHoveredOverTop = true;
@@ -1197,7 +1382,7 @@
                 });
                 quickContainer.addEventListener('mouseleave', () => {
                     isHoveredOverTop = false;
-                    scheduleHide(3000);
+                    if (!isPlaybackPaused) scheduleHide(3000);
                 });
             }
 
@@ -1210,7 +1395,7 @@
                 });
                 overlay.addEventListener('mouseleave', () => {
                     isHoveredOverTop = false;
-                    scheduleHide(3000);
+                    if (!isPlaybackPaused) scheduleHide(3000);
                 });
             }
 
@@ -1218,12 +1403,19 @@
                 if (e.clientY <= 120) {
                     showOverlay();
                     window.focus();
-                } else if (!isHoveredOverTop) {
+                } else if (!isHoveredOverTop && !isPlaybackPaused) {
                     showOverlay();
                 }
             });
 
             document.addEventListener('touchstart', () => {
+                showOverlay();
+            });
+
+            document.addEventListener('fullscreenchange', () => {
+                showOverlay();
+            });
+            document.addEventListener('webkitfullscreenchange', () => {
                 showOverlay();
             });
 
@@ -1299,8 +1491,16 @@
                         }
                     }
 
-                    // Check explicit ended events
-                    const eventName = d.event || d.type || (d.data && d.data.event);
+                    // Check explicit pause, play, and ended events from embed player
+                    const eventName = ((d.event || d.type || (d.data && d.data.event) || '') + '').toLowerCase();
+                    if (eventName === 'pause' || eventName === 'paused' || d.paused === true) {
+                        isPlaybackPaused = true;
+                        showOverlay();
+                    } else if (eventName === 'play' || eventName === 'playing' || d.paused === false) {
+                        isPlaybackPaused = false;
+                        scheduleHide(3500);
+                    }
+
                     if (eventName === 'ended' || eventName === 'playback_ended' || d.ended === true) {
                         if (sleepTimerMode === 'end_of_episode') {
                             triggerSleepTimer();
@@ -1371,7 +1571,7 @@
                         return;
                     }
                     closeBookmarkModal();
-                    document.getElementById('sleep-timer-menu')?.classList.add('hidden');
+                    closeSleepTimerMenu();
                     const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
                     if (isFull) {
                         if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
@@ -1534,18 +1734,14 @@
                     scheduleHide(3500);
                 });
 
-                // When paused, auto-hide player controls after 3.5s of inactivity
+                // When paused, keep player controls visible so user can access bookmarks, sleep timer, servers
                 player.on('pause', () => {
-                    scheduleHide(3500);
-                    setTimeout(() => {
-                        if (player.paused() && !isHoveredOverTop) {
-                            player.userActive(false);
-                            hideOverlay();
-                        }
-                    }, 3500);
+                    isPlaybackPaused = true;
+                    showOverlay();
                 });
 
                 player.on('play', () => {
+                    isPlaybackPaused = false;
                     showOverlay();
                     scheduleHide(3500);
                 });
@@ -1588,12 +1784,16 @@
                 });
             }
 
-            // Outside click listener to dismiss sleep timer menu
+            // Outside click & blur listeners to dismiss sleep timer menu
             document.addEventListener('click', (e) => {
                 const sleepContainer = document.getElementById('sleep-timer-container');
                 if (sleepContainer && !sleepContainer.contains(e.target)) {
-                    document.getElementById('sleep-timer-menu')?.classList.add('hidden');
+                    closeSleepTimerMenu();
                 }
+            });
+
+            window.addEventListener('blur', () => {
+                closeSleepTimerMenu();
             });
         });
     </script>

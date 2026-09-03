@@ -1,7 +1,7 @@
 import json
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponseBadRequest
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.contrib.auth.decorators import login_required
 from apps.tmdb.client import TMDBClient
 from apps.watch.models import WatchProgress
@@ -18,6 +18,7 @@ def format_time(seconds: float) -> str:
     return f"{minutes:02d}:{remaining_seconds:02d}"
 
 @login_required
+@ensure_csrf_cookie
 def watch(request, media_type, tmdb_id, season=None, episode=None):
     client = TMDBClient()
     server_id = request.GET.get('server')
