@@ -1,4 +1,4 @@
-# 🎬 Filvora v2.2 — Next-Gen Cinema & Series Streaming Engine
+# 🎬 Filvora v2.3 — Next-Gen Cinema & Series Streaming Engine
 
 [![Django](https://img.shields.io/badge/Django-5.2+-092e20?style=for-the-badge&logo=django&logoColor=white)](https://www.djangoproject.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4+-38bdf8?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
@@ -7,7 +7,7 @@
 [![Video.js](https://img.shields.io/badge/Video.js-Player-ff0000?style=for-the-badge&logo=video.js&logoColor=white)](https://videojs.com/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Installable-purple?style=for-the-badge&logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 
-**Filvora v2.2** is a complete, production-grade cinematic movie and TV series streaming application. Built on **Django 5.2**, **Tailwind CSS**, and **HTMX**, Filvora delivers real-time TMDB metadata, official age certifications, user ratings & affinity personalization engine, multi-server online playback (VidLink, VidFast 4K, AutoEmbed, VidSrc, 2Embed, NontonGo), multi-tab watch history, multi-profile user switching with Kids safety mode, season-wise viewing insights (Filvora Wrapped), and Progressive Web App (PWA) installation.
+**Filvora v2.3** is a complete, production-grade cinematic movie and TV series streaming application. Built on **Django 5.2**, **Tailwind CSS**, and **HTMX**, Filvora delivers real-time TMDB metadata, official franchise saga universe rails, official 4K/HD trailer modals, director/creator filmographies, official age certifications, user ratings & affinity personalization engine, multi-server online playback (VidLink, VidFast 4K, AutoEmbed, VidSrc, 2Embed, NontonGo), multi-tab watch history, multi-profile user switching with Kids safety mode, season-wise viewing insights (Filvora Wrapped), and Progressive Web App (PWA) installation.
 
 ---
 

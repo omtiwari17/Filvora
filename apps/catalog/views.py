@@ -112,6 +112,16 @@ def movie_detail(request, tmdb_id):
         if rating_obj:
             user_rating = rating_obj.score
 
+    # Fetch official franchise saga collection if movie belongs to a collection
+    collection = None
+    belongs_to = movie.get('belongs_to_collection')
+    if belongs_to and isinstance(belongs_to, dict) and belongs_to.get('id'):
+        collection = client.get_collection(belongs_to.get('id'))
+        if collection and 'parts' in collection:
+            curr_id = int(tmdb_id)
+            for part in collection['parts']:
+                part['is_current'] = (part.get('id') == curr_id)
+
     return render(request, 'catalog/movie_detail.html', {
         'movie': movie,
         'in_library': in_library,
@@ -119,6 +129,7 @@ def movie_detail(request, tmdb_id):
         'cast': cast,
         'directors': directors,
         'recommendations': recommendations,
+        'collection': collection,
         'user_rating': user_rating,
         'trailer_key': movie.get('trailer_key'),
         'star_range': [1, 2, 3, 4, 5],

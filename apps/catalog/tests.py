@@ -132,4 +132,15 @@ class CatalogViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('trailer_key', response.context)
 
+    def test_franchise_collection_context(self):
+        response = self.client.get('/movies/245891/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('collection', response.context)
+        col = response.context['collection']
+        if col:
+            self.assertIn('parts', col)
+            self.assertTrue(len(col['parts']) >= 1)
+            has_current = any(p.get('is_current') for p in col['parts'])
+            self.assertTrue(has_current)
+
 

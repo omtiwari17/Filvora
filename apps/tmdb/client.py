@@ -446,6 +446,63 @@ class TMDBClient:
             "trailer_key": None
         }
 
+    def get_collection(self, collection_id):
+        """Fetch full franchise collection details with chronologically ordered movie parts."""
+        if not collection_id:
+            return None
+        data = self._fetch(f"/collection/{collection_id}")
+        if not data or not isinstance(data, dict) or not data.get('parts'):
+            return self._get_mock_collection(collection_id)
+        
+        parts = data.get('parts', [])
+        parts.sort(key=lambda x: x.get('release_date') or '9999-99-99')
+        for idx, part in enumerate(parts, 1):
+            part['media_type'] = 'movie'
+            part['display_title'] = part.get('title') or f"Part {idx}"
+            part['release_year'] = (part.get('release_date') or '')[:4]
+            part['franchise_order'] = idx
+            self._attach_age_rating(part, 'movie')
+            
+        data['parts'] = parts
+        data['total_parts'] = len(parts)
+        return data
+
+    def _get_mock_collection(self, collection_id):
+        return {
+            "id": int(collection_id) if str(collection_id).isdigit() else 1,
+            "name": "The Cinematic Saga Collection",
+            "overview": "An epic journey chronicling every installment of the iconic franchise.",
+            "poster_path": "/sm7rZZivZm2NhJDucFf3gpfFdVt.jpg",
+            "backdrop_path": "/fSwYa5q2xRkBoOOjueLpkLf3N1m.jpg",
+            "parts": [
+                {
+                    "id": 101,
+                    "title": "Saga: Chapter 1",
+                    "display_title": "Saga: Chapter 1",
+                    "release_date": "2021-01-01",
+                    "release_year": "2021",
+                    "poster_path": "/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+                    "vote_average": 8.1,
+                    "age_rating": "PG-13",
+                    "franchise_order": 1,
+                    "media_type": "movie"
+                },
+                {
+                    "id": 102,
+                    "title": "Saga: Chapter 2",
+                    "display_title": "Saga: Chapter 2",
+                    "release_date": "2023-06-15",
+                    "release_year": "2023",
+                    "poster_path": "/xJHokMbljvjADYdit5fK5VQsXEG.jpg",
+                    "vote_average": 8.5,
+                    "age_rating": "PG-13",
+                    "franchise_order": 2,
+                    "media_type": "movie"
+                }
+            ],
+            "total_parts": 2
+        }
+
     def get_tv(self, tv_id):
         return self.get_tv_details(tv_id)
 

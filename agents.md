@@ -25,8 +25,9 @@
 
 ## 2. Feature Status: What Works vs. What Is On Standby / Inactive
 
-### 2.1 ✅ Active & 100% Working Features (v2.2 Production State)
+### 2.1 ✅ Active & 100% Working Features (v2.3 Production State)
 
+| **Official Franchise & Saga Universe Rail** | `apps/tmdb/`, `apps/catalog/`, `templates/catalog/movie_detail.html` | Auto-detects if a movie belongs to an official TMDB collection/franchise (e.g. *Dune, Harry Potter, Spider-Man, John Wick, Avatar, Marvel*). Fetches all installments chronologically ordered by release date, displays saga overview and total film count, assigns chronological order badges (`#1`, `#2`, `#3`...), highlights the currently viewed film with a glowing border and `Now Viewing` indicator, and provides instant play/details actions. |
 | **Official Cinematic 4K/HD Trailer Modal** | `apps/tmdb/`, `apps/catalog/`, `templates/components/trailer_modal.html` | Watch official trailers on movie detail, series detail, and homepage hero billboard without leaving the page. Built with privacy-focused YouTube embeds (`youtube-nocookie`), autoplay, zero-emoji SVG controls, instant audio/playback cutoff on dismiss, keyboard escape dismissal, and dynamic `/trailer/<media_type>/<tmdb_id>/` on-demand API fallback. |
 | **Director, Creator & Interactive Cast Showcase** | `apps/catalog/`, `templates/catalog/` | Extracted official directors with dedicated badges on movie detail views, showrunners/creators on TV series detail views, and interactive clickable avatar cards linking straight to the artist's full filmography page (`/person/<id>/`) supporting both crew and cast credits. |
 | **Smart TV Episode Autoplay & Up Next Overlay** | `apps/playback/`, `templates/playback/` | Intelligent episodic advance engine with season boundary rollover (smoothly transitioning from e.g. S1E8 to S2E1). Bottom-right cinematic modal with episode still thumbnail, episode title, season/episode tags, animated 8-second countdown progress bar, and instant "Play Now" action. Triggered on Video.js `ended` event and embed `postMessage` triggers ($\ge 95\%$ or $\le 25$s remaining). |
@@ -79,18 +80,18 @@ Filvora/
 │   └── wsgi.py / asgi.py      # WSGI/ASGI application gateways
 ├── static/
 │   ├── css/main.css           # Glassmorphism, animations, scrollbar-hide styles, star cascade hover CSS
-│   ├── js/main.js             # Rail drag-scroll, keyboard shortcuts, toast engine, star rating hover engine (v2.2)
+│   ├── js/main.js             # Rail drag-scroll, keyboard shortcuts, toast engine, star rating hover engine (v2.3)
 │   ├── manifest.json          # PWA Web App Manifest
 │   └── sw.js                  # PWA Service Worker caching
 ├── Start Filvora.bat          # Double-clickable launcher for Windows (venv check, migrations, browser launch)
 └── templates/
-    ├── base.html              # Base layout with navbar, footer, PWA meta & bottom nav (v2.2)
+    ├── base.html              # Base layout with navbar, footer, PWA meta & bottom nav (v2.3)
     ├── components/            # Reusable partials (movie_card, series_card, empty_state, rating_stars)
     ├── catalog/               # Browse, discover, genres, and person detail views
     ├── watch/                 # History (Streamed & Rated tabs) and Personal Analytics (Wrapped) templates
     ├── library/               # Watchlist (live search & star filters) and custom collections manager
-    ├── accounts/              # Sign in, registration (v2.2), profile switcher with QR code pairing & edit modals
-    ├── playback/              # Immersive cinematic player view with Up Next autoplay overlay (v2.2)
+    ├── accounts/              # Sign in, registration (v2.3), profile switcher with QR code pairing & edit modals
+    ├── playback/              # Immersive cinematic player view with Up Next autoplay overlay (v2.3)
     ├── 404.html               # Custom cinematic 404 error page
     └── 500.html               # Custom cinematic 500 error page
 ```
@@ -100,13 +101,13 @@ Filvora/
 ## 4. Key Conventions & Rules
 
 1. **Universal Version Bump Synchronization (MANDATORY)**:
-   - When bumping the application version (e.g., from `v2.1` to `v2.2`), you **MUST update all version occurrences simultaneously across the entire project**:
-     - `templates/base.html`: `<title>` tag, footer logo badge, and footer release span (`v2.2.0-release`).
+   - When bumping the application version (e.g., from `v2.2` to `v2.3`), you **MUST update all version occurrences simultaneously across the entire project**:
+     - `templates/base.html`: `<title>` tag, footer logo badge, and footer release span (`v2.3.0-release`).
      - `templates/includes/navbar.html`: Logo badge next to FILVORA brand title.
      - `templates/playback/watch.html`: Player header badge next to video title.
      - `templates/accounts/login.html`: Header badge and page `<title>`.
      - `templates/accounts/register.html`: Header badge and page `<title>`.
-     - `static/js/main.js`: File header docstring and Shortcuts modal title badge (`v2.2`).
+     - `static/js/main.js`: File header docstring and Shortcuts modal title badge (`v2.3`).
      - `README.md`: Header and introductory overview description.
      - `AGENTS.md`: Version specifications and architecture state.
 2. **Database Privacy & `.env` Isolation**:
