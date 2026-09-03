@@ -196,15 +196,50 @@ button, a, input, select {
     transform: scale(0.95);
 }
 
-/* Mobile & Click Toggle Utilities for Dropdowns */
-.dropdown-force-open {
+/* Desktop Hover (Strictly scoped to real pointer devices, never sticky on mobile touch) */
+@media (hover: hover) and (pointer: fine) {
+    #vibe-dropdown-wrapper:hover:not(.vibe-closed) #vibe-dropdown-menu {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+        pointer-events: auto !important;
+    }
+    #vibe-dropdown-wrapper:hover:not(.vibe-closed) #vibe-chevron {
+        transform: rotate(180deg) !important;
+    }
+    #profile-dropdown-wrapper:hover:not(.profile-closed) #profile-dropdown-menu {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: translateY(0) !important;
+        pointer-events: auto !important;
+    }
+}
+
+/* Explicit Toggle State (Active on Click/Tap across Mobile & Desktop) */
+#vibe-dropdown-wrapper.vibe-open #vibe-dropdown-menu {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    pointer-events: auto !important;
+}
+
+#vibe-dropdown-wrapper.vibe-open #vibe-chevron {
+    transform: rotate(180deg) !important;
+}
+
+#profile-dropdown-wrapper.profile-open #profile-dropdown-menu {
     opacity: 1 !important;
     visibility: visible !important;
     transform: translateY(0) !important;
     pointer-events: auto !important;
 }
 
-.dropdown-force-closed {
+/* Explicit Suppress State */
+#vibe-dropdown-wrapper.vibe-closed #vibe-dropdown-menu {
+    opacity: 0 !important;
+    transform: translateY(4px) !important;
+    pointer-events: none !important;
+}
+
+#profile-dropdown-wrapper.profile-closed #profile-dropdown-menu {
     opacity: 0 !important;
     visibility: hidden !important;
     transform: translateY(4px) !important;
