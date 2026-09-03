@@ -119,8 +119,25 @@ def movie_detail(request, tmdb_id):
         collection = client.get_collection(belongs_to.get('id'))
         if collection and 'parts' in collection:
             curr_id = int(tmdb_id)
+            curr_order = None
             for part in collection['parts']:
-                part['is_current'] = (part.get('id') == curr_id)
+                if part.get('id') == curr_id:
+                    part['is_current'] = True
+                    curr_order = part.get('franchise_order', 1)
+                else:
+                    part['is_current'] = False
+            
+            collection['current_chapter_num'] = curr_order or 1
+            for part in collection['parts']:
+                p_order = part.get('franchise_order', 1)
+                if part['is_current']:
+                    part['saga_relation'] = 'Now Viewing'
+                elif curr_order and p_order < curr_order:
+                    part['saga_relation'] = 'Prequel'
+                elif curr_order and p_order > curr_order:
+                    part['saga_relation'] = 'Sequel'
+                else:
+                    part['saga_relation'] = f"Chapter {p_order}"
 
     return render(request, 'catalog/movie_detail.html', {
         'movie': movie,
