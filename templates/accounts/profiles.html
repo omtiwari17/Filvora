@@ -20,10 +20,10 @@
                     {% endif %}
                 </a>
                 
-                <!-- Edit Button overlay -->
+                <!-- Edit Button overlay (Mobile Touch Visible, Desktop Hover) -->
                 <button onclick="openEditProfile('{{ p.id }}', '{{ p.name|escapejs }}', {{ p.is_kids|yesno:'true,false' }})" 
                         title="Edit Profile" 
-                        class="absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full bg-gray-800/95 hover:bg-brand-500 text-gray-300 hover:text-white border border-gray-700 flex items-center justify-center shadow-lg transition-all transform opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95">
+                        class="absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full bg-gray-800/95 hover:bg-brand-500 text-gray-300 hover:text-white border border-gray-700 flex items-center justify-center shadow-lg transition-all transform opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:scale-110 active:scale-95">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                     </svg>
@@ -39,7 +39,7 @@
                 {% endif %}
             </div>
             {% if profiles|length > 1 %}
-            <form method="post" action="/accounts/profiles/{{ p.id }}/delete/" onsubmit="return confirm('Delete profile {{ p.name }}? All history and ratings for this profile will be permanently removed.');" class="opacity-0 group-hover:opacity-100 transition-opacity">
+            <form method="post" action="/accounts/profiles/{{ p.id }}/delete/" onsubmit="return confirm('Delete profile {{ p.name }}? All history and ratings for this profile will be permanently removed.');" class="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 {% csrf_token %}
                 <button type="submit" class="text-[10px] text-gray-500 hover:text-red-500 transition font-medium">Delete</button>
             </form>
@@ -100,35 +100,6 @@
     </div>
     {% endif %}
 </div>
-
-<!-- Modal: QR Code Mobile / TV Pairing -->
-{% if lan_access_url %}
-<div id="qr-pairing-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 max-w-xs w-full shadow-2xl space-y-5 text-center">
-        <div class="flex items-center justify-between">
-            <h3 class="text-lg font-black text-white">Scan to Watch</h3>
-            <button onclick="document.getElementById('qr-pairing-modal').classList.add('hidden')" class="text-gray-400 hover:text-white">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-        
-        <div class="bg-white p-3.5 rounded-2xl inline-block shadow-inner mx-auto">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ lan_access_url }}" alt="Scan QR Code" class="w-44 h-44 rounded-lg">
-        </div>
-
-        <div>
-            <p class="text-xs font-bold text-white mb-0.5">Connect from Phone or TV</p>
-            <p class="text-[11px] text-gray-400">Point your camera to instantly open Filvora on your local network</p>
-        </div>
-
-        <div class="pt-1">
-            <button type="button" onclick="document.getElementById('qr-pairing-modal').classList.add('hidden')" class="w-full py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold text-xs transition border border-gray-700">
-                Close
-            </button>
-        </div>
-    </div>
-</div>
-{% endif %}
 
 <!-- Modal: Add Profile -->
 <div id="add-profile-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">

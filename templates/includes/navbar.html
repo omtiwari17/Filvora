@@ -1,50 +1,61 @@
-<nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-gradient-to-b from-black/90 via-black/50 to-transparent px-4 sm:px-8 py-3.5 flex items-center justify-between">
-    <div class="flex items-center gap-6 sm:gap-8">
+<nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-gradient-to-b from-black/90 via-black/50 to-transparent px-3 sm:px-5 lg:px-8 py-2.5 sm:py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-2 sm:gap-4 lg:gap-8 min-w-0">
         <!-- Logo & v2.4 Badge -->
-        <a href="/" class="flex items-center gap-2 group">
-            <span class="text-2xl sm:text-3xl font-black bg-gradient-to-r from-brand-500 via-rose-500 to-amber-500 bg-clip-text text-transparent tracking-tighter drop-shadow-sm group-hover:opacity-90 transition">FILVORA</span>
-            <span class="bg-gradient-to-r from-red-600 to-rose-500 text-[10px] font-black text-white px-1.5 py-0.5 rounded shadow-sm ring-1 ring-white/20 tracking-wider">v2.4</span>
+        <a href="/" class="flex items-center gap-1.5 sm:gap-2 group shrink-0">
+            <span class="text-xl sm:text-2xl lg:text-3xl font-black bg-gradient-to-r from-brand-500 via-rose-500 to-amber-500 bg-clip-text text-transparent tracking-tighter drop-shadow-sm group-hover:opacity-90 transition">FILVORA</span>
+            <span class="bg-gradient-to-r from-red-600 to-rose-500 text-[9px] sm:text-[10px] font-black text-white px-1 sm:px-1.5 py-0.5 rounded shadow-sm ring-1 ring-white/20 tracking-wider">v2.4</span>
         </a>
         
-        <!-- Desktop Navigation Links -->
-        <div class="hidden md:flex items-center gap-1 text-sm font-medium">
-            <a href="/" class="nav-link px-3.5 py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Home</a>
-            <a href="/discover/" class="nav-link px-3.5 py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Discover</a>
-            <a href="/movies/" class="nav-link px-3.5 py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Movies</a>
-            <a href="/series/" class="nav-link px-3.5 py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Series</a>
-            <a href="/genres/" class="nav-link px-3.5 py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Genres</a>
-            <a href="/library/" class="nav-link px-3.5 py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">My List</a>
+        <!-- Desktop Navigation Links (Responsive: Compact on md (tablets/iPad), spacious on lg+) -->
+        <div class="hidden md:flex items-center gap-0.5 lg:gap-1 text-xs lg:text-sm font-medium">
+            <a href="/" class="nav-link whitespace-nowrap px-2.5 lg:px-3.5 py-1 lg:py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Home</a>
+            <a href="/discover/" class="nav-link whitespace-nowrap px-2.5 lg:px-3.5 py-1 lg:py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Discover</a>
+            <a href="/movies/" class="nav-link whitespace-nowrap px-2.5 lg:px-3.5 py-1 lg:py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Movies</a>
+            <a href="/series/" class="nav-link whitespace-nowrap px-2.5 lg:px-3.5 py-1 lg:py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Series</a>
+            <a href="/genres/" class="nav-link whitespace-nowrap px-2.5 lg:px-3.5 py-1 lg:py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Genres</a>
+            <a href="/library/" class="nav-link whitespace-nowrap px-2.5 lg:px-3.5 py-1 lg:py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">My List</a>
         </div>
     </div>
     
     <!-- Right Actions -->
-    <div class="flex items-center gap-3 sm:gap-5">
-        <!-- Live Instant Search Bar -->
-        <div class="relative" id="navbar-search-container">
+    <div class="flex items-center gap-1.5 sm:gap-2.5 lg:gap-4 shrink-0">
+        <!-- Mobile & Tablet Search Trigger Button (Active on <1024px, hidden on lg+) -->
+        <button type="button" 
+                onclick="openMobileSearch()" 
+                title="Search" 
+                aria-label="Open Search"
+                class="lg:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-900/90 hover:bg-gray-800 border border-gray-700/80 flex items-center justify-center text-gray-300 hover:text-white transition active:scale-95 shadow-sm">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+        </button>
+
+        <!-- Desktop Live Instant Search Bar (Visible on lg+, hidden on mobile & tablets) -->
+        <div class="hidden lg:block relative" id="navbar-search-container">
             <form action="/search/" method="get" class="relative flex items-center">
-                <div class="absolute inset-y-0 left-0 pl-3 sm:pl-3.5 flex items-center pointer-events-none">
-                    <svg class="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                 </div>
                 <input type="text"
                        name="q"
-                       placeholder="Search..."
+                       placeholder="Search movies, series, cast..."
                        autocomplete="off"
                        hx-get="/search/suggest/"
                        hx-trigger="keyup changed delay:250ms, search"
                        hx-target="#search-results-dropdown"
                        hx-swap="innerHTML"
                        onfocus="document.getElementById('search-results-dropdown').classList.remove('hidden');"
-                       class="bg-gray-900/90 border border-gray-700/80 focus:border-brand-500 rounded-full pl-8 sm:pl-10 pr-3 sm:pr-10 py-1.5 sm:py-2 text-xs sm:text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 w-28 sm:w-60 md:w-68 transition-all duration-300 focus:w-40 sm:focus:w-80 shadow-inner">
+                       class="bg-gray-900/90 border border-gray-700/80 focus:border-brand-500 rounded-full pl-10 pr-10 py-1.5 lg:py-2 text-xs lg:text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 w-44 xl:w-64 transition-all duration-300 focus:w-60 xl:focus:w-80 shadow-inner">
                 <!-- Keyboard Shortcut Hint Badge -->
-                <div class="hidden sm:flex absolute inset-y-0 right-0 pr-3 items-center pointer-events-none">
+                <div class="flex absolute inset-y-0 right-0 pr-3 items-center pointer-events-none">
                     <span class="text-[10px] text-gray-400 bg-gray-800 border border-gray-700 px-1.5 py-0.5 rounded font-mono font-bold">/</span>
                 </div>
             </form>
-            <!-- Suggestions Dropdown -->
+            <!-- Desktop Suggestions Dropdown -->
             <div id="search-results-dropdown" 
-                 class="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-sm z-50">
+                 class="absolute right-0 top-full mt-2 w-96 max-w-sm z-50">
             </div>
         </div>
 
@@ -149,6 +160,12 @@
                     </svg>
                     <span>Switch Profiles</span>
                 </a>
+                <a href="/genres/" class="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-300 hover:text-white hover:bg-gray-800/80 rounded-xl transition">
+                    <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                    </svg>
+                    <span>Explore Genres</span>
+                </a>
                 <a href="/analytics/" class="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-300 hover:text-white hover:bg-gray-800/80 rounded-xl transition">
                     <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -156,6 +173,15 @@
                     <span>Analytics & Wrapped</span>
                 </a>
                 {% if lan_access_url %}
+                <button type="button" onclick="document.getElementById('qr-pairing-modal')?.classList.remove('hidden')" class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-xl transition text-left group">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                        <span>Scan QR Code</span>
+                    </div>
+                    <span class="text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">Pair</span>
+                </button>
                 <button type="button" onclick="navigator.clipboard.writeText('{{ lan_access_url }}'); showToast('Wi-Fi Link Copied: {{ lan_access_url }}');" class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-xl transition text-left group">
                     <div class="flex items-center gap-2">
                         <svg class="w-4 h-4 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -179,11 +205,66 @@
             </div>
         </div>
         {% else %}
-        <!-- Auth Buttons -->
-        <div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm font-semibold">
-            <a href="/accounts/login/" class="text-gray-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/5 transition">Sign In</a>
-            <a href="/accounts/register/" class="bg-brand-500 hover:bg-red-600 text-white px-4 py-1.5 sm:py-2 rounded-full transition shadow-lg shadow-brand-500/30 hover:scale-105 active:scale-95 transform">Sign Up</a>
+        <!-- Auth Buttons (Never Wrap, Always Fully Visible) -->
+        <div class="flex items-center gap-1.5 sm:gap-2.5 lg:gap-3 text-xs lg:text-sm font-semibold shrink-0 whitespace-nowrap">
+            <a href="/accounts/login/" class="text-gray-300 hover:text-white px-2 sm:px-2.5 lg:px-3 py-1.5 rounded-lg hover:bg-white/5 transition whitespace-nowrap font-medium">Sign In</a>
+            <a href="/accounts/register/" class="bg-brand-500 hover:bg-red-600 text-white px-2.5 sm:px-3.5 lg:px-4 py-1.5 sm:py-2 rounded-full transition shadow-lg shadow-brand-500/30 hover:scale-105 active:scale-95 transform whitespace-nowrap font-bold">Sign Up</a>
         </div>
         {% endif %}
     </div>
 </nav>
+
+<!-- Mobile & Tablet Search Backdrop (Active on <1024px, hidden on lg+) -->
+<div id="mobile-search-backdrop" onclick="closeMobileSearch()" class="hidden fixed inset-0 z-[55] bg-black/80 backdrop-blur-sm lg:hidden transition-opacity"></div>
+
+<!-- Mobile & Tablet Full-Width Search Overlay (Active on <1024px, hidden on lg+) -->
+<div id="mobile-search-overlay" 
+     class="hidden lg:hidden fixed top-0 left-0 right-0 z-[60] bg-gray-950/98 backdrop-blur-2xl px-3 py-2.5 sm:px-6 sm:py-3.5 border-b border-gray-800 shadow-2xl transition-all duration-200"
+     style="padding-top: max(0.625rem, env(safe-area-inset-top, 0px));">
+    <div class="flex items-center gap-2 max-w-2xl mx-auto">
+        <!-- Back Button -->
+        <button type="button" 
+                onclick="closeMobileSearch()" 
+                title="Back to Browse"
+                class="p-2 -ml-1 text-gray-400 hover:text-white rounded-full active:scale-90 transition shrink-0">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+        </button>
+
+        <!-- Full-Width Mobile & Tablet Search Input Form -->
+        <form action="/search/" method="get" class="flex-1 relative flex items-center">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <svg class="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            <input type="text"
+                   id="mobile-search-input"
+                   name="q"
+                   placeholder="Search movies, series, cast..."
+                   autocomplete="off"
+                   hx-get="/search/suggest/"
+                   hx-trigger="keyup changed delay:250ms, search"
+                   hx-target="#mobile-search-results-dropdown"
+                   hx-swap="innerHTML"
+                   onfocus="document.getElementById('mobile-search-results-dropdown').classList.remove('hidden');"
+                   class="w-full bg-gray-900 border border-gray-700/90 focus:border-brand-500 rounded-full pl-10 pr-9 py-2 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 shadow-inner">
+            
+            <!-- Clear Button -->
+            <button type="button" 
+                    onclick="clearMobileSearch()" 
+                    title="Clear search"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </form>
+    </div>
+
+    <!-- Mobile & Tablet Suggestions Dropdown -->
+    <div id="mobile-search-results-dropdown" 
+         class="hidden fixed left-3 right-3 sm:left-6 sm:right-6 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl top-[calc(3.75rem+env(safe-area-inset-top,0px))] max-h-[75vh] overflow-y-auto z-[70] shadow-2xl rounded-2xl">
+    </div>
+</div>

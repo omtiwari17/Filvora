@@ -43,10 +43,17 @@ def movie_browse(request):
     client = TMDBClient()
     category = request.GET.get('category', 'popular')
     genre_id = request.GET.get('genre')
-    sort_by = request.GET.get('sort', 'popularity.desc')
+    explicit_sort = request.GET.get('sort')
     audience = request.GET.get('audience', 'all')
     page = request.GET.get('page', '1')
     kids_mode = is_kids_profile(request)
+
+    if explicit_sort:
+        sort_by = explicit_sort
+    elif category == 'top_rated':
+        sort_by = 'vote_average.desc'
+    else:
+        sort_by = 'popularity.desc'
 
     movies = client.get_movies_catalog(
         category=category,
@@ -159,10 +166,17 @@ def series_browse(request):
     client = TMDBClient()
     category = request.GET.get('category', 'popular')
     genre_id = request.GET.get('genre')
-    sort_by = request.GET.get('sort', 'popularity.desc')
+    explicit_sort = request.GET.get('sort')
     audience = request.GET.get('audience', 'all')
     page = request.GET.get('page', '1')
     kids_mode = is_kids_profile(request)
+
+    if explicit_sort:
+        sort_by = explicit_sort
+    elif category == 'top_rated':
+        sort_by = 'vote_average.desc'
+    else:
+        sort_by = 'popularity.desc'
 
     series_list = client.get_series_catalog(
         category=category,

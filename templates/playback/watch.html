@@ -3,7 +3,7 @@
 <html lang="en" class="dark bg-black">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
     <title>Watching {{ title }} — Filvora</title>
     
     <!-- Tailwind CSS (CDN) -->
@@ -136,19 +136,27 @@
             z-index: 45 !important;
             box-shadow: 0 0 120px rgba(0, 0, 0, 0.98), 0 0 40px rgba(229, 9, 20, 0.2) !important;
         }
+        /* Mobile 16px Form Input Safeguard (Prevents iOS Safari auto-zoom) */
+        @media screen and (max-width: 768px) {
+            #player-wrapper input,
+            #player-wrapper select,
+            #player-wrapper textarea {
+                font-size: 16px !important;
+            }
+        }
     </style>
 </head>
-<body id="player-wrapper" class="bg-black text-white h-screen w-screen overflow-hidden select-none relative">
+<body id="player-wrapper" class="bg-black text-white h-[100dvh] w-screen overflow-hidden select-none relative">
     <!-- Theater Mode Ambient Velvet Curtain Backdrop -->
     <div id="theater-curtain" onclick="toggleTheaterMode()" title="Click to Exit Theater Mode" class="fixed inset-0 bg-black z-40 opacity-0 pointer-events-none transition-opacity duration-500 cursor-pointer"></div>
 
-    <!-- Top Hover & Click Detection Sensor (136px tall zone across the monitor with compositor quad) -->
+    <!-- Top Hover & Click Detection Sensor (Constrained height on mobile) -->
     <div id="top-sensor" 
          onclick="showOverlay()" 
          onmouseenter="showOverlay()" 
          style="background: rgba(0, 0, 0, 0.002) !important;" 
          title="Move cursor or click near top to reveal controls" 
-         class="fixed top-0 left-0 w-full h-32 z-[2147483646] cursor-pointer pointer-events-auto"></div>
+         class="fixed top-0 left-0 w-full h-16 sm:h-28 z-[2147483646] cursor-pointer pointer-events-auto"></div>
 
     <!-- Top Notch Trigger (Always visible at top center when upper bar is hidden) -->
     <div id="top-notch-trigger" 
@@ -163,12 +171,12 @@
         </svg>
     </div>
 
-    <!-- Floating Quick Server Switcher & Direct Dropdown Menu on Hover -->
-    <div id="quick-server-container" class="fixed top-4 right-4 z-50 group">
+    <!-- Floating Quick Server Switcher & Direct Dropdown Menu on Hover (Visible on sm+, hidden on mobile) -->
+    <div id="quick-server-container" class="hidden sm:block fixed top-4 right-4 z-50 group">
         <button id="quick-server-trigger" 
                 type="button"
-                onclick="showOverlay()" 
-                title="Hover or Click to Switch Video Server (Alt + S)" 
+                onclick="openOverlayServerMenuDirectly(event)" 
+                title="Click or Hover to Switch Video Server (Alt + S)" 
                 class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gray-950/90 hover:bg-gray-900 border border-gray-700/90 backdrop-blur-2xl shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 text-xs text-gray-200 cursor-pointer">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span class="font-bold">Server {{ current_server|upper }}</span>
@@ -199,22 +207,28 @@
         </div>
     </div>
 
-    <!-- Top Overlay (Title, Navigation & Server Switcher) -->
-    <div id="player-overlay" class="fixed top-0 left-0 w-full p-4 sm:p-6 z-50 flex items-center justify-between bg-gradient-to-b from-black/95 via-black/80 to-transparent transition-all duration-300 transform">
-        <div class="flex items-center gap-3 sm:gap-5">
+    <!-- Top Overlay (Title, Navigation & Player Controls) -->
+    <div id="player-overlay" 
+         class="fixed top-0 left-0 w-full p-2.5 sm:p-6 z-50 flex items-center justify-between bg-gradient-to-b from-black/95 via-black/80 to-transparent transition-all duration-300 transform"
+         style="padding-top: max(0.625rem, env(safe-area-inset-top, 0px)); padding-left: max(0.625rem, env(safe-area-inset-left, 0px)); padding-right: max(0.625rem, env(safe-area-inset-right, 0px));">
+        <div class="flex items-center gap-2 sm:gap-5 min-w-0">
             <a href="{% if media_type == 'movie' %}/movies/{{ tmdb_id }}/{% else %}/series/{{ tmdb_id }}/{% endif %}" 
-               class="text-white hover:text-brand-500 transition p-2.5 rounded-full bg-black/60 backdrop-blur-xl border border-gray-700/60 shadow-lg hover:scale-105 active:scale-95"
+               class="text-white hover:text-brand-500 transition p-2 sm:p-2.5 rounded-full bg-black/60 backdrop-blur-xl border border-gray-700/60 shadow-lg hover:scale-105 active:scale-95 shrink-0"
                title="Back to Details">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
             </a>
-            <div>
-                <div class="flex items-center gap-2">
-                    <h1 class="text-base sm:text-xl md:text-2xl font-black drop-shadow text-white truncate max-w-[180px] sm:max-w-md md:max-w-lg">{{ title }}</h1>
-                    <span class="hidden sm:inline-block bg-brand-500/20 border border-brand-500/40 text-brand-500 text-[10px] font-black px-1.5 py-0.5 rounded">v2.4</span>
+            <div class="min-w-0">
+                <div class="flex items-center gap-1.5 sm:gap-2">
+                    <h1 class="text-xs sm:text-lg md:text-2xl font-black drop-shadow text-white truncate max-w-[85px] xs:max-w-[140px] sm:max-w-md md:max-w-lg">{{ title }}</h1>
+                    {% if season and episode %}
+                    <span class="bg-brand-500/25 border border-brand-500/40 text-brand-400 text-[10px] font-black px-1.5 py-0.5 rounded shrink-0">S{{ season }}E{{ episode }}</span>
+                    {% else %}
+                    <span class="hidden sm:inline-block bg-brand-500/20 border border-brand-500/40 text-brand-500 text-[10px] font-black px-1.5 py-0.5 rounded shrink-0">v2.4</span>
+                    {% endif %}
                 </div>
-                <div class="flex items-center gap-2 text-[11px] sm:text-xs text-gray-400 mt-0.5">
+                <div class="hidden sm:flex items-center gap-2 text-[11px] sm:text-xs text-gray-400 mt-0.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span>Server {{ current_server|upper }}</span>
                     <span class="text-gray-600">•</span>
@@ -223,24 +237,49 @@
             </div>
         </div>
         
-        <div class="flex items-center gap-2 sm:gap-3">
-            <!-- Server Switcher Dropdown -->
-            <div class="relative flex items-center">
-                <select onchange="window.location.replace('?server=' + this.value)" 
-                        class="bg-gray-900/90 text-xs text-gray-200 border border-gray-700/80 rounded-xl px-3 py-2 focus:outline-none focus:border-brand-500 cursor-pointer backdrop-blur-xl shadow-lg">
+        <div class="flex items-center gap-1 sm:gap-2.5 lg:gap-3 shrink-0">
+            <!-- Server Switcher Dropdown (Responsive: Compact on mobile, full on desktop) -->
+            <div class="relative" id="overlay-server-dropdown-container">
+                <button type="button" 
+                        id="overlay-server-btn"
+                        onclick="toggleOverlayServerMenu(event)" 
+                        title="Switch Video Server (Alt + S)" 
+                        class="flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gray-900/90 hover:bg-gray-800 border border-gray-700/80 hover:border-brand-500/60 text-gray-200 hover:text-white text-xs font-bold transition shadow-lg backdrop-blur-xl cursor-pointer">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                    <span class="sm:hidden font-mono uppercase text-[11px]">{% if current_server == 'vidlink' %}S1{% elif current_server == 'vidfast' %}S2{% elif current_server == 'autoembed' %}S3{% elif current_server == 'vidsrc' %}S4{% elif current_server == '2embed' %}S5{% elif current_server == 'nontongo' %}S6{% else %}{{ current_server|slice:":4"|upper }}{% endif %}</span>
+                    <span class="hidden sm:inline">Server {{ current_server|upper }}</span>
+                    <svg class="w-3 h-3 text-gray-400 transition-transform duration-200" id="overlay-server-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <!-- Server Dropdown Menu (Screen-adaptive: fixed on mobile, absolute on desktop) -->
+                <div id="overlay-server-menu" class="hidden fixed sm:absolute right-3 sm:right-0 top-14 sm:top-full mt-2 w-64 max-w-[calc(100vw-1.5rem)] bg-gray-950/98 border border-gray-800/90 rounded-2xl shadow-2xl backdrop-blur-2xl p-1.5 space-y-1 z-[110]">
+                    <div class="px-3 py-1.5 border-b border-gray-800/80 text-[10px] font-black text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                        <span>Select Video Server</span>
+                        <span class="text-[9px] text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Fast CDN</span>
+                    </div>
                     {% for p in providers %}
-                    <option value="{{ p.id }}" {% if p.id == current_server %}selected{% endif %}>
-                        {{ p.name }}
-                    </option>
+                    <a href="?server={{ p.id }}" 
+                       class="flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-xl transition {% if p.id == current_server %}bg-brand-500 text-white shadow-md font-bold{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full {% if p.id == current_server %}bg-white{% else %}bg-gray-500{% endif %}"></span>
+                            <span>{{ p.name }}</span>
+                        </div>
+                        {% if p.id == current_server %}
+                        <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                        </svg>
+                        {% endif %}
+                    </a>
                     {% endfor %}
-                </select>
+                </div>
             </div>
 
-            <!-- Fast Fallback Button -->
+            <!-- Fast Fallback Button (Desktop only) -->
             {% if next_provider and next_provider.id != current_server %}
             <button onclick="window.location.replace('?server={{ next_provider.id }}')" 
                     title="Switch to next fallback server (Alt + S)" 
-                    class="hidden md:inline-flex items-center gap-1.5 bg-gray-800/80 hover:bg-gray-700 text-gray-300 hover:text-white px-3 py-2 rounded-xl text-xs font-semibold border border-gray-700/60 backdrop-blur-xl transition">
+                    class="hidden lg:inline-flex items-center gap-1.5 bg-gray-800/80 hover:bg-gray-700 text-gray-300 hover:text-white px-3 py-2 rounded-xl text-xs font-semibold border border-gray-700/60 backdrop-blur-xl transition">
                 <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
@@ -248,7 +287,7 @@
             </button>
             {% endif %}
 
-            <!-- Previous Episode Button (For TV Series) -->
+            <!-- Previous Episode Button (For TV Series, desktop/tablet only) -->
             {% if previous_episode %}
             <a href="{{ previous_episode.url }}{% if current_server %}?server={{ current_server }}{% endif %}" 
                class="hidden sm:inline-flex items-center gap-1.5 bg-gray-900/90 hover:bg-gray-800 text-white text-xs font-bold px-3 py-2 rounded-xl transition border border-gray-700/80 shadow-lg hover:scale-105 active:scale-95">
@@ -262,30 +301,31 @@
             <!-- Next Episode Button (For TV Series) -->
             {% if next_episode %}
             <a href="{{ next_episode.url }}{% if current_server %}?server={{ current_server }}{% endif %}" 
-               class="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-red-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition shadow-lg shadow-brand-500/25 hover:scale-105 active:scale-95">
-                <span>Next (E{{ next_episode.episode }})</span>
-                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               class="inline-flex items-center gap-1 bg-brand-500 hover:bg-red-600 text-white text-xs font-bold px-2 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition shadow-lg shadow-brand-500/25 hover:scale-105 active:scale-95">
+                <span class="sm:hidden text-[11px]">E{{ next_episode.episode }}</span>
+                <span class="hidden sm:inline">Next (E{{ next_episode.episode }})</span>
+                <svg class="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                 </svg>
             </a>
             {% endif %}
 
-            <!-- My List Button -->
+            <!-- My List Button (Desktop & Tablet only, on mobile accessible via More Sheet) -->
             <button hx-post="/library/toggle/" 
                     hx-vals='{"tmdb_id": "{{ tmdb_id }}", "media_type": "{{ media_type }}"}' 
                     hx-swap="outerHTML"
-                    class="bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95">
+                    class="hidden sm:inline-flex bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
                 </svg>
-                <span class="hidden sm:inline">My List</span>
+                <span>My List</span>
             </button>
 
-            <!-- Bookmark Scene Button -->
+            <!-- Bookmark Scene Button (Compact icon on mobile, full on desktop) -->
             <button type="button"
                     onclick="openBookmarkModal()" 
                     title="Bookmark Scene (B)" 
-                    class="bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
+                    class="bg-gray-900/90 hover:bg-gray-800 text-white p-2 sm:px-3.5 sm:py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
                 <svg class="h-4 w-4 text-amber-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                 </svg>
@@ -295,11 +335,9 @@
                 {% endif %}
             </button>
 
-            <!-- Sleep Timer Dropdown -->
-            <div class="relative inline-block text-left" id="sleep-timer-container">
-                <!-- Transparent click-capture backdrop covering entire screen (even above embed iframe) -->
+            <!-- Sleep Timer Dropdown (Desktop & Tablet only, on mobile accessible via More Sheet) -->
+            <div class="relative hidden sm:inline-block text-left" id="sleep-timer-container">
                 <div id="sleep-timer-backdrop" onclick="closeSleepTimerMenu()" class="hidden fixed inset-0 z-[85]"></div>
-
                 <button type="button"
                         id="sleep-timer-btn"
                         onclick="toggleSleepTimerMenu()" 
@@ -308,11 +346,10 @@
                     <svg class="h-4 w-4 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span id="sleep-timer-label" class="hidden sm:inline">Sleep</span>
+                    <span id="sleep-timer-label">Sleep</span>
                     <span id="sleep-timer-countdown" class="hidden font-mono text-cyan-300 font-black text-[10px] bg-cyan-950/90 border border-cyan-500/40 px-1.5 py-0.5 rounded-md shadow-sm"></span>
                 </button>
-
-                <!-- Sleep Timer Dropdown Options -->
+                <!-- Sleep Timer Menu Options -->
                 <div id="sleep-timer-menu" class="hidden absolute right-0 mt-2 w-48 rounded-2xl bg-gray-950/95 border border-gray-800 shadow-2xl backdrop-blur-2xl p-2 z-[90] space-y-1">
                     <div class="px-2.5 py-1.5 border-b border-gray-800/80 mb-1 flex items-center justify-between">
                         <span class="text-[10px] font-black uppercase tracking-wider text-gray-400">Sleep Timer</span>
@@ -345,28 +382,40 @@
                 </div>
             </div>
 
-            <!-- Theater Mode Dimming Toggle -->
+            <!-- Mobile More Actions Trigger Button (sm:hidden) -->
+            <button type="button"
+                    id="mobile-player-menu-btn"
+                    onclick="openMobilePlayerSheet()" 
+                    title="More Playback Options" 
+                    aria-label="More Options"
+                    class="sm:hidden p-2 rounded-xl bg-gray-900/90 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/80 flex items-center justify-center shadow-lg transition active:scale-95 cursor-pointer">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                </svg>
+            </button>
+
+            <!-- Theater Mode Dimming Toggle (Desktop only) -->
             <button type="button"
                     id="theater-mode-btn"
                     onclick="toggleTheaterMode()" 
                     title="Theater Mode (T)" 
-                    class="bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
+                    class="hidden md:inline-flex bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
                 <svg id="theater-mode-icon" class="h-4 w-4 text-purple-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
                 </svg>
-                <span id="theater-mode-label" class="hidden md:inline">Theater</span>
+                <span id="theater-mode-label" class="hidden lg:inline">Theater</span>
             </button>
 
-            <!-- Picture in Picture Button -->
+            <!-- Picture in Picture Button (Desktop only) -->
             <button type="button"
                     id="pip-toggle-btn"
                     onclick="togglePictureInPicture()" 
                     title="Picture in Picture (P)" 
-                    class="bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
+                    class="hidden lg:inline-flex bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
                 <svg class="h-4 w-4 text-emerald-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 13v-1m4 1v-3m4 3V8M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z" />
                 </svg>
-                <span class="hidden lg:inline">PiP</span>
+                <span>PiP</span>
             </button>
 
             <!-- Fullscreen Toggle Button -->
@@ -374,7 +423,7 @@
                     type="button"
                     onclick="toggleFullscreen()" 
                     title="Toggle Cinema Fullscreen (F)" 
-                    class="bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
+                    class="bg-gray-900/90 hover:bg-gray-800 text-white p-2 sm:px-3.5 sm:py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
                 <svg id="fullscreen-icon" class="h-4 w-4 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                 </svg>
@@ -385,7 +434,7 @@
 
     <!-- Bookmark Scene Modal -->
     <div id="bookmark-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md transition-opacity">
-        <div class="bg-gray-950 border border-gray-800 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 relative animate-in fade-in zoom-in-95 duration-200">
+        <div class="bg-gray-950 border border-gray-800 rounded-3xl p-5 sm:p-7 max-w-md w-full max-h-[90dvh] overflow-y-auto shadow-2xl space-y-5 relative animate-in fade-in zoom-in-95 duration-200">
             {% csrf_token %}
             <input type="hidden" id="bookmark-csrf-token" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
             <div class="flex items-center justify-between border-b border-gray-800 pb-3">
@@ -481,6 +530,105 @@
             <svg class="w-4 h-4 fill-black" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             <span>Resume Watching</span>
         </button>
+    </div>
+
+    <!-- Mobile Player Controls Sheet (Slide-Up Bottom Sheet for Mobile Viewports) -->
+    <div id="mobile-player-controls-sheet" class="hidden sm:hidden fixed inset-0 z-[95] bg-black/85 backdrop-blur-md flex flex-col justify-end transition-opacity">
+        <!-- Backdrop dismiss tap -->
+        <div class="flex-1" onclick="closeMobilePlayerSheet()"></div>
+        
+        <!-- Sheet Card with Safe Area Inset Support -->
+        <div class="bg-gray-950 border-t border-gray-800 rounded-t-3xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200"
+             style="padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));">
+            
+            <!-- Sheet Handle & Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-gray-800/80">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-brand-500 animate-pulse"></span>
+                    <div>
+                        <h3 class="text-sm font-black text-white truncate max-w-[220px]">{{ title }}</h3>
+                        <p class="text-[11px] text-gray-400">Server {{ current_server|upper }} • {% if season and episode %}S{{ season }}E{{ episode }}{% else %}Movie{% endif %}</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeMobilePlayerSheet()" class="p-1.5 rounded-full bg-gray-900 text-gray-400 hover:text-white transition">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Quick Actions Grid (Watchlist, Bookmark, Fullscreen) -->
+            <div class="grid grid-cols-3 gap-2">
+                <!-- Toggle Watchlist -->
+                <button hx-post="/library/toggle/" 
+                        hx-vals='{"tmdb_id": "{{ tmdb_id }}", "media_type": "{{ media_type }}"}' 
+                        hx-swap="outerHTML"
+                        class="flex flex-col items-center justify-center p-3 rounded-2xl bg-gray-900/90 border border-gray-800 hover:border-brand-500/50 text-white transition active:scale-95 text-center">
+                    <svg class="w-5 h-5 text-brand-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                    <span class="text-[11px] font-bold">Watchlist</span>
+                </button>
+
+                <!-- Bookmark Scene -->
+                <button type="button" 
+                        onclick="closeMobilePlayerSheet(); openBookmarkModal();" 
+                        class="flex flex-col items-center justify-center p-3 rounded-2xl bg-gray-900/90 border border-gray-800 hover:border-amber-500/50 text-white transition active:scale-95 text-center">
+                    <svg class="w-5 h-5 text-amber-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-[11px] font-bold">Bookmark</span>
+                </button>
+
+                <!-- Fullscreen -->
+                <button type="button" 
+                        onclick="closeMobilePlayerSheet(); toggleFullscreen();" 
+                        class="flex flex-col items-center justify-center p-3 rounded-2xl bg-gray-900/90 border border-gray-800 hover:border-cyan-500/50 text-white transition active:scale-95 text-center">
+                    <svg class="w-5 h-5 text-cyan-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                    <span class="text-[11px] font-bold">Fullscreen</span>
+                </button>
+            </div>
+
+            <!-- Sleep Timer Selector -->
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-black uppercase text-gray-400 tracking-wider flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>Sleep Timer</span>
+                </label>
+                <div class="grid grid-cols-3 gap-1.5 text-xs font-bold">
+                    <button type="button" onclick="setSleepTimer(0); closeMobilePlayerSheet();" class="p-2 rounded-xl bg-gray-900 border border-gray-800 hover:bg-gray-800 text-gray-300 transition text-center">Off</button>
+                    <button type="button" onclick="setSleepTimer(15); closeMobilePlayerSheet();" class="p-2 rounded-xl bg-gray-900 border border-gray-800 hover:bg-gray-800 text-cyan-400 transition text-center">15m</button>
+                    <button type="button" onclick="setSleepTimer(30); closeMobilePlayerSheet();" class="p-2 rounded-xl bg-gray-900 border border-gray-800 hover:bg-gray-800 text-cyan-400 transition text-center">30m</button>
+                    <button type="button" onclick="setSleepTimer(45); closeMobilePlayerSheet();" class="p-2 rounded-xl bg-gray-900 border border-gray-800 hover:bg-gray-800 text-cyan-400 transition text-center">45m</button>
+                    <button type="button" onclick="setSleepTimer(60); closeMobilePlayerSheet();" class="p-2 rounded-xl bg-gray-900 border border-gray-800 hover:bg-gray-800 text-cyan-400 transition text-center">1 hour</button>
+                    <button type="button" onclick="setSleepTimer('end_of_episode'); closeMobilePlayerSheet();" class="p-2 rounded-xl bg-gray-900 border border-gray-800 hover:bg-gray-800 text-amber-400 transition text-center">End</button>
+                </div>
+            </div>
+
+            <!-- Video Server Selector -->
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-black uppercase text-gray-400 tracking-wider flex items-center justify-between">
+                    <span>Video Server Failover</span>
+                    <a href="/watch/diagnostics/" target="_blank" class="text-gray-500 hover:text-white text-[10px] lowercase underline">diagnostics</a>
+                </label>
+                <div class="space-y-1 max-h-48 overflow-y-auto">
+                    {% for p in providers %}
+                    <a href="?server={{ p.id }}" 
+                       class="flex items-center justify-between px-3 py-2.5 text-xs font-semibold rounded-xl transition {% if p.id == current_server %}bg-brand-500 text-white shadow-md font-bold{% else %}bg-gray-900 text-gray-300 hover:text-white border border-gray-800/80{% endif %}">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full {% if p.id == current_server %}bg-white{% else %}bg-emerald-400{% endif %}"></span>
+                            <span>{{ p.name }}</span>
+                        </div>
+                        {% if p.id == current_server %}
+                        <span class="text-[10px] font-black bg-white/20 px-2 py-0.5 rounded">ACTIVE</span>
+                        {% endif %}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Interactive Resume Prompt Banner (Shown when user has past progress) -->
@@ -904,6 +1052,61 @@
         }
 
         // ==========================================
+        // Responsive Server Dropdown & Mobile Sheet
+        // ==========================================
+        function toggleOverlayServerMenu(e) {
+            if (e) e.stopPropagation();
+            const menu = document.getElementById('overlay-server-menu');
+            const chevron = document.getElementById('overlay-server-chevron');
+            if (!menu) return;
+            const isHidden = menu.classList.contains('hidden');
+            if (isHidden) {
+                menu.classList.remove('hidden');
+                if (chevron) chevron.classList.add('rotate-180');
+                clearTimeout(hideTimeout);
+            } else {
+                menu.classList.add('hidden');
+                if (chevron) chevron.classList.remove('rotate-180');
+                scheduleHide(3000);
+            }
+        }
+
+        function openOverlayServerMenuDirectly(e) {
+            if (e) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+            showOverlay();
+            const menu = document.getElementById('overlay-server-menu');
+            const chevron = document.getElementById('overlay-server-chevron');
+            if (menu) {
+                menu.classList.remove('hidden');
+                if (chevron) chevron.classList.add('rotate-180');
+            }
+            clearTimeout(hideTimeout);
+        }
+
+        function closeOverlayServerMenu() {
+            const menu = document.getElementById('overlay-server-menu');
+            const chevron = document.getElementById('overlay-server-chevron');
+            if (menu && !menu.classList.contains('hidden')) {
+                menu.classList.add('hidden');
+                if (chevron) chevron.classList.remove('rotate-180');
+                scheduleHide(3000);
+            }
+        }
+
+        function openMobilePlayerSheet() {
+            const sheet = document.getElementById('mobile-player-controls-sheet');
+            if (sheet) sheet.classList.remove('hidden');
+        }
+
+        function closeMobilePlayerSheet() {
+            const sheet = document.getElementById('mobile-player-controls-sheet');
+            if (sheet) sheet.classList.add('hidden');
+        }
+
+        // ==========================================
         // Sleep Timer Engine
         // ==========================================
         let sleepTimerMinutes = 0;
@@ -1307,6 +1510,10 @@
             if (bm && !bm.classList.contains('hidden')) return true;
             const st = document.getElementById('sleep-timer-menu');
             if (st && !st.classList.contains('hidden')) return true;
+            const srv = document.getElementById('overlay-server-menu');
+            if (srv && !srv.classList.contains('hidden')) return true;
+            const sheet = document.getElementById('mobile-player-controls-sheet');
+            if (sheet && !sheet.classList.contains('hidden')) return true;
             return false;
         }
 
@@ -1350,8 +1557,13 @@
                 topNotch.style.transform = 'translate(-50%, 0)';
             }
             if (quickContainer) {
-                quickContainer.style.opacity = '0.9';
-                quickContainer.style.pointerEvents = 'auto';
+                if (window.innerWidth >= 640) {
+                    quickContainer.style.opacity = '0.9';
+                    quickContainer.style.pointerEvents = 'auto';
+                } else {
+                    quickContainer.style.opacity = '0';
+                    quickContainer.style.pointerEvents = 'none';
+                }
             }
         }
 
@@ -1423,14 +1635,23 @@
             });
 
             document.addEventListener('click', (e) => {
-                if (!isInteractiveMenuOpen() && !e.target.closest('#player-overlay') && !e.target.closest('#bookmark-modal') && !e.target.closest('#sleep-timer-container')) {
-                    scheduleHide(1000);
+                const srvContainer = document.getElementById('overlay-server-dropdown-container');
+                const quickContainer = document.getElementById('quick-server-container');
+                if (srvContainer && !srvContainer.contains(e.target) && (!quickContainer || !quickContainer.contains(e.target))) {
+                    closeOverlayServerMenu();
+                }
+                if (!isInteractiveMenuOpen() && !e.target.closest('#player-overlay') && !e.target.closest('#bookmark-modal') && !e.target.closest('#sleep-timer-container') && !e.target.closest('#quick-server-container') && !e.target.closest('#mobile-player-controls-sheet')) {
+                    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                    scheduleHide(isTouch ? 3500 : 1000);
                 }
             });
 
-            document.addEventListener('touchstart', () => {
-                showOverlay();
-            });
+            document.addEventListener('touchstart', (e) => {
+                if (!isInteractiveMenuOpen() && !e.target.closest('#player-overlay') && !e.target.closest('#bookmark-modal') && !e.target.closest('#sleep-timer-container') && !e.target.closest('#quick-server-container') && !e.target.closest('#mobile-player-controls-sheet')) {
+                    showOverlay();
+                    scheduleHide(3500);
+                }
+            }, { passive: true });
 
             function handleFullscreenChange() {
                 const fsEl = document.fullscreenElement || 
@@ -1647,6 +1868,8 @@
                     }
                     closeBookmarkModal();
                     closeSleepTimerMenu();
+                    closeOverlayServerMenu();
+                    closeMobilePlayerSheet();
                     const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
                     if (isFull) {
                         if (document.exitFullscreen) document.exitFullscreen().catch(() => {});

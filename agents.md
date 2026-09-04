@@ -44,13 +44,14 @@
 | **Multi-Profile Isolation Engine (History, Ratings, Watchlist, Collections & Server Preferences)** | `apps/accounts/`, `apps/watch/`, `apps/catalog/`, `apps/playback/`, `apps/library/` | Full multi-profile isolation with session-aware active profile switching. Each profile ([`UserProfile`](file:///D:/Om/Projects/Filvora/apps/accounts/models.py#L6)) maintains its own completely independent watch history timeline rails, continue watching list, Watchlist ("My List"), scene bookmarks, custom playlists/collections, server preferences, rating scores (1–5 stars), resume timestamps, and personal analytics / Wrapped metrics. Enforces server-side `certification.lte=PG` content filtering for Kids profiles. |
 | **Interactive User Ratings & Affinity Engine** | `apps/watch/`, `apps/core/`, `templates/components/` | Custom `UserRating` model (1–5 stars, unique per user profile/media). Interactive HTMX star rating widget with instant left-to-right JavaScript cascade hover animations. Weighting 4–5 star titles (+5 affinity), 3 star titles (+2 affinity), and 1–2 star titles (-2 penalty) driving "Because You Watched / Loved" suggestions per active profile. |
 | **Multi-Tab Watch History & Rated Hub** | `apps/watch/`, `templates/watch/history.html` | Dual-tab history dashboard scoped per active profile featuring: (1) **Streamed History** with grouped timeline rails (*Today, Yesterday, This Week, Earlier*), progress bars, and single-item removal, and (2) **Rated Titles** tab displaying a dedicated poster grid of all user-rated content with live star badges and in-place rating adjustments. |
-| **Multi-Server Online Playback** | `apps/playback/` | Full multi-server web player with 6 streaming providers: **VidLink** (Primary Fast 1080p HD, Default), **VidFast** (4K Ultra HD), **AutoEmbed**, **VidSrc** (UHD/HD active mirror `vidsrc.pm`), **2Embed**, **NontonGo**. Fullscreen overlay preservation, direct hover server switcher dropdown, profile-isolated server preference memory, wildcard origin iframe permissions, universal fullscreen toggle button, resume prompt threshold ($\ge 30$s scoped per active profile), active beacon progress tracking ($\ge 15$s), 3.5s pause auto-hide. |
+| **Multi-Server Online Playback & Screen-Adaptive Controls** | `apps/playback/`, `templates/playback/watch.html` | Full multi-server web player with 6 streaming providers: **VidLink** (Primary Fast 1080p HD, Default), **VidFast** (4K Ultra HD), **AutoEmbed**, **VidSrc** (UHD/HD active mirror `vidsrc.pm`), **2Embed**, **NontonGo**. Fully screen-adaptive control bar resolving mobile horizontal overflow traps: replaces raw `<select>` with responsive custom server dropdowns (`[⚡ S1 ▾]` on mobile, `[⚡ Server VIDLINK ▾]` on desktop), compact 1-row mobile icon buttons (Back, Title, Server, Next Episode, Bookmark, More, Fullscreen), a slide-up **Mobile Player Controls Sheet** (`#mobile-player-controls-sheet`) giving 1-tap thumb access to servers, sleep timer presets, and watchlist, and interactive menu suspension of controls auto-hide. Includes fullscreen overlay preservation, profile-isolated server preference memory, wildcard origin iframe permissions, universal fullscreen toggle button, resume prompt threshold ($\ge 30$s scoped per active profile), active beacon progress tracking ($\ge 15$s), and 3.5s pause auto-hide. |
 | **Season Total Runtime & Analytics Engine** | `apps/catalog/`, `apps/watch/` | Aggregates individual episode runtimes per TV season via `format_season_runtime` in `apps/catalog/views.py`. Displays duration badges on season selector tabs (`Season 1 • 6h 38m`) and episode list meta headers. Aggregates user watch history by season badges in Personal Analytics & Filvora Wrapped (`/analytics/`), with 5-metric dashboard including **Avg Rating** and total rated counts for active profile. |
 | **Dynamic Age Ratings Engine** | `apps/tmdb/client.py` | Automatically extracts official release certifications (`PG`, `PG-13`, `R`, `TV-MA`) from TMDB and caches them in singleton `_RATING_CACHE[media_type:tmdb_id]` across all views. Ensures 100% rating consistency between cards and detail pages. |
 | **Balanced Responsive Grid Engine** | `apps/tmdb/client.py` | `_fetch_paginated_24` windowing creates perfectly full, even rows of 24 titles per page (Desktop: 4 rows of 6; Laptop: 6 rows of 4; Tablet: 8 rows of 3; Mobile: 12 rows of 2). |
 | **Multi-Page Discover Engine** | `apps/catalog/` | Faceted multi-page discovery filtering by Media Type (`movie`/`tv`), Mood, Genre, Language, Score, Certification (`G`, `PG`, `PG-13`, `R`, `NC-17`), and Sort Order with preserved query parameters across pagination. |
-| **Homepage Cinematic Billboard** | `templates/home/index.html` | Hero spotlight billboard with backdrop image blending, action buttons (Play Now, In My List, Details), and responsive spacing avoiding overlap with the "Continue Watching" rail. |
-| **Mobile-First UX & App Navigation** | `templates/base.html`, `static/css/main.css` | Native app-like mobile experience with iOS/Android safe area insets (`env(safe-area-inset-bottom)`), active pill bottom navigation, mobile poster rating badges, full-width touch CTA buttons on detail views, horizontal touch-swipe season selector rails, and search bar boundary bounds. |
+| **Homepage Cinematic Billboard** | `templates/home/index.html` | Hero spotlight billboard with generous upper breathing space (`pt-28 sm:pt-44`) allowing backdrop artwork to shine, responsive title typography, and content shifted gracefully into the lower third (`items-end pb-6 sm:pb-10`). Tight, seamless cinematic margin (`-mt-1 sm:mt-0`) eliminates the empty black gap between CTA buttons (Play Now, Trailer, In My List, Details) and the Continue Watching rail. |
+| **Mobile-First UX & Touch Architecture** | `templates/base.html`, `static/css/main.css`, `templates/playback/watch.html`, `templates/includes/navbar.html`, `templates/accounts/profiles.html` | Comprehensive mobile and touch device optimizations: (1) Universal 16px font-size CSS safeguard on mobile form inputs/selects preventing iOS Safari auto-zoom; (2) Full-bleed safe area insets (`viewport-fit=cover`, `env(safe-area-inset-top/bottom/left/right)`); (3) Mobile bottom clearance preventing content cutoff behind fixed bottom navigation; (4) Floating toast repositioning above bottom navigation; (5) Native iOS momentum flick scrolling with decoupled smooth scrolling; (6) Active tap feedback animations; (7) Mobile-safe fixed centered live search dropdown eliminating left-edge clipping; (8) Global Wi-Fi LAN QR pairing modal accessible across all pages; (9) Mobile-adapted watch player using dynamic viewport height (`100dvh`), safe-area padding, mobile-constrained top sensor (h-16), touch auto-hide delay (3.5s vs 1s), scrollable landscape bookmark modal (`max-h-[90dvh]`), direct server switcher popup on floating pill click, viewport-safe fixed dropdown on mobile, and desktop-only theater/PiP filtering; (10) Touch-visible profile edit/delete controls and watchlist deletion without hover dependency; (11) Touch-pan optimized horizontal season selector rails and episode cards. |
+| **Screen-Adaptive Navbar & Cross-Device Engine** | `templates/includes/navbar.html`, `static/js/main.js` | Precision breakpoint architecture providing 100% overlap-free layouts across all viewports: Mobile (320px–767px), iPad / Tablet portrait (768px–1023px, iPad Mini, iPad Air, iPad Pro), and Desktop (1024px+). Mobile and tablets feature a dedicated `[🔍]` trigger button opening a full-width search overlay with instant HTMX live suggestions, while desktops display the inline search bar with keyboard shortcut hint (`/`). Tablet navigation links feature compact padding (`px-2.5 py-1 text-xs whitespace-nowrap`), preserving >80px of clear center margin and eliminating collisions between nav links and action buttons. |
 | **Zero Emojis / Strict SVG Design** | `static/css/`, `static/js/`, `templates/` | 100% clean Tailwind SVGs across all components (metrics, badges, fallback posters, dropdowns, bat launcher, buttons). Suppressed native horizontal scrollbars on carousels/rails, rail drag-scroll, keyboard shortcuts (<kbd>F</kbd> for fullscreen, <kbd>C</kbd> for controls, <kbd>Space</kbd> for play/pause, <kbd>M</kbd> for mute, <kbd>Alt</kbd>+<kbd>S</kbd> for server switch, <kbd>B</kbd> for bookmark, <kbd>Z</kbd> for sleep timer, <kbd>T</kbd> for theater mode, <kbd>P</kbd> for PiP). |
 
 ---
@@ -88,9 +89,12 @@
 - **The Solution**: 
   - Standardized catalog browsing through high-precision discover queries with adaptive vote floors:
     - **Most Popular**: `vote_count.gte >= 80` (Movies) / `vote_count.gte >= 40` (TV), returning genuine, recognized global titles.
-    - **Top Rated**: `vote_count.gte >= 300` (Movies) / `vote_count.gte >= 150` (TV), preventing low-vote entries from hijacking top rated lists.
-    - **Newest Releases**: `vote_count.gte >= 10` (Movies) / `vote_count.gte >= 5` (TV) with `primary_release_date.lte = today`, eliminating unreleased placeholder entries.
-  - **Broadcast / News Exclusion**: TV series catalog automatically applies `without_genres = '10763,10767'`, filtering out foreign daily news broadcasts and daily talk shows from the popular TV series feed.
+    - **Top Rated**: `vote_count.gte >= 300` (Movies) / `vote_count.gte >= 150` (TV), with natural `vote_average.desc` ordering, preventing low-vote entries from hijacking top rated lists.
+    - **Trending Today**: Directly queries native TMDB daily trending (`/trending/movie/day`, `/trending/tv/day`) with deduplication and 24-item pagination, or trending within genres/audiences.
+    - **In Theaters & On The Air**: Fetches active theatrical releases (`/movie/now_playing`) and episodic shows currently broadcast (`/tv/on_the_air`).
+    - **Upcoming Releases**: Surfaces anticipated upcoming releases (`primary_release_date.gte = today`, `vote_count.gte = 0`) without dropping unreleased titles.
+  - **Broadcast / News & Talk Show Exclusion**: All TV series catalog and discovery queries automatically apply `without_genres = '10763,10767'`, filtering out foreign daily news broadcasts (e.g. *Tagesschau*) and late-night talk shows (*Jimmy Fallon*, *Stephen Colbert*, *Andy Cohen*).
+  - **Category Isolation**: Decoupled category tabs from previous sort states so clicking Top Rated, Trending, or In Theaters immediately applies the category's natural sort and filters.
 
 #### 2.3.2 Audience Segmentation Engine (Live-Action vs. Kids & Family vs. Mature)
 - **The Core Problem**: TMDB indiscriminately classifies toddler/children animation (*Paw Patrol, Despicable Me, Minions, Toy Story, Moana*) and mature R-rated comedies (*Deadpool, Scary Movie, Jackass, Sausage Party*) under the identical Genre `35` (Comedy).
@@ -142,6 +146,45 @@
 - **bfcache Back-Navigation Sync**:
   - Modern browsers cache navigation DOM snapshots (bfcache). When users navigate back from the video player, `pageshow` listener detects `event.persisted` and reloads the document, ensuring authenticated UI and active profiles are always up to date.
 
+---
+
+### 2.5 📱 Mobile-First UX, Cross-Device Breakpoints & Screen-Adaptive Engine
+
+#### 2.5.1 The Tablet / iPad Portrait Collision Problem & Decoupled Breakpoint Matrix
+- **The Core Problem**: In viewport widths between $768\text{px}$ and $1023\text{px}$ (such as iPad Mini $768\text{px}$, iPad Air $820\text{px}$, and standard tablets in portrait orientation), the inline search input bar expanded to $\approx 380\text{px}$, causing the navigation links (*Movies, Series, Discover, Genres, Vibe*) to physically collide with and wrap over the search bar and action buttons. Auth buttons ("Sign In" / "Sign Up") were squeezed into awkward two-line buttons.
+- **The Breakpoint Architecture Solution**:
+  - **Mobile (< 768px)**: Compact navigation bar with hamburger drawer/mobile bottom bar, icon actions, and dedicated full-width search overlay triggered by `[🔍]`.
+  - **Tablet Portrait (768px – 1023px, `md:` to `lg:`)**:
+    - Replaced the wide inline search input with a sleek, compact `[🔍]` icon button that opens the full-width live search overlay.
+    - Compacted nav link padding to `px-2.5 py-1 text-xs whitespace-nowrap`, preserving $>80\text{px}$ of clear center breathing space.
+    - Applied `whitespace-nowrap` to auth buttons, guaranteeing 1-line layout.
+  - **Desktop (1024px+, `lg:`)**: Full-sized inline search bar with keyboard shortcut hint (`/`), spacious navigation links, and full action cluster.
+
+#### 2.5.2 Watch Player Screen-Adaptive Architecture & Direct Server Selector
+- **Mobile Horizontal Overflow Elimination**: Replaced the native HTML `<select>` (which overflowed narrow screens and clipped action buttons) with custom responsive glassmorphic components:
+  - **Compact Mobile Server Pill (`[⚡ S1 ▾]`)**: Displays a clean 2-character server badge (`S1`, `S2`, `S3`, `S4`, `S5`, `S6`) on mobile, expanding to `[⚡ Server VIDLINK ▾]` on desktop.
+  - **Viewport-Safe Dropdown (`#overlay-server-menu`)**: Styled with `fixed sm:absolute right-3 sm:right-0 top-14 sm:top-full mt-2 w-64 max-w-[calc(100vw-1.5rem)]`. On narrow mobile screens ($360\text{px}-393\text{px}$), the dropdown is anchored 12px from the right screen edge, completely preventing left-edge off-screen clipping.
+  - **Direct Server Switcher Trigger (`openOverlayServerMenuDirectly`)**: Resolves the bug where clicking the floating server pill only revealed the controls bar while leaving the server menu closed. Clicks on `#quick-server-trigger` execute `openOverlayServerMenuDirectly(event)`, revealing controls and immediately opening `#overlay-server-menu` with all available streaming providers.
+  - **Auto-Hide Suspension on Interaction**: `toggleOverlayServerMenu(e)` and `openOverlayServerMenuDirectly(e)` clear `hideTimeout`. The 3-second controls auto-hide timer is suspended while the user browses the server list, resuming only upon dismissal.
+  - **Document Click Exclusion**: Added `#quick-server-container` to the outside-click exclusion filter, preventing click events from prematurely closing the server menu.
+- **Slide-Up Mobile Player Controls Sheet (`#mobile-player-controls-sheet`)**: Accessible via the 1-tap `[⋯]` More button on mobile viewports. Provides thumb-friendly access to:
+  - Full-width Video Server Failover list with active server indicators and fast CDN tags.
+  - 6-preset Sleep Timer grid (Off, 15m, 30m, 45m, 1h, End of Episode).
+  - Quick action grid (Watchlist toggle, Bookmark scene, Fullscreen).
+  - Full safe-area inset padding (`padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px))`).
+
+#### 2.5.3 Homepage Cinematic Hero Billboard Lower-Third Alignment & Breathing Room
+- **The Core Problem**: Vertically centering content (`items-center`) inside an 85vh hero billboard placed the text in the middle of the screen, leaving an awkward ~300px empty black void before the *Continue Watching* rail and obscuring the focal area of the backdrop artwork.
+- **The Solution**:
+  - Switched container alignment to `flex items-end justify-start` with generous top breathing room (`pt-28 sm:pt-36 md:pt-44`) and compact bottom padding (`pb-6 sm:pb-8 md:pb-10`).
+  - Anchors the title, overview, badges, and CTA buttons (*Play Now, Trailer, In My List, Details*) into the cinematic lower third.
+  - Rails container margin set to `-mt-1 sm:mt-0` with deep gradient blending (`from-gray-950 via-gray-950/45 to-transparent`), completely eliminating the gap before *Continue Watching*.
+
+#### 2.5.4 Touch Experience, iOS Safeguards & Safe Areas
+- **Universal 16px iOS Form Input Safeguard**: `#player-wrapper input, #player-wrapper select, #player-wrapper textarea` enforce `font-size: 16px !important;` on screens $\le 768\text{px}$, preventing iOS Safari from auto-zooming and breaking layouts.
+- **Full-Bleed Safe Area Insets**: Base shell and player overlay utilize `viewport-fit=cover` and `env(safe-area-inset-top/bottom/left/right)` for edge-to-edge rendering around device notches, Dynamic Islands, and home indicator bars.
+- **Touch-Pan Horizontal Rails**: Added `overflow-x-auto scrollbar-hide snap-x -webkit-overflow-scrolling: touch` to genre filter rails, season selector tabs, and episode cards across all browse and detail views.
+- **Global Wi-Fi LAN QR Pairing Modal (`templates/components/qr_modal.html`)**: Included globally in `templates/base.html` for 1-click mobile camera / TV access without manual IP typing.
 
 ---
 
@@ -225,7 +268,7 @@ Filvora/
 # Run Development Server manually
 .\venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000
 
-# Run Automated Test Suite (106 tests across 8 apps)
+# Run Automated Test Suite (113 tests across 8 apps)
 .\venv\Scripts\python.exe manage.py test apps.core apps.catalog apps.playback apps.library apps.watch apps.tmdb apps.accounts apps.downloads
 
 # Backup Local Database

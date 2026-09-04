@@ -23,11 +23,10 @@ class TMDBClient:
             TMDBClient._session.mount('http://', adapter)
 
     def _fetch(self, endpoint, params=None):
-        if not params:
-            params = {}
+        req_params = dict(params) if params else {}
         
         # Check in-memory cache
-        cache_key = f"{endpoint}:{json.dumps(params, sort_keys=True)}"
+        cache_key = f"{endpoint}:{json.dumps(req_params, sort_keys=True)}"
         if cache_key in self._cache:
             cached_data, cached_time = self._cache[cache_key]
             if time.time() - cached_time < self.CACHE_TTL:
@@ -36,13 +35,13 @@ class TMDBClient:
         if not self.api_key:
             return {}
 
-        params['api_key'] = self.api_key
-        query_string = urllib.parse.urlencode(params)
+        req_params['api_key'] = self.api_key
+        query_string = urllib.parse.urlencode(req_params)
         url = f"{self.BASE_URL}{endpoint}?{query_string}"
 
         # Method 1: Requests with persistent keep-alive connection pool (Fastest, ~100-200ms)
         try:
-            r = self._session.get(url, timeout=3.5)
+            r = self._session.get(url, timeout=4.5)
             if r.status_code == 200:
                 data = r.json()
                 self._cache[cache_key] = (data, time.time())
@@ -53,11 +52,11 @@ class TMDBClient:
         # Method 2: Windows Schannel curl fallback if requests encounters SSL/network glitch
         try:
             res = subprocess.run(
-                ['curl.exe', '-s', '--ssl-no-revoke', '-4', '--connect-timeout', '3', url],
+                ['curl.exe', '-s', '--ssl-no-revoke', '-4', '--connect-timeout', '4', url],
                 capture_output=True,
                 text=True,
                 encoding='utf-8',
-                timeout=4
+                timeout=5
             )
             if res.returncode == 0 and res.stdout.strip():
                 data = json.loads(res.stdout)
@@ -216,12 +215,14 @@ class TMDBClient:
     def get_popular_series(self, page=1):
         data = self._fetch("/tv/popular", {"page": page})
         results = data.get('results', self._get_mock_series())
-        return [self._attach_age_rating(s, 'tv') for s in results]
+        clean = [s for s in results if not any(g in [10763, 10767] for g in s.get('genre_ids', []))]
+        return [self._attach_age_rating(s, 'tv') for s in clean]
 
     def get_top_rated_series(self):
         data = self._fetch("/tv/top_rated")
         results = data.get('results', self._get_mock_series())
-        return [self._attach_age_rating(s, 'tv') for s in results]
+        clean = [s for s in results if not any(g in [10763, 10767] for g in s.get('genre_ids', []))]
+        return [self._attach_age_rating(s, 'tv') for s in clean]
 
     def get_action_movies(self):
         data = self._fetch("/discover/movie", {"with_genres": "28"})
@@ -299,7 +300,7 @@ class TMDBClient:
             v_data = self.get_movie_videos(tmdb_id)
         return self.extract_official_trailer(v_data)
 
-    def _fetch_paginated_24(self, endpoint, base_params, page=1, media_type='movie', kids_only=False):
+    def _fetch_paginated_24(self, endpoint, base_params, page=1, media_type='movie', kids_only=False, exclude_genres=None):
         try:
             curr_page = max(1, int(page or 1))
         except (ValueError, TypeError):
@@ -307,21 +308,41 @@ class TMDBClient:
 
         target_count = 24
         start_idx = (curr_page - 1) * target_count
-        end_idx = start_idx + target_count
-
-        tmdb_start_page = (start_idx // 20) + 1
-        tmdb_end_page = ((end_idx - 1) // 20) + 1
+        tmdb_start_page = max(1, (start_idx // 20) + 1)
         offset = start_idx - (tmdb_start_page - 1) * 20
 
+        # For TV, always exclude news (10763) and talk shows (10767) unless specified otherwise
+        if media_type == 'tv' and exclude_genres is None:
+            exclude_genres = {10763, 10767}
+        elif exclude_genres is None:
+            exclude_genres = set()
+        elif isinstance(exclude_genres, (list, tuple)):
+            exclude_genres = set(exclude_genres)
+
         raw_results = []
-        for p_num in range(tmdb_start_page, tmdb_end_page + 1):
+        seen_ids = set()
+        for p_num in range(tmdb_start_page, tmdb_start_page + 3):
             p_params = dict(base_params)
             p_params['page'] = p_num
             data = self._fetch(endpoint, p_params)
             res = data.get('results', [])
-            if not res and not raw_results:
-                res = self._get_mock_movies() if media_type == 'movie' else self._get_mock_series()
-            raw_results.extend(res)
+            if not res:
+                break
+            for item in res:
+                iid = item.get('id')
+                if not iid or iid in seen_ids:
+                    continue
+                seen_ids.add(iid)
+                gids = item.get('genre_ids') or []
+                if exclude_genres and any(g in exclude_genres for g in gids):
+                    continue
+                item['media_type'] = media_type
+                item['display_title'] = item.get('title') or item.get('name') or f"Title {item.get('id')}"
+                item['release_year'] = (item.get('release_date') or item.get('first_air_date') or '')[:4]
+                self._attach_age_rating(item, media_type)
+                if kids_only and item.get('age_rating') in ['R', 'NC-17', 'TV-MA', '18+']:
+                    continue
+                raw_results.append(item)
             if len(raw_results) >= (offset + target_count):
                 break
 
@@ -329,102 +350,154 @@ class TMDBClient:
         if not sliced and raw_results:
             sliced = raw_results[:target_count]
 
-        processed = []
-        for item in sliced:
-            item['media_type'] = media_type
-            item['display_title'] = item.get('title') or item.get('name') or f"Title {item.get('id')}"
-            item['release_year'] = (item.get('release_date') or item.get('first_air_date') or '')[:4]
-            self._attach_age_rating(item, media_type)
-            if kids_only and item.get('age_rating') in ['R', 'NC-17', 'TV-MA', '18+']:
-                continue
-            processed.append(item)
+        # Only fallback to mock if no results were obtained at all and API key is missing
+        if not sliced and not self.api_key:
+            mock_list = self._get_mock_movies() if media_type == 'movie' else self._get_mock_series()
+            for m in mock_list:
+                m['media_type'] = media_type
+                m['display_title'] = m.get('title') or m.get('name') or f"Title {m.get('id')}"
+                m['release_year'] = (m.get('release_date') or m.get('first_air_date') or '')[:4]
+                self._attach_age_rating(m, media_type)
+            return mock_list[:target_count]
 
-        return processed
+        return sliced
 
     def get_movies_catalog(self, category='popular', genre_id=None, sort_by='popularity.desc', page=1, kids_only=False, audience=None):
-        if genre_id or audience or sort_by != 'popularity.desc':
+        import datetime
+        today_str = datetime.date.today().isoformat()
+        has_genre = bool(genre_id)
+        has_audience = bool(audience and audience != 'all')
+
+        if category == 'trending':
+            if not has_genre and not has_audience:
+                return self._fetch_paginated_24("/trending/movie/day", {}, page=page, media_type='movie', kids_only=kids_only)
             return self.discover_content(
                 media_type='movie',
                 genre_id=genre_id,
-                sort_by=sort_by,
-                page=page,
-                kids_only=kids_only,
-                audience=audience
-            )
-
-        if category == 'trending':
-            endpoint = "/trending/movie/day"
-            params = {}
-        elif category == 'top_rated':
-            return self.discover_content(
-                media_type='movie',
-                sort_by='vote_average.desc',
-                page=page,
-                kids_only=kids_only,
-                audience=audience
-            )
-        elif category == 'now_playing':
-            endpoint = "/movie/now_playing"
-            params = {'region': 'US'}
-        elif category == 'upcoming':
-            import datetime
-            today_str = datetime.date.today().isoformat()
-            endpoint = "/discover/movie"
-            params = {
-                'primary_release_date.gte': today_str,
-                'sort_by': 'popularity.desc',
-                'vote_count.gte': 5,
-            }
-        else:  # popular
-            return self.discover_content(
-                media_type='movie',
                 sort_by='popularity.desc',
                 page=page,
                 kids_only=kids_only,
                 audience=audience
             )
 
-        return self._fetch_paginated_24(endpoint, params, page=page, media_type='movie', kids_only=kids_only)
+        elif category == 'top_rated':
+            top_sort = sort_by if sort_by and sort_by != 'popularity.desc' else 'vote_average.desc'
+            return self.discover_content(
+                media_type='movie',
+                genre_id=genre_id,
+                sort_by=top_sort,
+                page=page,
+                kids_only=kids_only,
+                audience=audience
+            )
+
+        elif category == 'now_playing':
+            if not has_genre and not has_audience:
+                return self._fetch_paginated_24("/movie/now_playing", {'region': 'US'}, page=page, media_type='movie', kids_only=kids_only)
+            d45_str = (datetime.date.today() - datetime.timedelta(days=45)).isoformat()
+            return self.discover_content(
+                media_type='movie',
+                genre_id=genre_id,
+                sort_by=sort_by or 'popularity.desc',
+                page=page,
+                kids_only=kids_only,
+                audience=audience,
+                date_gte=d45_str,
+                date_lte=today_str
+            )
+
+        elif category == 'upcoming':
+            return self.discover_content(
+                media_type='movie',
+                genre_id=genre_id,
+                sort_by=sort_by or 'popularity.desc',
+                page=page,
+                kids_only=kids_only,
+                audience=audience,
+                date_gte=today_str
+            )
+
+        else:  # popular
+            return self.discover_content(
+                media_type='movie',
+                genre_id=genre_id,
+                sort_by=sort_by or 'popularity.desc',
+                page=page,
+                kids_only=kids_only,
+                audience=audience
+            )
 
     def get_series_catalog(self, category='popular', genre_id=None, sort_by='popularity.desc', page=1, kids_only=False, audience=None):
-        if genre_id or audience or sort_by != 'popularity.desc':
+        import datetime
+        today_str = datetime.date.today().isoformat()
+        has_genre = bool(genre_id)
+        has_audience = bool(audience and audience != 'all')
+
+        if category == 'trending':
+            if not has_genre and not has_audience:
+                return self._fetch_paginated_24("/trending/tv/day", {}, page=page, media_type='tv', kids_only=kids_only)
             return self.discover_content(
                 media_type='tv',
                 genre_id=genre_id,
-                sort_by=sort_by,
-                page=page,
-                kids_only=kids_only,
-                audience=audience
-            )
-
-        if category == 'trending':
-            endpoint = "/trending/tv/day"
-            params = {}
-        elif category == 'top_rated':
-            return self.discover_content(
-                media_type='tv',
-                sort_by='vote_average.desc',
-                page=page,
-                kids_only=kids_only,
-                audience=audience
-            )
-        elif category == 'on_the_air':
-            endpoint = "/tv/on_the_air"
-            params = {}
-        elif category == 'airing_today':
-            endpoint = "/tv/airing_today"
-            params = {}
-        else:  # popular
-            return self.discover_content(
-                media_type='tv',
                 sort_by='popularity.desc',
                 page=page,
                 kids_only=kids_only,
                 audience=audience,
-                without_genres='10763,10767'  # Exclude daily news broadcasts & talk shows
+                without_genres='10763,10767'
             )
 
-        return self._fetch_paginated_24(endpoint, params, page=page, media_type='tv', kids_only=kids_only)
+        elif category == 'top_rated':
+            top_sort = sort_by if sort_by and sort_by != 'popularity.desc' else 'vote_average.desc'
+            return self.discover_content(
+                media_type='tv',
+                genre_id=genre_id,
+                sort_by=top_sort,
+                page=page,
+                kids_only=kids_only,
+                audience=audience,
+                without_genres='10763,10767'
+            )
+
+        elif category == 'on_the_air':
+            if not has_genre and not has_audience:
+                return self._fetch_paginated_24("/tv/on_the_air", {}, page=page, media_type='tv', kids_only=kids_only)
+            d7_before = (datetime.date.today() - datetime.timedelta(days=7)).isoformat()
+            d7_after = (datetime.date.today() + datetime.timedelta(days=7)).isoformat()
+            return self.discover_content(
+                media_type='tv',
+                genre_id=genre_id,
+                sort_by=sort_by or 'popularity.desc',
+                page=page,
+                kids_only=kids_only,
+                audience=audience,
+                air_date_gte=d7_before,
+                air_date_lte=d7_after
+            )
+
+        elif category == 'airing_today':
+            if not has_genre and not has_audience:
+                return self._fetch_paginated_24("/tv/airing_today", {}, page=page, media_type='tv', kids_only=kids_only)
+            return self.discover_content(
+                media_type='tv',
+                genre_id=genre_id,
+                sort_by=sort_by or 'popularity.desc',
+                page=page,
+                kids_only=kids_only,
+                audience=audience,
+                air_date_gte=today_str,
+                air_date_lte=today_str
+            )
+
+        else:  # popular
+            return self.discover_content(
+                media_type='tv',
+                genre_id=genre_id,
+                sort_by=sort_by or 'popularity.desc',
+                page=page,
+                kids_only=kids_only,
+                audience=audience,
+                without_genres='10763,10767'
+            )
 
 
     def get_movie(self, movie_id):
@@ -737,13 +810,15 @@ class TMDBClient:
             {"id": 37, "name": "Western", "slug": "western"},
         ]
 
-    def discover_content(self, media_type='movie', genre_id=None, year=None, min_rating=None, mood=None, language=None, certification=None, kids_only=False, sort_by='popularity.desc', page=1, without_genres=None, audience=None):
+    def discover_content(self, media_type='movie', genre_id=None, year=None, min_rating=None, mood=None, language=None, certification=None, kids_only=False, sort_by='popularity.desc', page=1, without_genres=None, audience=None, date_gte=None, date_lte=None, air_date_gte=None, air_date_lte=None):
         import datetime
         today_str = datetime.date.today().isoformat()
         sort_by = sort_by or "popularity.desc"
 
         # Adaptive vote thresholds for accuracy and high-quality titles
-        if sort_by == 'vote_average.desc':
+        if date_gte and date_gte >= today_str:
+            default_vote_floor = 0
+        elif sort_by == 'vote_average.desc':
             default_vote_floor = 300 if media_type == 'movie' else 150
         elif sort_by in ['popularity.desc', '']:
             default_vote_floor = 80 if media_type == 'movie' else 40
@@ -759,10 +834,11 @@ class TMDBClient:
 
         # Prevent unreleased/announced placeholder entries from polluting popular & newest catalogs
         if sort_by in ['popularity.desc', 'primary_release_date.desc', 'first_air_date.desc']:
-            if media_type == 'movie':
-                params['primary_release_date.lte'] = today_str
-            else:
-                params['first_air_date.lte'] = today_str
+            if not date_gte or date_gte < today_str:
+                if media_type == 'movie':
+                    params['primary_release_date.lte'] = today_str
+                else:
+                    params['first_air_date.lte'] = today_str
 
         # Mood mappings (media-aware, using TMDB pipe OR operator)
         mood_map_movie = {
@@ -806,6 +882,10 @@ class TMDBClient:
             params['certification_country'] = 'US'
             params['certification'] = 'R' if media_type == 'movie' else 'TV-MA'
 
+        if media_type == 'tv':
+            tv_excluded = '10763,10767'
+            without_genres = f"{without_genres},{tv_excluded}" if without_genres else tv_excluded
+
         if without_genres:
             params['without_genres'] = str(without_genres)
 
@@ -814,6 +894,24 @@ class TMDBClient:
                 params['primary_release_year'] = str(year)
             else:
                 params['first_air_date_year'] = str(year)
+
+        if date_gte:
+            if media_type == 'movie':
+                params['primary_release_date.gte'] = str(date_gte)
+            else:
+                params['first_air_date.gte'] = str(date_gte)
+
+        if date_lte:
+            if media_type == 'movie':
+                params['primary_release_date.lte'] = str(date_lte)
+            else:
+                params['first_air_date.lte'] = str(date_lte)
+
+        if air_date_gte:
+            params['air_date.gte'] = str(air_date_gte)
+
+        if air_date_lte:
+            params['air_date.lte'] = str(air_date_lte)
 
         if min_rating:
             params['vote_average.gte'] = str(min_rating)

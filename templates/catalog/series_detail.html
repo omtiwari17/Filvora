@@ -145,7 +145,7 @@
 
                 <!-- Season selector tabs -->
                 {% if seasons %}
-                <div class="flex items-center gap-2.5 overflow-x-auto scrollbar-hide py-1 -my-1 max-w-full">
+                <div class="flex items-center gap-2.5 overflow-x-auto scrollbar-hide py-1 -my-1 max-w-full touch-pan-x">
                     {% for s in seasons %}
                     <button hx-get="/series/{{ series.id }}/season/{{ s.season_number }}/"
                             hx-target="#episodes-container"

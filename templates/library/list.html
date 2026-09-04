@@ -162,6 +162,19 @@
                 <div class="w-full h-full flex items-center justify-center text-center text-gray-500 p-3 text-xs font-medium">{{ item.display_title }}</div>
                 {% endif %}
                 
+                <!-- Mobile Persistent Remove Button (Touch Screens) -->
+                <button hx-post="/library/toggle/" 
+                        hx-vals='{"tmdb_id": "{{ item.id }}", "media_type": "{{ item.media_type|default:'movie' }}"}'
+                        hx-target="closest .watchlist-card"
+                        hx-swap="outerHTML swap:300ms"
+                        onclick="event.preventDefault(); event.stopPropagation();"
+                        title="Remove from My List"
+                        class="sm:hidden absolute top-2 right-2 z-20 w-7 h-7 rounded-full bg-black/80 hover:bg-brand-500 text-gray-300 hover:text-white border border-gray-700/80 flex items-center justify-center shadow-lg active:scale-90 transition">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
                 <!-- Hover Overlay -->
                 <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/75 to-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3.5">
                     <div class="flex items-center justify-between z-20">

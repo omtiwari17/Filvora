@@ -20,9 +20,9 @@
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     {% for ep in episodes %}
-    <div class="flex gap-4 p-3.5 sm:p-4 rounded-2xl bg-gray-900/70 border border-gray-800/80 hover:border-gray-700 transition group relative overflow-hidden backdrop-blur-md">
+    <div class="flex gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-gray-900/70 border border-gray-800/80 hover:border-gray-700 transition group relative overflow-hidden backdrop-blur-md">
         <!-- Episode Thumbnail -->
-        <a href="/watch/tv/{{ tmdb_id }}/{{ season_number }}/{{ ep.episode_number }}/" class="flex-none w-36 sm:w-44 aspect-video rounded-xl overflow-hidden bg-gray-800 relative block ring-1 ring-gray-700/50 group-hover:ring-brand-500 transition shadow-md">
+        <a href="/watch/tv/{{ tmdb_id }}/{{ season_number }}/{{ ep.episode_number }}/" class="flex-none w-28 sm:w-44 aspect-video rounded-xl overflow-hidden bg-gray-800 relative block ring-1 ring-gray-700/50 group-hover:ring-brand-500 transition shadow-md">
             {% if ep.still_path %}
             <img src="https://image.tmdb.org/t/p/w300{{ ep.still_path }}" alt="{{ ep.name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
             {% else %}

@@ -245,3 +245,50 @@ button, a, input, select {
     transform: translateY(4px) !important;
     pointer-events: none !important;
 }
+
+/* =========================================================
+   Mobile Web & Touch Optimizations
+   ========================================================= */
+
+/* iOS Safari auto-zoom prevention: Force min 16px font-size on all form controls under 768px */
+@media screen and (max-width: 768px) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* Safe Area Insets for Fixed Navigation & Shell */
+nav.fixed.top-0 {
+    padding-top: max(0.875rem, env(safe-area-inset-top, 0px)) !important;
+}
+
+/* Ensure mobile content and toasts clear the app-style bottom navigation bar */
+@media screen and (max-width: 767px) {
+    body {
+        padding-bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    #toast-container {
+        bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)) !important;
+        right: 16px !important;
+        left: 16px !important;
+        align-items: center !important;
+    }
+}
+
+/* Touch momentum scrolling and active tap feedback */
+@media (hover: none) and (pointer: coarse) {
+    .rail-track {
+        scroll-behavior: auto !important; /* Preserves smooth native flick inertia on iOS & Android */
+    }
+    button:active, 
+    a:active, 
+    .touch-target:active {
+        opacity: 0.88;
+        transform: scale(0.97);
+        transition: transform 0.08s ease, opacity 0.08s ease;
+    }
+}
+

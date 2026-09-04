@@ -46,6 +46,45 @@ function initNavbar() {
     });
 }
 
+// --- Mobile Dedicated Search ---
+function openMobileSearch() {
+    const overlay = document.getElementById('mobile-search-overlay');
+    const backdrop = document.getElementById('mobile-search-backdrop');
+    const input = document.getElementById('mobile-search-input');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        if (backdrop) backdrop.classList.remove('hidden');
+        if (input) {
+            setTimeout(() => {
+                input.focus();
+                input.select();
+            }, 60);
+        }
+    }
+}
+
+function closeMobileSearch() {
+    const overlay = document.getElementById('mobile-search-overlay');
+    const backdrop = document.getElementById('mobile-search-backdrop');
+    const dropdown = document.getElementById('mobile-search-results-dropdown');
+    if (overlay) overlay.classList.add('hidden');
+    if (backdrop) backdrop.classList.add('hidden');
+    if (dropdown) dropdown.classList.add('hidden');
+}
+
+function clearMobileSearch() {
+    const input = document.getElementById('mobile-search-input');
+    const dropdown = document.getElementById('mobile-search-results-dropdown');
+    if (input) {
+        input.value = '';
+        input.focus();
+    }
+    if (dropdown) {
+        dropdown.innerHTML = '';
+        dropdown.classList.add('hidden');
+    }
+}
+
 // --- Keyboard Shortcuts ---
 function initKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
@@ -55,15 +94,20 @@ function initKeyboardShortcuts() {
         // Press '/' to search
         if (e.key === '/' && !isInput) {
             e.preventDefault();
-            const searchInput = document.querySelector('input[name="q"]');
-            if (searchInput) {
-                searchInput.focus();
-                searchInput.select();
+            if (window.innerWidth < 1024) {
+                openMobileSearch();
+            } else {
+                const searchInput = document.querySelector('#navbar-search-container input[name="q"]') || document.querySelector('input[name="q"]');
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
             }
         }
 
-        // Press 'Escape' to dismiss search dropdown or modal
+        // Press 'Escape' to dismiss search dropdown, mobile overlay, or modal
         if (e.key === 'Escape') {
+            closeMobileSearch();
             const dropdown = document.getElementById('search-results-dropdown');
             if (dropdown) dropdown.classList.add('hidden');
             
@@ -215,6 +259,7 @@ function initHorizontalRails() {
         if (!track) return;
 
         const updateArrows = () => {
+            if (window.innerWidth < 768) return;
             const tolerance = 10;
             const maxScroll = track.scrollWidth - track.clientWidth;
 
