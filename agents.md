@@ -19,7 +19,7 @@
   - All active routes (`/`, `/movies/`, `/series/`, `/discover/`, `/genres/`, `/history/`, `/analytics/`, `/library/`, `/search/`, `/watch/`) return `200 OK`.
 - **One-Click Launcher**:
   - `Start Filvora.bat` located at root: verifies venv, silently checks database migrations, auto-opens browser, and runs dev server bound to `0.0.0.0:8000`.
-- **Automated Test Suite**: **106 tests** across all 8 apps (`apps.core`, `apps.catalog`, `apps.playback`, `apps.library`, `apps.watch`, `apps.tmdb`, `apps.accounts`, `apps.downloads`), **100% passing**.
+- **Automated Test Suite**: **113 tests** across all 8 apps (`apps.core`, `apps.catalog`, `apps.playback`, `apps.library`, `apps.watch`, `apps.tmdb`, `apps.accounts`, `apps.downloads`), **100% passing**.
 
 ---
 
@@ -27,6 +27,7 @@
 
 ### 2.1 ✅ Active & 100% Working Features (v2.4 Production State)
 
+| **High-Precision Catalog Filtering & Audience Engine** | `apps/catalog/`, `apps/tmdb/`, `templates/catalog/` | Eliminates obscure 0-vote titles from Popular/Top Rated via adaptive TMDB vote floors (`vote_count.gte >= 80` for movies, `>= 40` for TV, `>= 300` for top rated) and unreleased date filtering (`primary_release_date.lte`). Introduces Audience Segments (All Content, Live-Action / General, Kids & Family, Mature 18+/TV-MA) that cleanly separate toddler cartoons and mature films in Comedy. Features complete multi-directional genre mapping between Movies (28, 878, 53) and TV (10759, 10765), pipe-separated (`\|`) OR mood discovery, TV certification translation, dual-universe `/genres/` switcher, and 100% URL filter state preservation across tabs, rails, and pagination. |
 | **True Cinema Fullscreen & Controls Overlay** | `apps/playback/`, `templates/playback/watch.html` | Hardware-composited fullscreen engine. Resolves the W3C isolated iframe spec trap via the **Embedded Fullscreen Hotspot Router** (`#embed-fullscreen-hotspot`), ensuring clicks on server player default `⛶` buttons, top bar buttons, or <kbd>F</kbd> trigger `#player-wrapper` cinema fullscreen. Full Filvora controls, persistent top pull-down notch (`#top-notch-trigger`), and server switchers remain accessible in fullscreen DOM. |
 | **Snappy 3-Second Controls Auto-Hide Engine** | `templates/playback/watch.html`, `static/js/main.js` | Unconditional inactivity auto-hide sliding controls off-screen (`translateY(-100%)`) after 3 seconds of no mouse movement. Fast dismissal (1s-1.5s) on click or cursor exit. Reveal triggers via top sensor (`#top-sensor`), pull-down notch, or <kbd>C</kbd> key. Automatically suspends hide timer when interactive modals (Bookmarks, Sleep Timer) are open. |
 | **1-Year Persistent Sessions & Isolated Cache Boundaries** | `config/settings.py`, `static/sw.js`, `static/js/main.js` | Long-lived Netflix-style persistent sessions (`SESSION_COOKIE_AGE = 31536000`, `SESSION_SAVE_EVERY_REQUEST = False`, `SESSION_EXPIRE_AT_BROWSER_CLOSE = False`). SQLite converted to **Write-Ahead Logging (WAL)** mode with 30s busy timeout, preventing table lockouts during background tasks. Strict Service Worker caching boundary (`filvora-static-v3`) that only caches `/static/` assets and bypasses dynamic HTML navigation, preventing ghost sign-outs and unauthenticated cache snapshot rollbacks. |
@@ -80,7 +81,48 @@
 
 ---
 
-### 2.3 🔐 Authentication, Concurrency & Session Persistence Architecture (`config/settings.py`)
+### 2.3 🎯 High-Precision Catalog Filtering, Audience Segments & Cross-Media Architecture (`apps/catalog/`, `apps/tmdb/`)
+
+#### 2.3.1 The TMDB Popularity Anomaly & The Adaptive Vote Floor Solution
+- **The Core Problem**: TMDB calculates popularity based on rolling 24-hour hits, wiki-style edits, and daily additions on `themoviedb.org`, rather than recognized all-time or lifetime acclaim. Consequently, obscure regional indie shorts, student projects, foreign daily news broadcasts (e.g. *Tagesschau*), and reality shows with 0–3 total votes artificially spiked to the top of `/movie/popular` and `/tv/popular`. Furthermore, sorting by Highest Rated with low thresholds caused 50-vote 9.5-rated student shorts to outrank cinematic masterpieces.
+- **The Solution**: 
+  - Standardized catalog browsing through high-precision discover queries with adaptive vote floors:
+    - **Most Popular**: `vote_count.gte >= 80` (Movies) / `vote_count.gte >= 40` (TV), returning genuine, recognized global titles.
+    - **Top Rated**: `vote_count.gte >= 300` (Movies) / `vote_count.gte >= 150` (TV), preventing low-vote entries from hijacking top rated lists.
+    - **Newest Releases**: `vote_count.gte >= 10` (Movies) / `vote_count.gte >= 5` (TV) with `primary_release_date.lte = today`, eliminating unreleased placeholder entries.
+  - **Broadcast / News Exclusion**: TV series catalog automatically applies `without_genres = '10763,10767'`, filtering out foreign daily news broadcasts and daily talk shows from the popular TV series feed.
+
+#### 2.3.2 Audience Segmentation Engine (Live-Action vs. Kids & Family vs. Mature)
+- **The Core Problem**: TMDB indiscriminately classifies toddler/children animation (*Paw Patrol, Despicable Me, Minions, Toy Story, Moana*) and mature R-rated comedies (*Deadpool, Scary Movie, Jackass, Sausage Party*) under the identical Genre `35` (Comedy).
+- **The Solution**: Integrated an intuitive Audience segment rail across [`movie_browse.html`](file:///D:/Om/Projects/Filvora/templates/catalog/movie_browse.html) and [`series_browse.html`](file:///D:/Om/Projects/Filvora/templates/catalog/series_browse.html):
+  - **All Content** (`audience=all`): Unrestricted catalog view.
+  - **Live-Action / General** (`audience=live_action`): Automatically excludes animation and children content (`without_genres = '16,10751'` for movies, `'16,10751,10762'` for TV). Browsing Comedy returns genuine live-action comedies (*Scary Movie*, *The Devil Wears Prada 2*, *Deadpool & Wolverine*, *Forrest Gump*, *Pulp Fiction*), eliminating toddler cartoons.
+  - **Kids & Family** (`audience=kids_family`): Targets family animation and family-rated titles (`with_genres = '10751|16'`, `certification.lte = 'PG'`).
+  - **Mature** (`audience=mature`): Targets R-rated movies (`certification = 'R'`) or TV-MA series (`certification = 'TV-MA'`).
+
+#### 2.3.3 The Cross-Media Genre Split & Polymorphic Resolver
+- **The Core Problem**: TMDB uses disjoint genre ID tables for Movies vs. TV. Movie Action is `28`, but TV Action & Adventure is `10759`; Movie Sci-Fi is `878`, but TV Sci-Fi & Fantasy is `10765`; Thriller `53` and Horror `27` do not exist in TV. Passing Movie IDs to TV endpoints returned 0 results, triggering fallback to identical mock series (*Game of Thrones*, *Stranger Things*) across all options.
+- **The Solution**:
+  - Implemented `_resolve_genre_for_media_type(genre_id, media_type)` with bidirectional translation maps (`MOVIE_TO_TV_GENRE_MAP`, `TV_TO_MOVIE_GENRE_MAP`).
+  - `get_genres_list(media_type)` dynamically returns native TV genres (`Action & Adventure 10759`, `Sci-Fi & Fantasy 10765`, `Kids 10762`, `Reality 10764`, `War & Politics 10768`, `Western 37`) or Movie genres (`Action 28`, `Sci-Fi 878`, `Horror 27`, `Thriller 53`).
+  - Updated [`genre_icon.html`](file:///D:/Om/Projects/Filvora/templates/components/genre_icon.html) with clean SVGs for all TV and movie genre IDs.
+  - Recommendation engine translates TV profile affinity back to movie genres (`10759 -> 28`, `10765 -> 878`) before discovering movies.
+
+#### 2.3.4 Mood Discovery OR-Delimited Pipe Logic & Certification Translation
+- Mood discovery changed from strict comma `AND` logic to TMDB pipe `|` `OR` logic (e.g. `28|12|53` for Movie Adrenaline, `10759|80` for TV Adrenaline), eliminating 0-result drops on TV.
+- Explicit form `genre_id` takes precedence over `mood` in [`discover_content`](file:///D:/Om/Projects/Filvora/apps/tmdb/client.py).
+- TV certification normalizer automatically translates movie ratings (`R` $\to$ `TV-MA`, `PG-13` $\to$ `TV-14`, `PG` $\to$ `TV-PG`, `G` $\to$ `TV-G|TV-Y`).
+- Added an **Active Mood Indicator** with a 1-click **Reset to All Moods** link in [`discover.html`](file:///D:/Om/Projects/Filvora/templates/catalog/discover.html).
+
+#### 2.3.5 100% Filter State Preservation Across All Interfaces
+- All category tabs, audience pills, genre pills, sort selectors, and pagination buttons preserve all active query parameters:
+  `?category=...&genre=...&audience=...&sort=...&page=...`
+- Upgraded [`genres.html`](file:///D:/Om/Projects/Filvora/templates/catalog/genres.html) with a dual **Movies / TV Series** universe switcher, deep-linking into `/movies/?genre=...` or `/series/?genre=...`.
+- Replaced all emojis in genre lists, language dropdowns, and search suggestion avatars with strict Tailwind SVGs per Filvora Rule 4.
+
+---
+
+### 2.4 🔐 Authentication, Concurrency & Session Persistence Architecture (`config/settings.py`)
 
 - **1-Year Long-Lived Sessions (Netflix-Style)**:
   - `SESSION_COOKIE_AGE = 31536000` (1 full year, 365 days).
