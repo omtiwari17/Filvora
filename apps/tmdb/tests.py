@@ -71,3 +71,38 @@ class TMDBTestCase(TestCase):
         self.assertEqual(rated['age_rating'], 'R')
         self.assertEqual(self.client._RATING_CACHE.get('movie:398818'), 'R')
 
+    def test_get_genres_list_tv_and_zero_emojis(self):
+        movie_genres = self.client.get_genres_list('movie')
+        tv_genres = self.client.get_genres_list('tv')
+        self.assertEqual(movie_genres[0]['id'], 28)
+        self.assertEqual(tv_genres[0]['id'], 10759)
+        self.assertEqual(tv_genres[0]['name'], 'Action & Adventure')
+        
+        # Verify strict zero emoji rule (no emojis in genre names or dictionaries)
+        import re
+        emoji_pattern = re.compile(r'[\U00010000-\U0010ffff]', flags=re.UNICODE)
+        for g in movie_genres + tv_genres:
+            self.assertFalse(bool(emoji_pattern.search(g['name'])))
+            self.assertNotIn('icon', g)
+
+    def test_genre_resolution_cross_media(self):
+        # Movie action (28) -> TV Action & Adventure (10759)
+        self.assertEqual(self.client._resolve_genre_for_media_type(28, 'tv'), 10759)
+        # Movie scifi (878) -> TV Sci-Fi & Fantasy (10765)
+        self.assertEqual(self.client._resolve_genre_for_media_type(878, 'tv'), 10765)
+        # TV Action (10759) -> Movie Action (28)
+        self.assertEqual(self.client._resolve_genre_for_media_type(10759, 'movie'), 28)
+
+    def test_discover_content_audience_filters(self):
+        live_movies = self.client.discover_content(media_type='movie', genre_id=35, audience='live_action')
+        self.assertGreater(len(live_movies), 0)
+
+        kids_movies = self.client.discover_content(media_type='movie', genre_id=35, audience='kids_family')
+        self.assertGreater(len(kids_movies), 0)
+
+    def test_tv_certification_conversion(self):
+        # Passing R to TV discover converts to TV-MA without error
+        tv_results = self.client.discover_content(media_type='tv', certification='R')
+        self.assertGreater(len(tv_results), 0)
+
+

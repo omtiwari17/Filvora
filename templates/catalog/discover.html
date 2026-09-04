@@ -87,7 +87,20 @@
 
     <!-- Filter Control Bar -->
     <form method="get" action="/discover/" class="bg-gray-900/80 border border-gray-800/90 rounded-2xl p-4 sm:p-5 mb-10 backdrop-blur-xl shadow-xl">
-        {% if selected_mood %}<input type="hidden" name="mood" value="{{ selected_mood }}">{% endif %}
+        {% if selected_mood %}
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-800/80 text-xs text-gray-300">
+            <span class="inline-flex items-center gap-1.5 font-bold">
+                <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
+                <span>Active Mood: <strong class="text-white capitalize">{{ selected_mood|cut:"_" }}</strong></span>
+            </span>
+            <a href="/discover/?type={{ media_type }}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_language %}&language={{ selected_language }}{% endif %}{% if selected_certification %}&certification={{ selected_certification }}{% endif %}{% if selected_rating %}&rating={{ selected_rating }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+               class="text-xs font-bold text-gray-400 hover:text-brand-400 flex items-center gap-1 transition">
+                <span>Reset to All Moods</span>
+                <span aria-hidden="true">&times;</span>
+            </a>
+        </div>
+        <input type="hidden" name="mood" value="{{ selected_mood }}">
+        {% endif %}
         
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             <!-- Media Type -->
@@ -108,7 +121,7 @@
                     <option value="">All Genres</option>
                     {% for g in genres %}
                     <option value="{{ g.id }}" {% if selected_genre == g.id|stringformat:"i" %}selected{% endif %}>
-                        {{ g.icon }} {{ g.name }}
+                        {{ g.name }}
                     </option>
                     {% endfor %}
                 </select>
@@ -120,13 +133,13 @@
                 <select name="language" onchange="this.form.submit()" 
                         class="w-full bg-gray-950 border border-gray-700/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
                     <option value="">All Languages</option>
-                    <option value="en" {% if selected_language == 'en' %}selected{% endif %}>🇺🇸 English</option>
-                    <option value="ja" {% if selected_language == 'ja' %}selected{% endif %}>🇯🇵 Japanese (Anime)</option>
-                    <option value="ko" {% if selected_language == 'ko' %}selected{% endif %}>🇰🇷 Korean (K-Drama)</option>
-                    <option value="es" {% if selected_language == 'es' %}selected{% endif %}>🇪🇸 Spanish</option>
-                    <option value="fr" {% if selected_language == 'fr' %}selected{% endif %}>🇫🇷 French</option>
-                    <option value="hi" {% if selected_language == 'hi' %}selected{% endif %}>🇮🇳 Hindi</option>
-                    <option value="de" {% if selected_language == 'de' %}selected{% endif %}>🇩🇪 German</option>
+                    <option value="en" {% if selected_language == 'en' %}selected{% endif %}>English</option>
+                    <option value="ja" {% if selected_language == 'ja' %}selected{% endif %}>Japanese (Anime)</option>
+                    <option value="ko" {% if selected_language == 'ko' %}selected{% endif %}>Korean (K-Drama)</option>
+                    <option value="es" {% if selected_language == 'es' %}selected{% endif %}>Spanish</option>
+                    <option value="fr" {% if selected_language == 'fr' %}selected{% endif %}>French</option>
+                    <option value="hi" {% if selected_language == 'hi' %}selected{% endif %}>Hindi</option>
+                    <option value="de" {% if selected_language == 'de' %}selected{% endif %}>German</option>
                 </select>
             </div>
 
@@ -149,9 +162,9 @@
                 <select name="rating" onchange="this.form.submit()" 
                         class="w-full bg-gray-950 border border-gray-700/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
                     <option value="">Any Score</option>
-                    <option value="8.0" {% if selected_rating == '8.0' %}selected{% endif %}>★ 8.0+ Masterpiece</option>
-                    <option value="7.0" {% if selected_rating == '7.0' %}selected{% endif %}>★ 7.0+ High</option>
-                    <option value="6.0" {% if selected_rating == '6.0' %}selected{% endif %}>★ 6.0+ Good</option>
+                    <option value="8.0" {% if selected_rating == '8.0' %}selected{% endif %}>8.0+ Masterpiece</option>
+                    <option value="7.0" {% if selected_rating == '7.0' %}selected{% endif %}>7.0+ High Quality</option>
+                    <option value="6.0" {% if selected_rating == '6.0' %}selected{% endif %}>6.0+ Good Watch</option>
                 </select>
             </div>
 

@@ -44,6 +44,7 @@ def movie_browse(request):
     category = request.GET.get('category', 'popular')
     genre_id = request.GET.get('genre')
     sort_by = request.GET.get('sort', 'popularity.desc')
+    audience = request.GET.get('audience', 'all')
     page = request.GET.get('page', '1')
     kids_mode = is_kids_profile(request)
 
@@ -52,9 +53,10 @@ def movie_browse(request):
         genre_id=genre_id,
         sort_by=sort_by,
         page=page,
-        kids_only=kids_mode
+        kids_only=kids_mode,
+        audience=audience
     )
-    genres = client.get_genres_list()
+    genres = client.get_genres_list('movie')
 
     user_saved_ids = set()
     if request.user.is_authenticated:
@@ -70,6 +72,7 @@ def movie_browse(request):
         'selected_category': category,
         'selected_genre': genre_id,
         'selected_sort': sort_by,
+        'selected_audience': audience,
         'pagination': pagination,
         'user_saved_ids': user_saved_ids
     })
@@ -157,6 +160,7 @@ def series_browse(request):
     category = request.GET.get('category', 'popular')
     genre_id = request.GET.get('genre')
     sort_by = request.GET.get('sort', 'popularity.desc')
+    audience = request.GET.get('audience', 'all')
     page = request.GET.get('page', '1')
     kids_mode = is_kids_profile(request)
 
@@ -165,9 +169,10 @@ def series_browse(request):
         genre_id=genre_id,
         sort_by=sort_by,
         page=page,
-        kids_only=kids_mode
+        kids_only=kids_mode,
+        audience=audience
     )
-    genres = client.get_genres_list()
+    genres = client.get_genres_list('tv')
 
     user_saved_ids = set()
     if request.user.is_authenticated:
@@ -183,6 +188,7 @@ def series_browse(request):
         'selected_category': category,
         'selected_genre': genre_id,
         'selected_sort': sort_by,
+        'selected_audience': audience,
         'pagination': pagination,
         'user_saved_ids': user_saved_ids
     })
@@ -477,7 +483,7 @@ def discover(request):
         page=page
     )
 
-    genres = client.get_genres_list()
+    genres = client.get_genres_list(media_type)
     user_saved_ids = set()
     if request.user.is_authenticated:
         from apps.accounts.utils import get_active_profile
@@ -517,8 +523,17 @@ def surprise_me(request):
 
 def genres_view(request):
     client = TMDBClient()
-    genres = client.get_genres_list()
-    return render(request, 'catalog/genres.html', {'genres': genres})
+    active_type = request.GET.get('type', 'movie')
+    if active_type not in ['movie', 'tv']:
+        active_type = 'movie'
+    movie_genres = client.get_genres_list('movie')
+    tv_genres = client.get_genres_list('tv')
+    return render(request, 'catalog/genres.html', {
+        'movie_genres': movie_genres,
+        'tv_genres': tv_genres,
+        'active_type': active_type,
+        'genres': movie_genres if active_type == 'movie' else tv_genres,
+    })
 
 def person_detail(request, person_id):
     client = TMDBClient()

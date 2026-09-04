@@ -341,61 +341,90 @@ class TMDBClient:
 
         return processed
 
-    def get_movies_catalog(self, category='popular', genre_id=None, sort_by='popularity.desc', page=1, kids_only=False):
-        if genre_id or sort_by != 'popularity.desc':
+    def get_movies_catalog(self, category='popular', genre_id=None, sort_by='popularity.desc', page=1, kids_only=False, audience=None):
+        if genre_id or audience or sort_by != 'popularity.desc':
             return self.discover_content(
                 media_type='movie',
                 genre_id=genre_id,
                 sort_by=sort_by,
                 page=page,
-                kids_only=kids_only
+                kids_only=kids_only,
+                audience=audience
             )
 
         if category == 'trending':
             endpoint = "/trending/movie/day"
             params = {}
         elif category == 'top_rated':
-            endpoint = "/movie/top_rated"
-            params = {}
+            return self.discover_content(
+                media_type='movie',
+                sort_by='vote_average.desc',
+                page=page,
+                kids_only=kids_only,
+                audience=audience
+            )
         elif category == 'now_playing':
             endpoint = "/movie/now_playing"
-            params = {}
+            params = {'region': 'US'}
         elif category == 'upcoming':
             import datetime
             today_str = datetime.date.today().isoformat()
             endpoint = "/discover/movie"
             params = {
                 'primary_release_date.gte': today_str,
-                'sort_by': 'popularity.desc'
+                'sort_by': 'popularity.desc',
+                'vote_count.gte': 5,
             }
-        else:
-            endpoint = "/movie/popular"
-            params = {}
+        else:  # popular
+            return self.discover_content(
+                media_type='movie',
+                sort_by='popularity.desc',
+                page=page,
+                kids_only=kids_only,
+                audience=audience
+            )
 
         return self._fetch_paginated_24(endpoint, params, page=page, media_type='movie', kids_only=kids_only)
 
-    def get_series_catalog(self, category='popular', genre_id=None, sort_by='popularity.desc', page=1, kids_only=False):
-        if genre_id or sort_by != 'popularity.desc':
+    def get_series_catalog(self, category='popular', genre_id=None, sort_by='popularity.desc', page=1, kids_only=False, audience=None):
+        if genre_id or audience or sort_by != 'popularity.desc':
             return self.discover_content(
                 media_type='tv',
                 genre_id=genre_id,
                 sort_by=sort_by,
                 page=page,
-                kids_only=kids_only
+                kids_only=kids_only,
+                audience=audience
             )
 
         if category == 'trending':
             endpoint = "/trending/tv/day"
+            params = {}
         elif category == 'top_rated':
-            endpoint = "/tv/top_rated"
+            return self.discover_content(
+                media_type='tv',
+                sort_by='vote_average.desc',
+                page=page,
+                kids_only=kids_only,
+                audience=audience
+            )
         elif category == 'on_the_air':
             endpoint = "/tv/on_the_air"
+            params = {}
         elif category == 'airing_today':
             endpoint = "/tv/airing_today"
-        else:
-            endpoint = "/tv/popular"
+            params = {}
+        else:  # popular
+            return self.discover_content(
+                media_type='tv',
+                sort_by='popularity.desc',
+                page=page,
+                kids_only=kids_only,
+                audience=audience,
+                without_genres='10763,10767'  # Exclude daily news broadcasts & talk shows
+            )
 
-        return self._fetch_paginated_24(endpoint, {}, page=page, media_type='tv', kids_only=kids_only)
+        return self._fetch_paginated_24(endpoint, params, page=page, media_type='tv', kids_only=kids_only)
 
 
     def get_movie(self, movie_id):
@@ -640,45 +669,145 @@ class TMDBClient:
 
         return categorized
 
-    def get_genres_list(self):
+    MOVIE_TO_TV_GENRE_MAP = {
+        28: 10759,     # Action -> Action & Adventure
+        12: 10759,     # Adventure -> Action & Adventure
+        878: 10765,    # Sci-Fi -> Sci-Fi & Fantasy
+        14: 10765,     # Fantasy -> Sci-Fi & Fantasy
+        27: 9648,      # Horror -> Mystery
+        53: 80,        # Thriller -> Crime
+        10749: 18,     # Romance -> Drama
+        10752: 10768,  # War -> War & Politics
+    }
+    TV_TO_MOVIE_GENRE_MAP = {
+        10759: 28,     # Action & Adventure -> Action
+        10765: 878,    # Sci-Fi & Fantasy -> Sci-Fi
+        10768: 10752,  # War & Politics -> War
+        10762: 10751,  # Kids -> Family
+        10764: 99,     # Reality -> Documentary
+    }
+
+    def _resolve_genre_for_media_type(self, genre_id, media_type='movie'):
+        if not genre_id:
+            return None
+        try:
+            gid = int(genre_id)
+        except (ValueError, TypeError):
+            return genre_id
+
+        if media_type == 'tv':
+            return self.MOVIE_TO_TV_GENRE_MAP.get(gid, gid)
+        elif media_type == 'movie':
+            return self.TV_TO_MOVIE_GENRE_MAP.get(gid, gid)
+        return gid
+
+    def get_genres_list(self, media_type='movie'):
+        if media_type == 'tv':
+            return [
+                {"id": 10759, "name": "Action & Adventure", "slug": "action"},
+                {"id": 16, "name": "Animation", "slug": "animation"},
+                {"id": 35, "name": "Comedy", "slug": "comedy"},
+                {"id": 80, "name": "Crime", "slug": "crime"},
+                {"id": 99, "name": "Documentary", "slug": "documentary"},
+                {"id": 18, "name": "Drama", "slug": "drama"},
+                {"id": 10751, "name": "Family", "slug": "family"},
+                {"id": 10762, "name": "Kids", "slug": "kids"},
+                {"id": 9648, "name": "Mystery", "slug": "mystery"},
+                {"id": 10764, "name": "Reality", "slug": "reality"},
+                {"id": 10765, "name": "Sci-Fi & Fantasy", "slug": "scifi"},
+                {"id": 10768, "name": "War & Politics", "slug": "war"},
+                {"id": 37, "name": "Western", "slug": "western"},
+            ]
         return [
-            {"id": 28, "name": "Action", "icon": "💥"},
-            {"id": 12, "name": "Adventure", "icon": "🧭"},
-            {"id": 16, "name": "Animation", "icon": "🎨"},
-            {"id": 35, "name": "Comedy", "icon": "😂"},
-            {"id": 80, "name": "Crime", "icon": "🕵️"},
-            {"id": 99, "name": "Documentary", "icon": "📹"},
-            {"id": 18, "name": "Drama", "icon": "🎭"},
-            {"id": 10751, "name": "Family", "icon": "👨‍👩‍👧"},
-            {"id": 14, "name": "Fantasy", "icon": "🧙"},
-            {"id": 27, "name": "Horror", "icon": "👻"},
-            {"id": 9648, "name": "Mystery", "icon": "🔍"},
-            {"id": 10749, "name": "Romance", "icon": "💖"},
-            {"id": 878, "name": "Sci-Fi", "icon": "🚀"},
-            {"id": 53, "name": "Thriller", "icon": "⚡"},
+            {"id": 28, "name": "Action", "slug": "action"},
+            {"id": 12, "name": "Adventure", "slug": "adventure"},
+            {"id": 16, "name": "Animation", "slug": "animation"},
+            {"id": 35, "name": "Comedy", "slug": "comedy"},
+            {"id": 80, "name": "Crime", "slug": "crime"},
+            {"id": 99, "name": "Documentary", "slug": "documentary"},
+            {"id": 18, "name": "Drama", "slug": "drama"},
+            {"id": 10751, "name": "Family", "slug": "family"},
+            {"id": 14, "name": "Fantasy", "slug": "fantasy"},
+            {"id": 27, "name": "Horror", "slug": "horror"},
+            {"id": 9648, "name": "Mystery", "slug": "mystery"},
+            {"id": 10749, "name": "Romance", "slug": "romance"},
+            {"id": 878, "name": "Sci-Fi", "slug": "scifi"},
+            {"id": 53, "name": "Thriller", "slug": "thriller"},
+            {"id": 10752, "name": "War", "slug": "war"},
+            {"id": 37, "name": "Western", "slug": "western"},
         ]
 
-    def discover_content(self, media_type='movie', genre_id=None, year=None, min_rating=None, mood=None, language=None, certification=None, kids_only=False, sort_by='popularity.desc', page=1):
+    def discover_content(self, media_type='movie', genre_id=None, year=None, min_rating=None, mood=None, language=None, certification=None, kids_only=False, sort_by='popularity.desc', page=1, without_genres=None, audience=None):
+        import datetime
+        today_str = datetime.date.today().isoformat()
+        sort_by = sort_by or "popularity.desc"
+
+        # Adaptive vote thresholds for accuracy and high-quality titles
+        if sort_by == 'vote_average.desc':
+            default_vote_floor = 300 if media_type == 'movie' else 150
+        elif sort_by in ['popularity.desc', '']:
+            default_vote_floor = 80 if media_type == 'movie' else 40
+        else:
+            default_vote_floor = 10 if media_type == 'movie' else 5
+
         params = {
             "page": page,
-            "sort_by": sort_by or "popularity.desc",
-            "vote_count.gte": 50,
+            "sort_by": sort_by,
+            "vote_count.gte": default_vote_floor,
+            "include_adult": 'false',
         }
-        
-        # Mood mappings
-        mood_map = {
-            'adrenaline': '28,12,53',
-            'mind_bending': '878,9648,18',
-            'relax': '35,16,10751',
+
+        # Prevent unreleased/announced placeholder entries from polluting popular & newest catalogs
+        if sort_by in ['popularity.desc', 'primary_release_date.desc', 'first_air_date.desc']:
+            if media_type == 'movie':
+                params['primary_release_date.lte'] = today_str
+            else:
+                params['first_air_date.lte'] = today_str
+
+        # Mood mappings (media-aware, using TMDB pipe OR operator)
+        mood_map_movie = {
+            'adrenaline': '28|12|53',
+            'mind_bending': '878|9648|18',
+            'relax': '35|10751',
             'funny': '35',
-            'emotional': '18,10749',
-            'scary': '27,53',
-            'escape_reality': '14,878,12',
+            'emotional': '18|10749',
+            'scary': '27|53',
+            'escape_reality': '14|878|12',
         }
-        if mood and mood in mood_map:
+        mood_map_tv = {
+            'adrenaline': '10759|80',
+            'mind_bending': '10765|9648|18',
+            'relax': '35|10751|10762',
+            'funny': '35',
+            'emotional': '18|10766',
+            'scary': '9648',
+            'escape_reality': '10765|10759',
+        }
+        mood_map = mood_map_movie if media_type == 'movie' else mood_map_tv
+
+        # Genre & mood resolution (explicit genre takes precedence)
+        if genre_id:
+            resolved_genre = self._resolve_genre_for_media_type(genre_id, media_type)
+            params['with_genres'] = str(resolved_genre)
+        elif mood and mood in mood_map:
             params['with_genres'] = mood_map[mood]
-        elif genre_id:
-            params['with_genres'] = str(genre_id)
+
+        # Audience modes (All, Live-Action, Kids & Family, Mature)
+        if audience == 'live_action':
+            # Exclude toddler/children animation so Comedy shows actual live-action comedy!
+            excluded = '16,10751' if media_type == 'movie' else '16,10751,10762'
+            without_genres = f"{without_genres},{excluded}" if without_genres else excluded
+        elif audience == 'kids_family':
+            if not params.get('with_genres'):
+                params['with_genres'] = '10751|16' if media_type == 'movie' else '10751|10762'
+            params['certification_country'] = 'US'
+            params['certification.lte'] = 'PG' if media_type == 'movie' else 'TV-PG'
+        elif audience == 'mature':
+            params['certification_country'] = 'US'
+            params['certification'] = 'R' if media_type == 'movie' else 'TV-MA'
+
+        if without_genres:
+            params['without_genres'] = str(without_genres)
 
         if year:
             if media_type == 'movie':
@@ -692,9 +821,32 @@ class TMDBClient:
         if language:
             params['with_original_language'] = str(language)
 
+        # Certification handling with cross-media normalization
         if certification:
             params['certification_country'] = 'US'
-            params['certification'] = str(certification)
+            cert_str = str(certification).strip().upper()
+            if media_type == 'tv':
+                if cert_str in ['R', '18+', 'TV-MA']:
+                    params['certification'] = 'TV-MA'
+                elif cert_str in ['PG-13', 'TV-14']:
+                    params['certification'] = 'TV-14'
+                elif cert_str in ['PG', 'TV-PG']:
+                    params['certification'] = 'TV-PG'
+                elif cert_str in ['G', 'TV-G', 'TV-Y', 'TV-Y7']:
+                    params['certification'] = 'TV-G|TV-Y'
+                else:
+                    params['certification'] = cert_str
+            else:
+                if cert_str in ['TV-MA', '18+', 'R']:
+                    params['certification'] = 'R'
+                elif cert_str in ['TV-14', 'PG-13']:
+                    params['certification'] = 'PG-13'
+                elif cert_str in ['TV-PG', 'PG']:
+                    params['certification'] = 'PG'
+                elif cert_str in ['TV-G', 'G', 'TV-Y']:
+                    params['certification'] = 'G'
+                else:
+                    params['certification'] = cert_str
         elif kids_only:
             params['certification_country'] = 'US'
             params['certification.lte'] = 'PG' if media_type == 'movie' else 'TV-PG'

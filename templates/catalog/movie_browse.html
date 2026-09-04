@@ -15,6 +15,7 @@
         <form method="get" action="/movies/" class="flex items-center gap-2">
             {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
             {% if selected_genre %}<input type="hidden" name="genre" value="{{ selected_genre }}">{% endif %}
+            {% if selected_audience and selected_audience != 'all' %}<input type="hidden" name="audience" value="{{ selected_audience }}">{% endif %}
             <label class="text-xs font-bold text-gray-400 uppercase tracking-wider hidden sm:inline">Sort By:</label>
             <select name="sort" onchange="this.form.submit()" 
                     class="bg-gray-900/90 border border-gray-800 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-brand-500 shadow-md">
@@ -26,37 +27,37 @@
     </div>
 
     <!-- Category Tabs Rail -->
-    <div class="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-hide no-scrollbar mb-6">
-        <a href="/movies/?category=popular{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
-           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'popular' and not selected_genre %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
+    <div class="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-hide no-scrollbar mb-4">
+        <a href="/movies/?category=popular{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'popular' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"/>
             </svg>
             <span>Popular</span>
         </a>
-        <a href="/movies/?category=trending{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+        <a href="/movies/?category=trending{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'trending' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
             <span>Trending Today</span>
         </a>
-        <a href="/movies/?category=top_rated{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+        <a href="/movies/?category=top_rated{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'top_rated' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
             <svg class="w-3.5 h-3.5 fill-amber-400 stroke-amber-400" viewBox="0 0 24 24">
                 <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
             </svg>
             <span>Top Rated</span>
         </a>
-        <a href="/movies/?category=now_playing{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+        <a href="/movies/?category=now_playing{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'now_playing' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/>
             </svg>
             <span>In Theaters</span>
         </a>
-        <a href="/movies/?category=upcoming{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+        <a href="/movies/?category=upcoming{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition flex-none {% if selected_category == 'upcoming' %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900/80 text-gray-300 hover:text-white border border-gray-800{% endif %}">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -65,14 +66,44 @@
         </a>
     </div>
 
+    <!-- Audience & Content Rating Rail -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-hide no-scrollbar mb-5 border-b border-gray-800/60">
+        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex-none mr-1">Audience:</span>
+        <a href="/movies/?category={{ selected_category }}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}&audience=all{% if selected_sort %}&sort={{ selected_sort }}{% endif %}"
+           class="px-3 py-1 rounded-lg text-[11px] font-bold transition flex-none {% if not selected_audience or selected_audience == 'all' %}bg-gray-800 text-white border border-gray-600{% else %}bg-gray-950 text-gray-400 hover:text-white border border-gray-800/80{% endif %}">
+            All Content
+        </a>
+        <a href="/movies/?category={{ selected_category }}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}&audience=live_action{% if selected_sort %}&sort={{ selected_sort }}{% endif %}"
+           class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold transition flex-none {% if selected_audience == 'live_action' %}bg-brand-500/20 text-brand-400 border border-brand-500/50 shadow-sm{% else %}bg-gray-950 text-gray-400 hover:text-white border border-gray-800/80{% endif %}">
+            <svg class="w-3 h-3 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            <span>Live-Action / General</span>
+        </a>
+        <a href="/movies/?category={{ selected_category }}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}&audience=kids_family{% if selected_sort %}&sort={{ selected_sort }}{% endif %}"
+           class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold transition flex-none {% if selected_audience == 'kids_family' %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 shadow-sm{% else %}bg-gray-950 text-gray-400 hover:text-white border border-gray-800/80{% endif %}">
+            <svg class="w-3 h-3 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            <span>Kids & Family</span>
+        </a>
+        <a href="/movies/?category={{ selected_category }}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}&audience=mature{% if selected_sort %}&sort={{ selected_sort }}{% endif %}"
+           class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold transition flex-none {% if selected_audience == 'mature' %}bg-red-500/20 text-red-400 border border-red-500/50 shadow-sm{% else %}bg-gray-950 text-gray-400 hover:text-white border border-gray-800/80{% endif %}">
+            <svg class="w-3 h-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <span>Mature (18+ / R)</span>
+        </a>
+    </div>
+
     <!-- Genre Quick Filter Rail -->
     <div class="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-hide no-scrollbar mb-8">
-        <a href="/movies/?category={{ selected_category }}" 
+        <a href="/movies/?category={{ selected_category }}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
            class="px-3 py-1.5 rounded-xl text-[11px] font-bold transition flex-none {% if not selected_genre %}bg-gray-800 text-white border border-gray-600{% else %}bg-gray-950 text-gray-400 hover:text-white border border-gray-800/80{% endif %}">
             All Genres
         </a>
         {% for g in genres %}
-        <a href="/movies/?genre={{ g.id }}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+        <a href="/movies/?category={{ selected_category }}&genre={{ g.id }}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition flex-none {% if selected_genre == g.id|stringformat:'i' %}bg-brand-500/20 text-brand-400 border border-brand-500/40{% else %}bg-gray-950 text-gray-400 hover:text-white border border-gray-800/80{% endif %}">
             {% include 'components/genre_icon.html' with name=g.name id=g.id class="w-3.5 h-3.5" %}
             <span>{{ g.name }}</span>
@@ -91,21 +122,21 @@
     <!-- Pagination Controls -->
     <div class="flex items-center justify-center gap-2 pt-6 border-t border-gray-800/80">
         {% if pagination.has_prev %}
-        <a href="?page={{ pagination.prev_page }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+        <a href="?page={{ pagination.prev_page }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
            class="px-4 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-xs font-bold text-gray-300 hover:text-white border border-gray-800 transition">
             &larr; Previous
         </a>
         {% endif %}
 
         {% for p_num in pagination.page_numbers %}
-        <a href="?page={{ p_num }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+        <a href="?page={{ p_num }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
            class="w-9 h-9 flex items-center justify-center rounded-xl text-xs font-bold transition {% if pagination.current_page == p_num %}bg-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-800{% endif %}">
             {{ p_num }}
         </a>
         {% endfor %}
 
         {% if pagination.has_next %}
-        <a href="?page={{ pagination.next_page }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+        <a href="?page={{ pagination.next_page }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
            class="px-4 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-xs font-bold text-gray-300 hover:text-white border border-gray-800 transition">
             Next &rarr;
         </a>

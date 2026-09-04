@@ -143,4 +143,30 @@ class CatalogViewsTestCase(TestCase):
             has_current = any(p.get('is_current') for p in col['parts'])
             self.assertTrue(has_current)
 
+    def test_movie_browse_with_audience_filter(self):
+        response = self.client.get('/movies/?category=popular&genre=35&audience=live_action&sort=popularity.desc')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('movies', response.context)
+        self.assertEqual(response.context['selected_audience'], 'live_action')
+        self.assertEqual(response.context['selected_genre'], '35')
+        self.assertEqual(response.context['selected_category'], 'popular')
+
+    def test_series_browse_with_tv_genre_and_audience(self):
+        response = self.client.get('/series/?category=popular&genre=10759&audience=mature')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('series_list', response.context)
+        self.assertEqual(response.context['selected_audience'], 'mature')
+        self.assertEqual(response.context['selected_genre'], '10759')
+        # Ensure TV genres are provided
+        tv_genre_names = [g['name'] for g in response.context['genres']]
+        self.assertIn('Action & Adventure', tv_genre_names)
+
+    def test_genres_view_with_tv_type(self):
+        response = self.client.get('/genres/?type=tv')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['active_type'], 'tv')
+        self.assertIn('tv_genres', response.context)
+        self.assertIn('movie_genres', response.context)
+
+
 
