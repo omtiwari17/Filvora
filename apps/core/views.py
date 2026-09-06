@@ -1,6 +1,8 @@
 import concurrent.futures
 from django.shortcuts import render
+from django.http import HttpResponse, JsonResponse
 from django.views.generic import TemplateView
+from django.middleware.csrf import rotate_token
 from apps.tmdb.client import TMDBClient
 from apps.core.recommendations import RecommendationEngine
 from apps.watch.models import WatchProgress
@@ -135,5 +137,62 @@ class HomeView(TemplateView):
             context['because_items'] = []
             
         return context
+
+
+def csrf_failure(request, reason=""):
+    """
+    Custom branded CSRF failure view for Filvora.
+    Gracefully handles stale tokens, token rotation after login, or multi-tab drift
+    by issuing a fresh CSRF token and rendering a cinematic recovery page with auto-redirect.
+    """
+    from django.conf import settings
+    # Rotate token and ensure fresh cookie is explicitly attached to the response
+    rotate_token(request)
+    new_token = request.META.get("CSRF_COOKIE")
+
+    def _attach_csrf(resp):
+        if new_token:
+            resp.set_cookie(
+                settings.CSRF_COOKIE_NAME,
+                new_token,
+                max_age=settings.CSRF_COOKIE_AGE,
+                domain=settings.CSRF_COOKIE_DOMAIN,
+                path=settings.CSRF_COOKIE_PATH,
+                secure=settings.CSRF_COOKIE_SECURE,
+                httponly=settings.CSRF_COOKIE_HTTPONLY,
+                samesite=settings.CSRF_COOKIE_SAMESITE,
+            )
+        return resp
+
+    # Check if request was from HTMX
+    if request.headers.get('HX-Request'):
+        response = HttpResponse(
+            '<div class="p-4 bg-red-950/80 border border-red-800 rounded-xl text-red-200 text-sm">'
+            'Session security token refreshed. Please try again.</div>',
+            status=403
+        )
+        response['HX-Refresh'] = 'true'
+        return _attach_csrf(response)
+
+    # Check if request was JSON / API
+    if request.headers.get('accept') == 'application/json' or request.content_type == 'application/json':
+        response = JsonResponse({
+            'status': 'error',
+            'message': 'CSRF verification failed. Security token refreshed, please retry.',
+            'reason': reason
+        }, status=403)
+        return _attach_csrf(response)
+
+    # Standard browser navigation / form POST failure
+    referer = request.META.get('HTTP_REFERER') or '/'
+    target_url = '/accounts/login/' if '/accounts/' in request.path else referer
+
+    context = {
+        'reason': reason,
+        'target_url': target_url,
+        'path': request.path,
+    }
+    response = render(request, '403_csrf.html', context, status=403)
+    return _attach_csrf(response)
 
 

@@ -3,6 +3,7 @@
  */
 
 document.addEventListener("DOMContentLoaded", () => {
+    initCsrfSync();
     initNavbar();
     initKeyboardShortcuts();
     initHorizontalRails();
@@ -519,3 +520,73 @@ window.addEventListener('pageshow', (event) => {
         window.location.reload();
     }
 });
+
+// --- Global CSRF Auto-Sync Engine ---
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function syncFormCsrfTokens() {
+    const liveToken = getCookie('csrftoken');
+    if (!liveToken) return;
+    document.querySelectorAll('input[name="csrfmiddlewaretoken"]').forEach(input => {
+        if (input.value !== liveToken) {
+            input.value = liveToken;
+        }
+    });
+}
+
+function initCsrfSync() {
+    // 1. Synchronize all CSRF inputs on initial load
+    syncFormCsrfTokens();
+
+    // 2. Intercept standard HTML form submissions on capture phase before any handler
+    document.addEventListener('submit', (e) => {
+        const form = e.target;
+        if (!form || form.tagName !== 'FORM') return;
+
+        const method = (form.getAttribute('method') || form.method || 'GET').toUpperCase();
+        if (method !== 'POST') return;
+
+        // Skip cross-origin submissions
+        const action = form.getAttribute('action') || '';
+        if (action.startsWith('http://') || action.startsWith('https://')) {
+            if (!action.startsWith(window.location.origin)) return;
+        }
+
+        const liveToken = getCookie('csrftoken');
+        if (liveToken) {
+            let csrfInput = form.querySelector('input[name="csrfmiddlewaretoken"]');
+            if (csrfInput) {
+                csrfInput.value = liveToken;
+            } else {
+                csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = liveToken;
+                form.appendChild(csrfInput);
+            }
+        }
+    }, true);
+
+    // 3. Re-sync on page visibility change or pageshow
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            syncFormCsrfTokens();
+        }
+    });
+    window.addEventListener('pageshow', () => {
+        syncFormCsrfTokens();
+    });
+}

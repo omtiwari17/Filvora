@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Session Security Notice - Filvora v2.4{% endblock %}
+
+{% block content %}
+<div class="relative min-h-[80vh] flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8">
+    <!-- Cinematic Dark Ambient Background -->
+    <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/90 to-gray-950/70"></div>
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    </div>
+    
+    <div class="relative z-10 w-full max-w-lg p-8 sm:p-10 bg-gray-950/90 border border-gray-800/90 rounded-3xl shadow-2xl backdrop-blur-2xl text-center space-y-6">
+        <!-- Shield Icon with Glow -->
+        <div class="mx-auto w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-inner">
+            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        </div>
+
+        <div class="space-y-2">
+            <div class="inline-flex items-center gap-2 mb-1">
+                <span class="text-xl font-black text-brand-500 tracking-tighter">FILVORA</span>
+                <span class="bg-gradient-to-r from-red-600 to-rose-500 text-[10px] font-black text-white px-2 py-0.5 rounded-full ring-1 ring-white/20">Security</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Security Token Refreshed</h1>
+            <p class="text-xs sm:text-sm text-gray-400 leading-relaxed max-w-md mx-auto">
+                Your browser's session token was desynchronized. A fresh security token has been issued to protect your account.
+            </p>
+        </div>
+
+        <!-- Automatic Redirect Badge -->
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-900/80 border border-gray-800 rounded-full text-xs text-gray-400">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+            <span>Returning automatically in <strong id="csrf-countdown" class="text-white font-mono">3</strong>s...</span>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="w-full bg-gray-900 rounded-full h-1 overflow-hidden border border-gray-800">
+            <div id="csrf-progress-bar" class="bg-gradient-to-r from-amber-500 to-brand-500 h-full w-full transition-all duration-1000 ease-linear"></div>
+        </div>
+
+        <!-- Action CTAs -->
+        <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a id="csrf-retry-btn" href="{{ target_url }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-red-600 text-white font-bold px-6 py-3 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-brand-500/30 text-xs sm:text-sm">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Continue & Try Again</span>
+            </a>
+            <a href="/" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 text-gray-300 hover:text-white font-semibold px-5 py-3 rounded-xl transition-all duration-200 text-xs sm:text-sm">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span>Return to Home</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        let seconds = 3;
+        const countdownEl = document.getElementById('csrf-countdown');
+        const progressBar = document.getElementById('csrf-progress-bar');
+        const targetUrl = "{{ target_url|escapejs }}";
+
+        const interval = setInterval(function() {
+            seconds--;
+            if (countdownEl) countdownEl.innerText = seconds;
+            if (progressBar) {
+                progressBar.style.width = ((seconds / 3) * 100) + '%';
+            }
+            if (seconds <= 0) {
+                clearInterval(interval);
+                window.location.href = targetUrl;
+            }
+        }, 1000);
+    })();
+</script>
+{% endblock %}

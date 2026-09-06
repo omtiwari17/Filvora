@@ -39,13 +39,24 @@ if csrf_origins:
 else:
     CSRF_TRUSTED_ORIGINS = [
         'http://localhost:8000',
+        'http://localhost',
         'http://127.0.0.1:8000',
+        'http://127.0.0.1',
         'http://0.0.0.0:8000',
+        'http://0.0.0.0',
         'http://192.168.1.5:8000',
+        'http://192.168.1.5',
+        'https://localhost:8000',
+        'https://localhost',
+        'https://127.0.0.1:8000',
+        'https://127.0.0.1',
         'http://192.168.*',
         'http://10.*',
         'http://172.16.*',
     ]
+
+# Dedicated Branded CSRF Failure View with Token Auto-Healing
+CSRF_FAILURE_VIEW = 'apps.core.views.csrf_failure'
 
 # Reverse Proxy & SSL headers for secure remote tunnels (Cloudflare / Caddy / Nginx)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -159,3 +170,9 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep logged in when closing browser/t
 SESSION_COOKIE_HTTPONLY = True           # XSS protection
 SESSION_COOKIE_SAMESITE = 'Lax'          # Safe top-level navigation cookie passing
 SESSION_COOKIE_SECURE = False            # Allow local HTTP access (127.0.0.1 & 192.168.1.x)
+
+# CSRF Cookie Protection & Frontend Token Accessibility
+CSRF_COOKIE_AGE = 60 * 60 * 24 * 365     # 1 year matching session age
+CSRF_COOKIE_HTTPONLY = False             # Allow client-side JS to synchronize csrfmiddlewaretoken
+CSRF_COOKIE_SAMESITE = 'Lax'            # Safe cross-site / top-level navigation support
+CSRF_COOKIE_SECURE = False              # Allow local HTTP access (127.0.0.1 & 192.168.1.x)

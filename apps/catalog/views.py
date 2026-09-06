@@ -221,6 +221,95 @@ def format_season_runtime(minutes: int) -> str:
     return f"{mins}m"
 
 
+def get_series_season_partitions(series: dict, chunk_size: int = 100) -> list:
+    """
+    Extracts and organizes seasons for a TV series.
+    For standard series (e.g. Breaking Bad, Stranger Things), returns the official TMDB seasons.
+    For mega-seasons (e.g. Taarak Mehta Ka Ooltah Chashmah, daily soaps, or continuous anime where
+    a single season has > 100 episodes), automatically partitions the massive episode catalog into
+    clean, manageable seasons/volumes of 100 episodes (matching SonyLIV/official platform streaming seasons).
+    """
+    raw_seasons = [s for s in series.get('seasons', []) if s.get('season_number', 0) > 0]
+    if not raw_seasons:
+        num_seasons = series.get('number_of_seasons', 1) or 1
+        return [{
+            'partition_id': i,
+            'season_number': i,
+            'tmdb_season_number': i,
+            'name': f"Season {i}",
+            'range_label': '',
+            'start_episode': 1,
+            'end_episode': 10,
+            'episode_count': 10,
+            'is_chunked': False,
+        } for i in range(1, num_seasons + 1)]
+
+    # Case 1: Exactly 1 season with > 100 episodes (e.g. Taarak Mehta Ka Ooltah Chashmah with 4,800+ episodes)
+    if len(raw_seasons) == 1 and raw_seasons[0].get('episode_count', 0) > chunk_size:
+        s0 = raw_seasons[0]
+        total_eps = s0.get('episode_count', 0)
+        tmdb_s = s0.get('season_number', 1)
+        partitions = []
+        part_idx = 1
+        for start_ep in range(1, total_eps + 1, chunk_size):
+            end_ep = min(start_ep + chunk_size - 1, total_eps)
+            count = end_ep - start_ep + 1
+            partitions.append({
+                'partition_id': part_idx,
+                'season_number': part_idx,
+                'tmdb_season_number': tmdb_s,
+                'name': f"Season {part_idx}",
+                'range_label': f"Eps {start_ep}–{end_ep}",
+                'start_episode': start_ep,
+                'end_episode': end_ep,
+                'episode_count': count,
+                'is_chunked': True,
+                'poster_path': s0.get('poster_path', ''),
+            })
+            part_idx += 1
+        return partitions
+
+    # Case 2: General series (standard seasons or multi-season shows)
+    partitions = []
+    for s in raw_seasons:
+        s_num = s.get('season_number', 1)
+        ep_count = s.get('episode_count', 0)
+        if ep_count > chunk_size:
+            part_idx = 1
+            for start_ep in range(1, ep_count + 1, chunk_size):
+                end_ep = min(start_ep + chunk_size - 1, ep_count)
+                count = end_ep - start_ep + 1
+                pid = int(f"{s_num}{part_idx:02d}")
+                partitions.append({
+                    'partition_id': pid,
+                    'season_number': s_num,
+                    'tmdb_season_number': s_num,
+                    'name': f"Season {s_num} (Part {part_idx})",
+                    'range_label': f"Eps {start_ep}–{end_ep}",
+                    'start_episode': start_ep,
+                    'end_episode': end_ep,
+                    'episode_count': count,
+                    'is_chunked': True,
+                    'poster_path': s.get('poster_path', ''),
+                })
+                part_idx += 1
+        else:
+            partitions.append({
+                'partition_id': s_num,
+                'season_number': s_num,
+                'tmdb_season_number': s_num,
+                'name': s.get('name') or f"Season {s_num}",
+                'range_label': '',
+                'start_episode': 1,
+                'end_episode': ep_count,
+                'episode_count': ep_count,
+                'is_chunked': False,
+                'poster_path': s.get('poster_path', ''),
+            })
+
+    return partitions
+
+
 def series_detail(request, tmdb_id):
     client = TMDBClient()
     series = client.get_tv_details(tmdb_id)
@@ -243,15 +332,26 @@ def series_detail(request, tmdb_id):
     if 'credits' in series and 'cast' in series['credits']:
         cast = series['credits']['cast'][:16]
 
-    # Fetch seasons and compute total season runtime for each
-    seasons = [s for s in series.get('seasons', []) if s.get('season_number', 0) > 0]
+    # Partition seasons (breaks mega-seasons like TMKOC into clean 100-episode seasons)
+    seasons = get_series_season_partitions(series)
     avg_runtime = series.get('episode_run_time', [45])[0] if series.get('episode_run_time') else 45
 
+    # Cache TMDB season data in a dict to avoid redundant fetches
+    loaded_tmdb_seasons = {}
     for s in seasons:
-        s_num = s.get('season_number', 1)
-        s_data = client.get_tv_season(tmdb_id, s_num)
-        s_eps = s_data.get('episodes', [])
-        s_total_mins = sum(e.get('runtime') or avg_runtime for e in s_eps)
+        tmdb_s = s.get('tmdb_season_number', 1)
+        if tmdb_s not in loaded_tmdb_seasons:
+            loaded_tmdb_seasons[tmdb_s] = client.get_tv_season(tmdb_id, tmdb_s).get('episodes', [])
+        
+        all_s_eps = loaded_tmdb_seasons[tmdb_s]
+        if s.get('is_chunked'):
+            start_i = s['start_episode'] - 1
+            end_i = s['end_episode']
+            part_eps = all_s_eps[start_i:end_i]
+        else:
+            part_eps = all_s_eps
+
+        s_total_mins = sum(e.get('runtime') or avg_runtime for e in part_eps)
         if not s_total_mins and s.get('episode_count'):
             s_total_mins = s.get('episode_count', 0) * avg_runtime
 
@@ -287,11 +387,18 @@ def series_detail(request, tmdb_id):
             else:
                 s['play_time_formatted'] = None
 
-    initial_season_num = seasons[0]['season_number'] if seasons else 1
-    season_data = client.get_tv_season(tmdb_id, initial_season_num)
-    episodes = season_data.get('episodes', [])
-    initial_season_runtime = seasons[0].get('total_hours_formatted', '') if seasons else ''
-    initial_season_decimal = seasons[0].get('total_hours_decimal', '') if seasons else ''
+    initial_partition = seasons[0] if seasons else None
+    initial_season_num = initial_partition['partition_id'] if initial_partition else 1
+    tmdb_initial_s = initial_partition.get('tmdb_season_number', 1) if initial_partition else 1
+
+    all_init_eps = loaded_tmdb_seasons.get(tmdb_initial_s, [])
+    if initial_partition and initial_partition.get('is_chunked'):
+        episodes = all_init_eps[initial_partition['start_episode'] - 1 : initial_partition['end_episode']]
+    else:
+        episodes = all_init_eps
+
+    initial_season_runtime = initial_partition.get('total_hours_formatted', '') if initial_partition else ''
+    initial_season_decimal = initial_partition.get('total_hours_decimal', '') if initial_partition else ''
 
     # Get user's existing rating for this series
     user_rating = 0
@@ -313,6 +420,7 @@ def series_detail(request, tmdb_id):
         'creators': creators,
         'seasons': seasons,
         'current_season': initial_season_num,
+        'current_partition': initial_partition,
         'episodes': episodes,
         'initial_season_runtime': initial_season_runtime,
         'initial_season_decimal': initial_season_decimal,
@@ -332,17 +440,51 @@ def trailer_api(request, media_type, tmdb_id):
 
 def season_episodes(request, tmdb_id, season_number):
     client = TMDBClient()
-    season_num = int(season_number) if str(season_number).isdigit() else 1
-    season_data = client.get_tv_season(tmdb_id, season_num)
-    episodes = season_data.get('episodes', [])
     series = client.get_tv_details(tmdb_id)
+    seasons = get_series_season_partitions(series)
+
+    target_partition = None
+    target_num = int(season_number) if str(season_number).isdigit() else 1
+    for s in seasons:
+        if s.get('partition_id') == target_num:
+            target_partition = s
+            break
+
+    if not target_partition:
+        for s in seasons:
+            if s.get('season_number') == target_num:
+                target_partition = s
+                break
+
+    if not target_partition and seasons:
+        target_partition = seasons[0]
+
+    if target_partition:
+        real_tmdb_s = target_partition.get('tmdb_season_number', 1)
+        season_data = client.get_tv_season(tmdb_id, real_tmdb_s)
+        all_eps = season_data.get('episodes', [])
+
+        if target_partition.get('is_chunked'):
+            start_i = target_partition['start_episode'] - 1
+            end_i = target_partition['end_episode']
+            episodes = all_eps[start_i:end_i]
+        else:
+            episodes = all_eps
+
+        disp_season_num = target_partition['partition_id']
+    else:
+        disp_season_num = target_num
+        season_data = client.get_tv_season(tmdb_id, disp_season_num)
+        episodes = season_data.get('episodes', [])
+
     avg_runtime = series.get('episode_run_time', [45])[0] if series.get('episode_run_time') else 45
     total_mins = sum(ep.get('runtime') or avg_runtime for ep in episodes)
     total_formatted = format_season_runtime(total_mins)
 
     return render(request, 'catalog/partials/episode_list.html', {
         'tmdb_id': tmdb_id,
-        'season_number': season_num,
+        'season_number': disp_season_num,
+        'partition': target_partition,
         'episodes': episodes,
         'season_total_runtime': total_formatted,
         'season_total_hours_decimal': f"{round(total_mins / 60.0, 1)} hrs" if total_mins else "",

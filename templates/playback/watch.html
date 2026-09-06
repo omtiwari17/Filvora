@@ -26,7 +26,8 @@
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script>
         document.addEventListener('htmx:configRequest', (event) => {
-            event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+            const token = typeof getCookie === 'function' ? getCookie('csrftoken') : null;
+            event.detail.headers['X-CSRFToken'] = token || '{{ csrf_token }}';
         });
     </script>
     
@@ -919,10 +920,10 @@
                     poster_path: '{{ media.poster_path|default:""|escapejs }}'
                 };
 
-                const csrfToken = document.getElementById('bookmark-csrf-token')?.value ||
+                const csrfToken = (typeof getCookie === 'function' ? getCookie('csrftoken') : null) ||
+                                  document.getElementById('bookmark-csrf-token')?.value ||
                                   document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
-                                  '{{ csrf_token }}' ||
-                                  getCookie('csrftoken') || '';
+                                  '{{ csrf_token }}' || '';
 
                 const resp = await fetch('/library/bookmark/add/', {
                     method: 'POST',
@@ -1008,10 +1009,10 @@
         }
 
         async function deleteModalBookmark(id) {
-            const csrfToken = document.getElementById('bookmark-csrf-token')?.value ||
+            const csrfToken = (typeof getCookie === 'function' ? getCookie('csrftoken') : null) ||
+                              document.getElementById('bookmark-csrf-token')?.value ||
                               document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
-                              '{{ csrf_token }}' ||
-                              getCookie('csrftoken') || '';
+                              '{{ csrf_token }}' || '';
             try {
                 const resp = await fetch(`/library/bookmark/${id}/delete/`, {
                     method: 'POST',

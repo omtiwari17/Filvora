@@ -140,31 +140,75 @@
 
         <!-- Episodes Section with HTMX Season Selector -->
         <div class="mt-16 border-t border-gray-800/80 pt-12">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                <h2 class="text-2xl font-bold text-white">Episodes</h2>
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-2xl font-bold text-white">Episodes</h2>
+                    {% if series.number_of_episodes %}
+                    <span class="text-xs bg-gray-800/90 text-gray-300 px-2.5 py-1 rounded-full font-semibold border border-gray-700/60">
+                        {{ series.number_of_episodes }} Total Episodes
+                    </span>
+                    {% endif %}
+                </div>
 
-                <!-- Season selector tabs -->
+                <!-- Season Controls & Quick Jump -->
                 {% if seasons %}
-                <div class="flex items-center gap-2.5 overflow-x-auto scrollbar-hide py-1 -my-1 max-w-full touch-pan-x">
-                    {% for s in seasons %}
-                    <button hx-get="/series/{{ series.id }}/season/{{ s.season_number }}/"
-                            hx-target="#episodes-container"
-                            hx-swap="innerHTML"
-                            onclick="document.querySelectorAll('.season-btn').forEach(b => { b.classList.remove('bg-brand-500', 'text-white', 'shadow-brand-500/25'); b.classList.add('bg-gray-900', 'text-gray-300'); }); this.classList.remove('bg-gray-900', 'text-gray-300'); this.classList.add('bg-brand-500', 'text-white', 'shadow-brand-500/25');"
-                            class="season-btn flex-none flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition border border-gray-700/80 shadow-md {% if s.season_number == current_season %}bg-brand-500 text-white shadow-brand-500/25{% else %}bg-gray-900 text-gray-300 hover:text-white hover:bg-gray-800{% endif %}">
-                        <span>Season {{ s.season_number }}</span>
-                        {% if s.total_hours_formatted %}
-                        <span class="text-[10px] sm:text-[11px] bg-black/40 text-gray-200 border border-white/15 px-2 py-0.5 rounded-full font-semibold">{{ s.total_hours_formatted }}</span>
-                        {% endif %}
-                    </button>
-                    {% endfor %}
+                <div class="flex flex-wrap items-center gap-3">
+                    {% if seasons|length > 4 %}
+                    <!-- Quick Dropdown for Large Season Catalogs -->
+                    <div class="relative">
+                        <select id="season-quick-select"
+                                onchange="switchSeasonFromSelect(this.value)"
+                                class="bg-gray-900 text-white text-xs sm:text-sm font-bold border border-gray-700/80 rounded-xl px-3 py-2 focus:outline-none focus:border-brand-500 shadow-md">
+                            {% for s in seasons %}
+                            <option value="{{ s.partition_id }}" {% if s.partition_id == current_season %}selected{% endif %}>
+                                {{ s.name }}{% if s.range_label %} ({{ s.range_label }}){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Episode Number Direct Jump -->
+                    <div class="relative flex items-center">
+                        <input type="number" id="quick-ep-jump-input" placeholder="Jump to Ep #" min="1"
+                               class="w-28 sm:w-32 bg-gray-900 border border-gray-700/80 focus:border-brand-500 rounded-xl pl-3 pr-8 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                               onkeydown="if(event.key === 'Enter'){ event.preventDefault(); jumpToSpecificEpisode(); }">
+                        <button type="button" onclick="jumpToSpecificEpisode()" title="Jump to Episode"
+                                class="absolute right-1 px-2 py-1 bg-brand-500 hover:bg-red-600 text-white rounded-lg text-[10px] font-bold transition">
+                            Go
+                        </button>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>
 
+            <!-- Season selector tabs rail -->
+            {% if seasons %}
+            <div class="mb-8 flex items-center gap-2.5 overflow-x-auto scrollbar-hide py-1 -my-1 max-w-full touch-pan-x">
+                {% for s in seasons %}
+                <button id="season-tab-btn-{{ s.partition_id }}"
+                        hx-get="/series/{{ series.id }}/season/{{ s.partition_id }}/"
+                        hx-target="#episodes-container"
+                        hx-swap="innerHTML"
+                        data-partition-id="{{ s.partition_id }}"
+                        data-start-ep="{{ s.start_episode }}"
+                        data-end-ep="{{ s.end_episode }}"
+                        onclick="setActiveSeasonTab('{{ s.partition_id }}');"
+                        class="season-btn flex-none flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition border border-gray-700/80 shadow-md {% if s.partition_id == current_season %}bg-brand-500 text-white shadow-brand-500/25{% else %}bg-gray-900 text-gray-300 hover:text-white hover:bg-gray-800{% endif %}">
+                    <span>{{ s.name }}</span>
+                    {% if s.range_label %}
+                    <span class="text-[10px] sm:text-[11px] bg-black/40 text-gray-300 border border-white/15 px-2 py-0.5 rounded-full font-semibold">{{ s.range_label }}</span>
+                    {% elif s.total_hours_formatted %}
+                    <span class="text-[10px] sm:text-[11px] bg-black/40 text-gray-200 border border-white/15 px-2 py-0.5 rounded-full font-semibold">{{ s.total_hours_formatted }}</span>
+                    {% endif %}
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <!-- Dynamic Episode Container Swapped via HTMX -->
             <div id="episodes-container">
-                {% include 'catalog/partials/episode_list.html' with episodes=episodes tmdb_id=series.id season_number=current_season season_total_runtime=initial_season_runtime season_total_hours_decimal=initial_season_decimal %}
+                {% include 'catalog/partials/episode_list.html' with episodes=episodes tmdb_id=series.id season_number=current_season partition=current_partition season_total_runtime=initial_season_runtime season_total_hours_decimal=initial_season_decimal %}
             </div>
         </div>
 
@@ -245,4 +289,73 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function setActiveSeasonTab(partitionId) {
+    document.querySelectorAll('.season-btn').forEach(b => {
+        b.classList.remove('bg-brand-500', 'text-white', 'shadow-brand-500/25');
+        b.classList.add('bg-gray-900', 'text-gray-300');
+    });
+    const activeBtn = document.getElementById('season-tab-btn-' + partitionId);
+    if (activeBtn) {
+        activeBtn.classList.remove('bg-gray-900', 'text-gray-300');
+        activeBtn.classList.add('bg-brand-500', 'text-white', 'shadow-brand-500/25');
+        activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+    const selectEl = document.getElementById('season-quick-select');
+    if (selectEl) selectEl.value = partitionId;
+}
+
+function switchSeasonFromSelect(partitionId) {
+    const btn = document.getElementById('season-tab-btn-' + partitionId);
+    if (btn) {
+        btn.click();
+    } else {
+        htmx.ajax('GET', `/series/{{ series.id }}/season/${partitionId}/`, {
+            target: '#episodes-container',
+            swap: 'innerHTML'
+        });
+        setActiveSeasonTab(partitionId);
+    }
+}
+
+function jumpToSpecificEpisode() {
+    const input = document.getElementById('quick-ep-jump-input');
+    if (!input || !input.value) return;
+    const epNum = parseInt(input.value, 10);
+    if (isNaN(epNum) || epNum <= 0) return;
+
+    // Find the season tab that contains this episode number
+    const tabs = document.querySelectorAll('.season-btn');
+    let targetTab = null;
+    let targetPartitionId = null;
+
+    tabs.forEach(tab => {
+        const start = parseInt(tab.getAttribute('data-start-ep') || '1', 10);
+        const end = parseInt(tab.getAttribute('data-end-ep') || '999999', 10);
+        if (epNum >= start && epNum <= end) {
+            targetTab = tab;
+            targetPartitionId = tab.getAttribute('data-partition-id');
+        }
+    });
+
+    if (targetTab && targetPartitionId) {
+        targetTab.click();
+        let attempts = 0;
+        const checkCard = setInterval(() => {
+            attempts++;
+            const card = document.getElementById('ep-card-' + epNum);
+            if (card) {
+                clearInterval(checkCard);
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                card.classList.add('ring-2', 'ring-brand-500', 'scale-[1.02]');
+                setTimeout(() => card.classList.remove('scale-[1.02]'), 1200);
+            }
+            if (attempts > 30) clearInterval(checkCard);
+        }, 100);
+    }
+}
+</script>
 {% endblock %}

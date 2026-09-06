@@ -77,6 +77,51 @@ class CoreViewsTestCase(TestCase):
         response = self.client.get('/')
         self.assertIn('manifest.json', response.content.decode('utf-8'))
 
+    def test_csrf_failure_view_browser(self):
+        from apps.core.views import csrf_failure
+        from django.test import RequestFactory
+        factory = RequestFactory()
+        request = factory.post('/accounts/login/', {'username': 'test'})
+        request.META['HTTP_REFERER'] = '/accounts/login/'
+        response = csrf_failure(request, reason="CSRF token from POST incorrect.")
+        self.assertEqual(response.status_code, 403)
+        self.assertIn('Security Token Refreshed', response.content.decode('utf-8'))
+        self.assertIn('csrf-countdown', response.content.decode('utf-8'))
+        # Ensure fresh CSRF cookie was issued
+        self.assertIn('csrftoken', response.cookies)
+
+    def test_csrf_failure_view_htmx(self):
+        from apps.core.views import csrf_failure
+        from django.test import RequestFactory
+        factory = RequestFactory()
+        request = factory.post('/library/toggle/', HTTP_HX_REQUEST='true')
+        response = csrf_failure(request, reason="CSRF token from POST incorrect.")
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response['HX-Refresh'], 'true')
+        self.assertIn('csrftoken', response.cookies)
+
+    def test_csrf_failure_view_json(self):
+        from apps.core.views import csrf_failure
+        from django.test import RequestFactory
+        import json
+        factory = RequestFactory()
+        request = factory.post('/library/bookmark/add/', HTTP_ACCEPT='application/json')
+        response = csrf_failure(request, reason="CSRF token from POST incorrect.")
+        self.assertEqual(response.status_code, 403)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['status'], 'error')
+        self.assertIn('csrftoken', response.cookies)
+
+    def test_csrf_settings_configuration(self):
+        from django.conf import settings
+        self.assertEqual(settings.CSRF_FAILURE_VIEW, 'apps.core.views.csrf_failure')
+        self.assertFalse(settings.CSRF_COOKIE_HTTPONLY)
+        self.assertEqual(settings.CSRF_COOKIE_SAMESITE, 'Lax')
+        self.assertIn('http://localhost:8000', settings.CSRF_TRUSTED_ORIGINS)
+        self.assertIn('http://localhost', settings.CSRF_TRUSTED_ORIGINS)
+        self.assertIn('http://127.0.0.1:8000', settings.CSRF_TRUSTED_ORIGINS)
+        self.assertIn('http://127.0.0.1', settings.CSRF_TRUSTED_ORIGINS)
+
 
 
 

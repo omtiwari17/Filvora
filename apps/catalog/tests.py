@@ -168,5 +168,54 @@ class CatalogViewsTestCase(TestCase):
         self.assertIn('tv_genres', response.context)
         self.assertIn('movie_genres', response.context)
 
+    def test_mega_season_partitioning(self):
+        from apps.catalog.views import get_series_season_partitions
+        mock_series_mega = {
+            'number_of_seasons': 1,
+            'seasons': [{'season_number': 1, 'name': 'Season 1', 'episode_count': 4808}]
+        }
+        partitions = get_series_season_partitions(mock_series_mega)
+        self.assertEqual(len(partitions), 49)
+        self.assertEqual(partitions[0]['name'], 'Season 1')
+        self.assertEqual(partitions[0]['range_label'], 'Eps 1–100')
+        self.assertEqual(partitions[0]['start_episode'], 1)
+        self.assertEqual(partitions[0]['end_episode'], 100)
+        self.assertEqual(partitions[48]['name'], 'Season 49')
+        self.assertEqual(partitions[48]['range_label'], 'Eps 4801–4808')
+        self.assertEqual(partitions[48]['episode_count'], 8)
+
+    def test_standard_season_partitioning(self):
+        from apps.catalog.views import get_series_season_partitions
+        mock_series_std = {
+            'number_of_seasons': 3,
+            'seasons': [
+                {'season_number': 1, 'name': 'Season 1', 'episode_count': 10},
+                {'season_number': 2, 'name': 'Season 2', 'episode_count': 12},
+                {'season_number': 3, 'name': 'Season 3', 'episode_count': 8},
+            ]
+        }
+        partitions = get_series_season_partitions(mock_series_std)
+        self.assertEqual(len(partitions), 3)
+        self.assertFalse(partitions[0]['is_chunked'])
+        self.assertEqual(partitions[0]['name'], 'Season 1')
+
+    def test_tmkoc_series_detail_and_season_episodes(self):
+        # Taarak Mehta Ka Ooltah Chashmah TMDB ID: 8630
+        response = self.client.get('/series/8630/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('seasons', response.context)
+        # Should be partitioned into 49 seasons
+        self.assertEqual(len(response.context['seasons']), 49)
+        # Season 1 should have 100 episodes
+        self.assertEqual(len(response.context['episodes']), 100)
+
+        # Test fetching Season 2 (episodes 101 to 200)
+        season_2_resp = self.client.get('/series/8630/season/2/')
+        self.assertEqual(season_2_resp.status_code, 200)
+        eps = season_2_resp.context['episodes']
+        self.assertEqual(len(eps), 100)
+        self.assertEqual(eps[0]['episode_number'], 101)
+        self.assertEqual(eps[-1]['episode_number'], 200)
+
 
 

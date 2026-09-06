@@ -21,7 +21,7 @@ def get_local_ip():
 
 def active_profile_context(request):
     profile = None
-    if request.user.is_authenticated:
+    if getattr(request, 'user', None) and request.user.is_authenticated:
         profile = get_active_profile(request)
         
     local_ip = get_local_ip()
