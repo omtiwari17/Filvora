@@ -136,6 +136,27 @@
                 font-size: 16px !important;
             }
         }
+        /* Picture-in-Picture Floating Mini-Player Mode (100% Reload-Free Continuous Playback) */
+        #video-container.pip-floating-mode {
+            position: fixed !important;
+            bottom: 1.5rem !important;
+            right: 1.5rem !important;
+            top: auto !important;
+            left: auto !important;
+            width: min(440px, calc(100vw - 2rem)) !important;
+            aspect-ratio: 16 / 9 !important;
+            height: auto !important;
+            z-index: 2147483640 !important;
+            border-radius: 1rem !important;
+            overflow: hidden !important;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 0 2px rgba(229, 9, 20, 0.7), 0 0 30px rgba(229, 9, 20, 0.25) !important;
+        }
+        #video-container.pip-floating-mode #embed-fullscreen-hotspot {
+            display: none !important;
+        }
+        #video-container.pip-floating-mode #pip-floating-toolbar {
+            display: flex !important;
+        }
     </style>
 </head>
 <body id="player-wrapper" class="bg-black text-white h-[100dvh] w-screen overflow-hidden select-none relative">
@@ -660,6 +681,26 @@
 
     <!-- Active Video Player Container -->
     <div id="video-container" class="absolute inset-0 w-full h-full bg-black z-0 transition-all duration-500">
+        <!-- Floating Mini-Player Top Toolbar (Only visible in pip-floating-mode) -->
+        <div id="pip-floating-toolbar" class="hidden absolute top-0 inset-x-0 p-2.5 z-40 bg-gradient-to-b from-black/90 via-black/50 to-transparent items-center justify-between pointer-events-auto opacity-0 hover:opacity-100 transition-opacity duration-200">
+            <div class="flex items-center gap-1.5 text-[11px] font-bold text-white px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-md border border-white/10 shadow-lg">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="truncate max-w-[150px] sm:max-w-[220px]">{{ title }}</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <button type="button" onclick="togglePictureInPicture()" title="Restore Full Player (P)" class="p-1.5 bg-black/80 hover:bg-brand-500 text-white rounded-lg transition backdrop-blur-md cursor-pointer border border-white/10 shadow-lg active:scale-95" aria-label="Restore Full Player">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                </button>
+                <button type="button" onclick="togglePictureInPicture()" title="Close Mini-Player (Esc)" class="p-1.5 bg-black/80 hover:bg-gray-700 text-white rounded-lg transition backdrop-blur-md cursor-pointer border border-white/10 shadow-lg active:scale-95" aria-label="Close Mini-Player">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
         {% if ".m3u8" in video_url or ".mp4" in video_url %}
         <!-- Direct HLS / MP4 Stream (Local Video.js) -->
         <video-js
@@ -779,7 +820,7 @@
             return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
         }
 
-        // Universal multi-server playback command dispatcher (Sends standard commands to any embed player)
+        // Universal multi-server playback command dispatcher (Sends standard commands to any embed player: VidFast, VidLink, AutoEmbed, VidSrc, etc.)
         function sendIframePlaybackCommand(action, val) {
             const iframe = document.getElementById('filvora-embed-frame') || document.querySelector('iframe');
             if (!iframe || !iframe.contentWindow) return;
@@ -787,41 +828,104 @@
                 const packets = [];
                 if (action === 'toggle_play') {
                     const act = isPlaybackPaused ? 'play' : 'pause';
+                    packets.push({ command: act });
+                    packets.push({ action: act });
+                    packets.push({ type: act });
+                    packets.push({ type: 'PLAYER_COMMAND', command: act });
+                    packets.push({ type: 'MEDIA_COMMAND', command: act });
                     packets.push({ event: act, action: act, type: act, method: act });
                     packets.push({ event: 'command', func: isPlaybackPaused ? 'playVideo' : 'pauseVideo' });
+                    packets.push({ method: act });
                     isPlaybackPaused = !isPlaybackPaused;
                 } else if (action === 'play') {
+                    packets.push({ command: 'play' });
+                    packets.push({ action: 'play' });
+                    packets.push({ type: 'play' });
+                    packets.push({ type: 'PLAYER_COMMAND', command: 'play' });
+                    packets.push({ type: 'MEDIA_COMMAND', command: 'play' });
                     packets.push({ event: 'play', action: 'play', type: 'play', method: 'play' });
                     packets.push({ event: 'command', func: 'playVideo' });
+                    packets.push({ method: 'play' });
                     isPlaybackPaused = false;
                 } else if (action === 'pause') {
+                    packets.push({ command: 'pause' });
+                    packets.push({ action: 'pause' });
+                    packets.push({ type: 'pause' });
+                    packets.push({ type: 'PLAYER_COMMAND', command: 'pause' });
+                    packets.push({ type: 'MEDIA_COMMAND', command: 'pause' });
                     packets.push({ event: 'pause', action: 'pause', type: 'pause', method: 'pause' });
                     packets.push({ event: 'command', func: 'pauseVideo' });
+                    packets.push({ method: 'pause' });
                     isPlaybackPaused = true;
                 } else if (action === 'seek') {
                     const newPos = Math.max(0, (currentPlaybackPosition || 0) + val);
+                    packets.push({ command: 'seek', time: newPos, value: newPos, offset: val });
+                    packets.push({ command: 'seekTo', time: newPos, value: newPos });
+                    packets.push({ command: 'setCurrentTime', time: newPos, value: newPos });
+                    packets.push({ action: 'seek', time: newPos, value: newPos, position: newPos });
+                    packets.push({ action: 'seekTo', time: newPos, value: newPos });
+                    packets.push({ type: 'seek', time: newPos, value: newPos, position: newPos });
+                    packets.push({ type: 'PLAYER_COMMAND', command: 'seek', time: newPos, value: newPos });
+                    packets.push({ type: 'MEDIA_COMMAND', command: 'seek', time: newPos, value: newPos });
                     packets.push({ event: 'seek', action: 'seek', type: 'seek', method: 'seek', value: newPos, time: newPos, position: newPos });
                     packets.push({ event: 'seekTo', action: 'seekTo', value: newPos, time: newPos });
                     packets.push({ event: 'command', func: 'seekTo', args: [newPos, true] });
+                    packets.push({ method: 'seek', value: newPos });
                     packets.push({ method: 'setCurrentTime', value: newPos });
                     packets.push({ api: 'seekTo', value: newPos });
                     currentPlaybackPosition = newPos;
                 } else if (action === 'seek_to') {
                     const targetPos = Math.max(0, val || 0);
+                    packets.push({ command: 'seek', time: targetPos, value: targetPos });
+                    packets.push({ command: 'seekTo', time: targetPos, value: targetPos });
+                    packets.push({ command: 'setCurrentTime', time: targetPos, value: targetPos });
+                    packets.push({ action: 'seek', time: targetPos, value: targetPos, position: targetPos });
+                    packets.push({ action: 'seekTo', time: targetPos, value: targetPos });
+                    packets.push({ type: 'seek', time: targetPos, value: targetPos, position: targetPos });
+                    packets.push({ type: 'PLAYER_COMMAND', command: 'seek', time: targetPos, value: targetPos });
+                    packets.push({ type: 'MEDIA_COMMAND', command: 'seek', time: targetPos, value: targetPos });
                     packets.push({ event: 'seek', action: 'seek', type: 'seek', method: 'seek', value: targetPos, time: targetPos, position: targetPos });
                     packets.push({ event: 'seekTo', action: 'seekTo', value: targetPos, time: targetPos });
                     packets.push({ event: 'command', func: 'seekTo', args: [targetPos, true] });
+                    packets.push({ method: 'seek', value: targetPos });
                     packets.push({ method: 'setCurrentTime', value: targetPos });
                     packets.push({ api: 'seekTo', value: targetPos });
                     currentPlaybackPosition = targetPos;
                 } else if (action === 'mute') {
                     isIframeMuted = !isIframeMuted;
+                    packets.push({ command: 'volume', level: isIframeMuted ? 0 : 1, value: isIframeMuted ? 0 : 1 });
+                    packets.push({ command: isIframeMuted ? 'mute' : 'unmute' });
+                    packets.push({ command: isIframeMuted ? 'mute' : 'unMute' });
+                    packets.push({ action: isIframeMuted ? 'mute' : 'unmute' });
+                    packets.push({ type: isIframeMuted ? 'mute' : 'unmute' });
+                    packets.push({ type: 'PLAYER_COMMAND', command: isIframeMuted ? 'mute' : 'unmute' });
+                    packets.push({ type: 'MEDIA_COMMAND', command: isIframeMuted ? 'mute' : 'unmute' });
                     packets.push({ event: 'mute', action: 'mute', type: 'mute', method: isIframeMuted ? 'mute' : 'unMute', value: isIframeMuted });
                     packets.push({ event: 'command', func: isIframeMuted ? 'mute' : 'unMute' });
+                    packets.push({ method: 'setMute', value: isIframeMuted });
+                    packets.push({ method: 'setVolume', value: isIframeMuted ? 0 : 100 });
                 }
+
+                const broadcast = (win, packet) => {
+                    if (!win) return;
+                    try { win.postMessage(packet, '*'); } catch(e) {}
+                    try { win.postMessage(JSON.stringify(packet), '*'); } catch(e) {}
+                };
+
                 packets.forEach(p => {
-                    iframe.contentWindow.postMessage(p, '*');
-                    iframe.contentWindow.postMessage(JSON.stringify(p), '*');
+                    broadcast(iframe.contentWindow, p);
+                    try {
+                        if (iframe.contentWindow.frames) {
+                            for (let i = 0; i < iframe.contentWindow.frames.length; i++) {
+                                broadcast(iframe.contentWindow.frames[i], p);
+                            }
+                        }
+                    } catch(e) {}
+                    try {
+                        for (let i = 0; i < window.frames.length; i++) {
+                            broadcast(window.frames[i], p);
+                        }
+                    } catch(e) {}
                 });
             } catch(e) {}
         }
@@ -1322,14 +1426,8 @@
                 } catch(e) {}
             }
 
-            // Pause iframe embed if postMessage is supported
-            const iframe = document.querySelector('iframe');
-            if (iframe) {
-                try {
-                    iframe.contentWindow.postMessage(JSON.stringify({event: 'pause', action: 'pause'}), '*');
-                    iframe.contentWindow.postMessage({event: 'pause', action: 'pause'}, '*');
-                } catch(e) {}
-            }
+            // Pause iframe embed if supported
+            sendIframePlaybackCommand('pause');
 
             // Reset badges
             const countdownEl = document.getElementById('sleep-timer-countdown');
@@ -1354,13 +1452,7 @@
                     player.play().catch(() => {});
                 } catch(e) {}
             }
-            const iframe = document.querySelector('iframe');
-            if (iframe) {
-                try {
-                    iframe.contentWindow.postMessage(JSON.stringify({event: 'play', action: 'play'}), '*');
-                    iframe.contentWindow.postMessage({event: 'play', action: 'play'}, '*');
-                } catch(e) {}
-            }
+            sendIframePlaybackCommand('play');
         }
 
         // ==========================================
@@ -1388,10 +1480,12 @@
         }
 
         // ==========================================
-        // Picture-in-Picture (PiP) Engine
+        // Picture-in-Picture (PiP) Engine (Zero-Reload Floating Mini-Player)
         // ==========================================
+        let isPipActive = false;
+
         async function togglePictureInPicture() {
-            // 1. Direct HTML5 video / Video.js PiP
+            // 1. Direct HTML5 video / Video.js PiP (Desktop OS level)
             const videoEl = document.querySelector('video');
             if (videoEl && typeof videoEl.requestPictureInPicture === 'function') {
                 try {
@@ -1406,114 +1500,62 @@
                 }
             }
 
-            // 2. Modern Document Picture-in-Picture API (Chrome 116+ / Edge)
-            if ('documentPictureInPicture' in window) {
-                try {
-                    if (window.documentPictureInPicture.window) {
-                        window.documentPictureInPicture.window.close();
-                        return;
-                    }
+            // 2. In-Page Floating Mini-Player (Preserves 100% uninterrupted playback across all embed servers without reloads)
+            const container = document.getElementById('video-container');
+            const mainWrapper = document.getElementById('player-wrapper');
+            if (!container || !mainWrapper) return;
 
-                    const pipWindow = await window.documentPictureInPicture.requestWindow({
-                        width: 854,
-                        height: 480
-                    });
+            isPipActive = !isPipActive;
+            const pipBtn = document.getElementById('pip-toggle-btn');
 
-                    // Inject full-viewport responsive CSS into the PiP window document head
-                    const style = pipWindow.document.createElement('style');
-                    style.textContent = `
-                        * {
-                            box-sizing: border-box !important;
-                            margin: 0 !important;
-                            padding: 0 !important;
-                        }
-                        html, body {
-                            width: 100vw !important;
-                            height: 100vh !important;
-                            margin: 0 !important;
-                            padding: 0 !important;
-                            overflow: hidden !important;
-                            background-color: #000000 !important;
-                        }
-                        #video-container {
-                            width: 100vw !important;
-                            height: 100vh !important;
-                            position: fixed !important;
-                            inset: 0 !important;
-                            margin: 0 !important;
-                            padding: 0 !important;
-                            display: flex !important;
-                            align-items: center !important;
-                            justify-content: center !important;
-                            background-color: #000000 !important;
-                            z-index: 99999 !important;
-                        }
-                        #video-container iframe,
-                        #video-container video,
-                        #video-container .video-js {
-                            width: 100vw !important;
-                            height: 100vh !important;
-                            max-width: 100% !important;
-                            max-height: 100% !important;
-                            border: 0 !important;
-                            display: block !important;
-                            object-fit: contain !important;
-                        }
-                    `;
-                    pipWindow.document.head.appendChild(style);
-
-                    const container = document.getElementById('video-container');
-                    const mainWrapper = document.getElementById('player-wrapper');
-
-                    if (container && mainWrapper) {
-                        // Create placeholder in main window while PiP is active
-                        const placeholder = document.createElement('div');
-                        placeholder.id = 'pip-active-placeholder';
-                        placeholder.className = 'fixed inset-0 z-10 flex flex-col items-center justify-center bg-gray-950 text-center p-6 space-y-4';
-                        placeholder.innerHTML = `
-                            <div class="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 animate-pulse">
-                                <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 13v-1m4 1v-3m4 3V8M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z" />
-                                </svg>
-                            </div>
-                            <div class="space-y-1">
-                                <h3 class="text-xl font-black text-white">Playing in Picture-in-Picture</h3>
-                                <p class="text-xs text-gray-400 max-w-sm">Video is currently playing in your floating Picture-in-Picture window.</p>
-                            </div>
-                            <button type="button" onclick="window.documentPictureInPicture.window?.close()" class="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs rounded-xl border border-gray-700 transition flex items-center gap-2 shadow-lg cursor-pointer">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                </svg>
-                                <span>Bring Player Back</span>
-                            </button>
-                        `;
-                        mainWrapper.appendChild(placeholder);
-
-                        // Move container into PiP window
-                        pipWindow.document.body.appendChild(container);
-
-                        // Restore container when PiP window closes
-                        const restorePlayer = () => {
-                            if (!mainWrapper.contains(container)) {
-                                mainWrapper.prepend(container);
-                            }
-                            const ph = document.getElementById('pip-active-placeholder');
-                            if (ph) ph.remove();
-                        };
-
-                        pipWindow.addEventListener('pagehide', restorePlayer);
-                        pipWindow.addEventListener('unload', restorePlayer);
-                        return;
-                    }
-                } catch(err) {
-                    console.warn('Document PiP request:', err);
+            if (isPipActive) {
+                // If currently in fullscreen, exit fullscreen first
+                const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+                if (isFull) {
+                    if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
                 }
-            }
 
-            // 3. Fallback: activate Theater Mode
-            toggleTheaterMode();
-            if (typeof showToast === 'function') {
-                showToast('PiP not supported by browser. Activated Cinema Theater Mode.');
+                container.classList.add('pip-floating-mode');
+                if (pipBtn) pipBtn.classList.add('bg-emerald-900/60', 'border-emerald-500/60', 'text-emerald-300');
+
+                // Create backdrop placeholder in main window while PiP is active
+                let backdrop = document.getElementById('pip-active-backdrop');
+                if (!backdrop) {
+                    backdrop = document.createElement('div');
+                    backdrop.id = 'pip-active-backdrop';
+                    backdrop.className = 'fixed inset-0 z-10 flex flex-col items-center justify-center bg-gray-950/95 backdrop-blur-2xl text-center p-6 space-y-5 transition-opacity duration-300';
+                    backdrop.innerHTML = `
+                        <div class="w-16 h-16 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-2xl">
+                            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 13v-1m4 1v-3m4 3V8M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z" />
+                            </svg>
+                        </div>
+                        <div class="space-y-1.5 max-w-md">
+                            <h3 class="text-xl font-black text-white">Picture-in-Picture Mini-Player Active</h3>
+                            <p class="text-xs text-gray-400 leading-relaxed">Video is playing continuously in your floating mini-player in the bottom-right corner.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button type="button" onclick="togglePictureInPicture()" class="px-5 py-2.5 bg-brand-500 hover:bg-red-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-brand-500/25 transition-all flex items-center gap-2 cursor-pointer active:scale-95">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                </svg>
+                                <span>Restore Full Player (P)</span>
+                            </button>
+                            <a href="{% if media_type == 'movie' %}/movies/{% else %}/series/{% endif %}" class="px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white font-bold text-xs rounded-xl border border-gray-800 transition cursor-pointer">
+                                Browse Catalog
+                            </a>
+                        </div>
+                    `;
+                    mainWrapper.appendChild(backdrop);
+                }
+                showToast('Mini-Player active (Press P or Esc to restore)', 2200);
+            } else {
+                container.classList.remove('pip-floating-mode');
+                if (pipBtn) pipBtn.classList.remove('bg-emerald-900/60', 'border-emerald-500/60', 'text-emerald-300');
+                const backdrop = document.getElementById('pip-active-backdrop');
+                if (backdrop) backdrop.remove();
+                showToast('Restored full screen player', 1600);
             }
         }
 
@@ -1560,6 +1602,10 @@
         }
 
         function toggleFullscreen() {
+            if (isPipActive) {
+                togglePictureInPicture();
+            }
+
             // 1. If direct Video.js player is present
             const videoEl = document.getElementById('filvora-player');
             if (videoEl && typeof videojs !== 'undefined') {
@@ -1861,16 +1907,19 @@
                 }
             }
 
-            // Listen for postMessage progress updates from supported embed players
+            // Listen for postMessage progress updates from supported embed players (VidFast, VidLink, etc.)
             window.addEventListener('message', (e) => {
                 if (!e.data) return;
                 try {
                     let d = e.data;
                     if (typeof d === 'string' && (d.startsWith('{') || d.startsWith('['))) {
-                        d = JSON.parse(d);
+                        try { d = JSON.parse(d); } catch(err) {}
                     }
-                    const pos = d.currentTime || d.time || d.position || (d.data && d.data.currentTime);
-                    const dur = d.duration || (d.data && d.data.duration);
+                    if (d && typeof d.data === 'string' && (d.data.startsWith('{') || d.data.startsWith('['))) {
+                        try { d.data = JSON.parse(d.data); } catch(err) {}
+                    }
+                    const pos = (d && (d.currentTime || d.time || d.position || (d.data && (d.data.currentTime || d.data.time || d.data.position || d.data.seconds))));
+                    const dur = (d && (d.duration || (d.data && (d.data.duration || d.data.totalTime))));
                     if (typeof pos === 'number' && pos >= 0) {
                         // If playback position is advancing, video is playing!
                         if (pos > currentPlaybackPosition) {
@@ -1890,6 +1939,12 @@
                             triggerAutoplayCountdown();
                             {% endif %}
                         }
+                    }
+
+                    // Volume change sync from embed players
+                    if (d && (d.event === 'volumechange' || d.type === 'volumechange' || (d.data && d.data.event === 'volumechange'))) {
+                        if (typeof d.muted === 'boolean') isIframeMuted = d.muted;
+                        else if (d.data && typeof d.data.muted === 'boolean') isIframeMuted = d.data.muted;
                     }
 
                     // Check explicit pause, play, fullscreen, and ended events from embed player
@@ -1980,8 +2035,12 @@
                     return;
                 }
 
-                // Escape key to exit theater mode, dialogs or fullscreen
+                // Escape key to exit floating PiP, theater mode, dialogs or fullscreen
                 if (key === 'escape') {
+                    if (isPipActive) {
+                        togglePictureInPicture();
+                        return;
+                    }
                     if (isTheaterMode) {
                         toggleTheaterMode();
                         return;
@@ -2014,10 +2073,13 @@
                     if (videoEl && typeof videojs !== 'undefined') {
                         try {
                             const player = videojs('filvora-player');
-                            player.muted(!player.muted());
+                            const muted = !player.muted();
+                            player.muted(muted);
+                            showToast(muted ? 'Muted' : 'Unmuted', 1500);
                         } catch (err) {}
                     } else {
                         sendIframePlaybackCommand('mute');
+                        showToast(isIframeMuted ? 'Muted' : 'Unmuted', 1500);
                     }
                 } else if (key === 'arrowright' || key === 'l') {
                     e.preventDefault();
