@@ -838,7 +838,10 @@
 
         function resumePlayback(pos) {
             const prompt = document.getElementById('resume-prompt');
-            if (prompt) prompt.style.display = 'none';
+            if (prompt) {
+                prompt.style.display = 'none';
+                try { prompt.remove(); } catch(e) {}
+            }
             currentPlaybackPosition = pos;
             isPlaybackPaused = false;
             const videoEl = document.getElementById('filvora-player');
@@ -872,7 +875,10 @@
 
         function startOverPlayback() {
             const prompt = document.getElementById('resume-prompt');
-            if (prompt) prompt.style.display = 'none';
+            if (prompt) {
+                prompt.style.display = 'none';
+                try { prompt.remove(); } catch(e) {}
+            }
             currentPlaybackPosition = 0;
             isPlaybackPaused = false;
             const videoEl = document.getElementById('filvora-player');
@@ -1601,7 +1607,6 @@
         }
 
         let hideTimeout = null;
-        let isPlaybackPaused = false;
 
         function isInteractiveMenuOpen() {
             const bm = document.getElementById('bookmark-modal');
