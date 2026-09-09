@@ -214,6 +214,11 @@
     </div>
 </nav>
 
+<!-- Global Navbar Dropdown Backdrop (Dismisses Vibe, Profile & Search Dropdowns on outside click/tap) -->
+<div id="navbar-dropdown-backdrop" 
+     onclick="closeAllNavbarDropdowns()" 
+     class="hidden fixed inset-0 z-40 bg-transparent cursor-default pointer-events-auto"></div>
+
 <!-- Mobile & Tablet Search Backdrop (Active on <1024px, hidden on lg+) -->
 <div id="mobile-search-backdrop" onclick="closeMobileSearch()" class="hidden fixed inset-0 z-[55] bg-black/80 backdrop-blur-sm lg:hidden transition-opacity"></div>
 

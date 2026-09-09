@@ -106,12 +106,10 @@ function initKeyboardShortcuts() {
             }
         }
 
-        // Press 'Escape' to dismiss search dropdown, mobile overlay, or modal
+        // Press 'Escape' to dismiss search dropdown, navbar dropdowns, mobile overlay, or modal
         if (e.key === 'Escape') {
+            closeAllNavbarDropdowns();
             closeMobileSearch();
-            const dropdown = document.getElementById('search-results-dropdown');
-            if (dropdown) dropdown.classList.add('hidden');
-            
             const shortcutsModal = document.getElementById('shortcuts-modal');
             if (shortcutsModal) shortcutsModal.classList.add('hidden');
         }
@@ -411,11 +409,20 @@ function initStarRatingHover() {
 }
 initStarRatingHover();
 
-// --- Responsive & Touch-Aware Dropdown Handlers (Vibe & Profile) ---
+// --- Responsive & Touch-Aware Dropdown Handlers (Vibe, Profile & Search) ---
 function isDropdownVisible(el) {
     if (!el) return false;
     const style = window.getComputedStyle(el);
     return style.opacity === '1' && style.visibility !== 'hidden' && style.pointerEvents !== 'none';
+}
+
+function closeAllNavbarDropdowns() {
+    closeVibeDropdown();
+    closeProfileDropdown();
+    const sDropdown = document.getElementById('search-results-dropdown');
+    if (sDropdown) sDropdown.classList.add('hidden');
+    const backdrop = document.getElementById('navbar-dropdown-backdrop');
+    if (backdrop) backdrop.classList.add('hidden');
 }
 
 function toggleVibeDropdown(e) {
@@ -426,6 +433,7 @@ function toggleVibeDropdown(e) {
     const wrapper = document.getElementById('vibe-dropdown-wrapper');
     const menu = document.getElementById('vibe-dropdown-menu');
     const btn = document.getElementById('vibe-dropdown-btn');
+    const backdrop = document.getElementById('navbar-dropdown-backdrop');
     if (!wrapper || !menu) return;
 
     closeProfileDropdown();
@@ -436,10 +444,12 @@ function toggleVibeDropdown(e) {
     if (currentlyVisible) {
         wrapper.classList.remove('vibe-open');
         wrapper.classList.add('vibe-closed');
+        if (backdrop) backdrop.classList.add('hidden');
         if (btn) btn.blur();
     } else {
         wrapper.classList.remove('vibe-closed');
         wrapper.classList.add('vibe-open');
+        if (backdrop) backdrop.classList.remove('hidden');
     }
 }
 
@@ -450,6 +460,11 @@ function closeVibeDropdown() {
     wrapper.classList.remove('vibe-open');
     wrapper.classList.add('vibe-closed');
     if (btn) btn.blur();
+    const pWrap = document.getElementById('profile-dropdown-wrapper');
+    const backdrop = document.getElementById('navbar-dropdown-backdrop');
+    if (backdrop && (!pWrap || !pWrap.classList.contains('profile-open'))) {
+        backdrop.classList.add('hidden');
+    }
 }
 
 function toggleProfileDropdown(e) {
@@ -460,6 +475,7 @@ function toggleProfileDropdown(e) {
     const wrapper = document.getElementById('profile-dropdown-wrapper');
     const menu = document.getElementById('profile-dropdown-menu');
     const btn = document.getElementById('profile-dropdown-btn');
+    const backdrop = document.getElementById('navbar-dropdown-backdrop');
     if (!wrapper || !menu) return;
 
     closeVibeDropdown();
@@ -470,10 +486,12 @@ function toggleProfileDropdown(e) {
     if (currentlyVisible) {
         wrapper.classList.remove('profile-open');
         wrapper.classList.add('profile-closed');
+        if (backdrop) backdrop.classList.add('hidden');
         if (btn) btn.blur();
     } else {
         wrapper.classList.remove('profile-closed');
         wrapper.classList.add('profile-open');
+        if (backdrop) backdrop.classList.remove('hidden');
     }
 }
 
@@ -484,34 +502,57 @@ function closeProfileDropdown() {
     wrapper.classList.remove('profile-open');
     wrapper.classList.add('profile-closed');
     if (btn) btn.blur();
+    const vWrap = document.getElementById('vibe-dropdown-wrapper');
+    const backdrop = document.getElementById('navbar-dropdown-backdrop');
+    if (backdrop && (!vWrap || !vWrap.classList.contains('vibe-open'))) {
+        backdrop.classList.add('hidden');
+    }
 }
 
-// Reset hover state when cursor leaves the element on desktop
+// Reset hover state when cursor leaves the element on desktop (without closing click-opened state)
 const vibeWrapperEl = document.getElementById('vibe-dropdown-wrapper');
 if (vibeWrapperEl) {
     vibeWrapperEl.addEventListener('mouseleave', () => {
-        vibeWrapperEl.classList.remove('vibe-closed', 'vibe-open');
+        if (!vibeWrapperEl.classList.contains('vibe-open')) {
+            vibeWrapperEl.classList.remove('vibe-closed');
+        }
     });
 }
 
 const profileWrapperEl = document.getElementById('profile-dropdown-wrapper');
 if (profileWrapperEl) {
     profileWrapperEl.addEventListener('mouseleave', () => {
-        profileWrapperEl.classList.remove('profile-closed', 'profile-open');
+        if (!profileWrapperEl.classList.contains('profile-open')) {
+            profileWrapperEl.classList.remove('profile-closed');
+        }
     });
 }
 
-// Global click-outside listener to dismiss dropdowns
-document.addEventListener('click', (e) => {
+// Universal capture-phase outside-interaction listener to dismiss dropdowns immediately
+// Pointerdown fires on mouse, touch, and pen before any element can swallow or stop bubbling
+function handleOutsideNavbarDismiss(e) {
     const vWrap = document.getElementById('vibe-dropdown-wrapper');
+    const pWrap = document.getElementById('profile-dropdown-wrapper');
+    const sContainer = document.getElementById('navbar-search-container');
+    const sDropdown = document.getElementById('search-results-dropdown');
+
     if (vWrap && !vWrap.contains(e.target)) {
         closeVibeDropdown();
     }
-
-    const pWrap = document.getElementById('profile-dropdown-wrapper');
     if (pWrap && !pWrap.contains(e.target)) {
         closeProfileDropdown();
     }
+    if (sContainer && sDropdown && !sContainer.contains(e.target)) {
+        sDropdown.classList.add('hidden');
+    }
+}
+
+document.addEventListener('pointerdown', handleOutsideNavbarDismiss, true);
+document.addEventListener('click', handleOutsideNavbarDismiss, true);
+
+// Dismiss dropdowns if user clicks an iframe (e.g. trailer player embed)
+window.addEventListener('blur', () => {
+    closeAllNavbarDropdowns();
 });
 
 // Ensure bfcache (back-forward cache) always restores fresh authenticated state when navigating back from video

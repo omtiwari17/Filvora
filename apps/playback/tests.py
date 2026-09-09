@@ -27,8 +27,18 @@ class PlaybackTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['resume_position'], 120.0)
         self.assertEqual(response.context['current_server'], 'vidlink')
+        self.assertFalse(response.context['is_direct_jump'])
         self.assertIn('video_url', response.context)
         self.assertIsNotNone(response.context['next_provider'])
+
+    def test_watch_direct_jump_timestamp(self):
+        self.client.login(username='playbackuser', password='password123')
+        response = self.client.get('/watch/movie/157336/?server=vidlink&t=340')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['resume_position'], 340.0)
+        self.assertTrue(response.context['is_direct_jump'])
+        self.assertIn('startAt=340', response.context['video_url'])
+        self.assertIn('t=340', response.context['video_url'])
 
     def test_watch_series_episode(self):
         self.client.login(username='playbackuser', password='password123')

@@ -69,14 +69,15 @@
             transition: opacity 0.4s ease !important;
         }
         /* Fullscreen & overlay layering */
-        #player-overlay,
-        #quick-server-container,
-        #top-notch-trigger {
+        #player-overlay {
             z-index: 2147483647 !important;
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease !important;
+            will-change: transform, opacity;
         }
         #top-sensor {
             z-index: 2147483646 !important;
-            background: rgba(0, 0, 0, 0.002) !important;
+            height: 2.25rem !important;
+            background: rgba(0, 0, 0, 0.001) !important;
         }
         .is-fullscreen #player-overlay,
         :fullscreen #player-overlay {
@@ -86,21 +87,6 @@
             left: 0 !important;
             width: 100% !important;
         }
-        .is-fullscreen #top-notch-trigger,
-        :fullscreen #top-notch-trigger {
-            z-index: 2147483647 !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-        }
-        .is-fullscreen #quick-server-container,
-        :fullscreen #quick-server-container {
-            z-index: 2147483647 !important;
-            position: fixed !important;
-            top: 1rem !important;
-            right: 1rem !important;
-        }
         .is-fullscreen #top-sensor,
         :fullscreen #top-sensor {
             z-index: 2147483646 !important;
@@ -108,8 +94,8 @@
             top: 0 !important;
             left: 0 !important;
             width: 100% !important;
-            height: 8.5rem !important;
-            background: rgba(0, 0, 0, 0.002) !important;
+            height: 2.25rem !important;
+            background: rgba(0, 0, 0, 0.001) !important;
         }
         .is-fullscreen #embed-fullscreen-hotspot,
         :fullscreen #embed-fullscreen-hotspot {
@@ -119,6 +105,11 @@
             right: 0 !important;
             width: 4.5rem !important;
             height: 4.5rem !important;
+        }
+        /* Auto-hide cursor on idle/playback in cinema view */
+        .hide-cursor,
+        .hide-cursor * {
+            cursor: none !important;
         }
         /* Ripple seek animations */
         @keyframes ripple-seek {
@@ -151,62 +142,18 @@
     <!-- Theater Mode Ambient Velvet Curtain Backdrop -->
     <div id="theater-curtain" onclick="toggleTheaterMode()" title="Click to Exit Theater Mode" class="fixed inset-0 bg-black z-40 opacity-0 pointer-events-none transition-opacity duration-500 cursor-pointer"></div>
 
-    <!-- Top Hover & Click Detection Sensor (Constrained height on mobile) -->
+    <!-- Global Player Dropdown Backdrop (Dismisses Server Menu & Sleep Timer when clicking video canvas or outside) -->
+    <div id="player-dropdown-backdrop" 
+         onclick="closeAllPlayerDropdowns()" 
+         class="hidden fixed inset-0 z-[2147483645] bg-transparent cursor-default pointer-events-auto"></div>
+
+    <!-- Top Hover & Move Detection Sensor (Thin edge trigger strip at top) -->
     <div id="top-sensor" 
          onclick="showOverlay()" 
          onmouseenter="showOverlay()" 
-         style="background: rgba(0, 0, 0, 0.002) !important;" 
-         title="Move cursor or click near top to reveal controls" 
-         class="fixed top-0 left-0 w-full h-16 sm:h-28 z-[2147483646] cursor-pointer pointer-events-auto"></div>
-
-    <!-- Top Notch Trigger (Always visible at top center when upper bar is hidden) -->
-    <div id="top-notch-trigger" 
-         onclick="showOverlay()" 
-         onmouseenter="showOverlay()" 
-         title="Click or hover to reveal controls (F: Fullscreen, B: Bookmark, Z: Sleep, T: Theater, P: PiP)"
-         class="fixed top-0 left-1/2 -translate-x-1/2 z-[2147483647] px-4 py-1.5 rounded-b-2xl bg-gray-950/90 hover:bg-black border-b border-x border-gray-700/90 text-gray-300 hover:text-white cursor-pointer transition-all duration-300 backdrop-blur-2xl flex items-center gap-2 text-xs font-bold shadow-2xl group opacity-90 hover:opacity-100">
-        <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
-        <span>Controls</span>
-        <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-white transition-transform group-hover:translate-y-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
-        </svg>
-    </div>
-
-    <!-- Floating Quick Server Switcher & Direct Dropdown Menu on Hover (Visible on sm+, hidden on mobile) -->
-    <div id="quick-server-container" class="hidden sm:block fixed top-4 right-4 z-50 group">
-        <button id="quick-server-trigger" 
-                type="button"
-                onclick="openOverlayServerMenuDirectly(event)" 
-                title="Click or Hover to Switch Video Server (Alt + S)" 
-                class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gray-950/90 hover:bg-gray-900 border border-gray-700/90 backdrop-blur-2xl shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 text-xs text-gray-200 cursor-pointer">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span class="font-bold">Server {{ current_server|upper }}</span>
-            <svg class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200 group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
-            </svg>
-        </button>
-
-        <!-- Direct Server Dropdown Menu on Hover -->
-        <div id="quick-server-menu" class="absolute right-0 mt-2 w-56 bg-gray-950/95 border border-gray-800/90 rounded-2xl shadow-2xl backdrop-blur-2xl p-1.5 space-y-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50">
-            <div class="px-3 py-1.5 border-b border-gray-800/80 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                Select Video Server
-            </div>
-            {% for p in providers %}
-            <a href="?server={{ p.id }}" 
-               class="flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-xl transition {% if p.id == current_server %}bg-brand-500 text-white shadow-md{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
-                <div class="flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 rounded-full {% if p.id == current_server %}bg-white{% else %}bg-gray-500{% endif %}"></span>
-                    <span>{{ p.name }}</span>
-                </div>
-                {% if p.id == current_server %}
-                <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                </svg>
-                {% endif %}
-            </a>
-            {% endfor %}
-        </div>
-    </div>
+         style="background: rgba(0, 0, 0, 0.001) !important;" 
+         title="Move cursor to top to reveal controls" 
+         class="fixed top-0 left-0 w-full h-9 z-[2147483646] cursor-pointer pointer-events-auto"></div>
 
     <!-- Top Overlay (Title, Navigation & Player Controls) -->
     <div id="player-overlay" 
@@ -241,6 +188,7 @@
         <div class="flex items-center gap-1 sm:gap-2.5 lg:gap-3 shrink-0">
             <!-- Server Switcher Dropdown (Responsive: Compact on mobile, full on desktop) -->
             <div class="relative" id="overlay-server-dropdown-container">
+                <div id="overlay-server-backdrop" onclick="closeOverlayServerMenu()" class="hidden fixed sm:absolute inset-0 z-[105]"></div>
                 <button type="button" 
                         id="overlay-server-btn"
                         onclick="toggleOverlayServerMenu(event)" 
@@ -261,6 +209,7 @@
                     </div>
                     {% for p in providers %}
                     <a href="?server={{ p.id }}" 
+                       onclick="event.preventDefault(); switchServer('{{ p.id }}');"
                        class="flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-xl transition {% if p.id == current_server %}bg-brand-500 text-white shadow-md font-bold{% else %}text-gray-300 hover:text-white hover:bg-white/10{% endif %}">
                         <div class="flex items-center gap-2">
                             <span class="w-1.5 h-1.5 rounded-full {% if p.id == current_server %}bg-white{% else %}bg-gray-500{% endif %}"></span>
@@ -278,7 +227,7 @@
 
             <!-- Fast Fallback Button (Desktop only) -->
             {% if next_provider and next_provider.id != current_server %}
-            <button onclick="window.location.replace('?server={{ next_provider.id }}')" 
+            <button onclick="switchServer('{{ next_provider.id }}')" 
                     title="Switch to next fallback server (Alt + S)" 
                     class="hidden lg:inline-flex items-center gap-1.5 bg-gray-800/80 hover:bg-gray-700 text-gray-300 hover:text-white px-3 py-2 rounded-xl text-xs font-semibold border border-gray-700/60 backdrop-blur-xl transition">
                 <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -617,6 +566,7 @@
                 <div class="space-y-1 max-h-48 overflow-y-auto">
                     {% for p in providers %}
                     <a href="?server={{ p.id }}" 
+                       onclick="event.preventDefault(); switchServer('{{ p.id }}');"
                        class="flex items-center justify-between px-3 py-2.5 text-xs font-semibold rounded-xl transition {% if p.id == current_server %}bg-brand-500 text-white shadow-md font-bold{% else %}bg-gray-900 text-gray-300 hover:text-white border border-gray-800/80{% endif %}">
                         <div class="flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full {% if p.id == current_server %}bg-white{% else %}bg-emerald-400{% endif %}"></span>
@@ -633,7 +583,7 @@
     </div>
 
     <!-- Interactive Resume Prompt Banner (Shown when user has past progress) -->
-    {% if resume_position > 5 and resume_formatted %}
+    {% if resume_position > 5 and resume_formatted and not is_direct_jump %}
     <div id="resume-prompt" class="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 bg-black/95 border border-gray-700/90 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-2xl max-w-md w-[92%] transition-all duration-300 flex flex-col items-center text-center">
         <div class="flex items-center gap-2 mb-1.5 text-brand-500 font-bold text-xs uppercase tracking-wider">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -770,7 +720,7 @@
             </p>
             <div class="flex items-center gap-3 mt-6">
                 {% if next_provider %}
-                <button onclick="window.location.replace('?server={{ next_provider.id }}')" 
+                <button onclick="switchServer('{{ next_provider.id }}')" 
                         class="flex-1 bg-brand-500 hover:bg-red-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow-lg shadow-brand-500/30">
                     Switch to {{ next_provider.name }}
                 </button>
@@ -787,8 +737,36 @@
     <script src="{% static 'js/videojs/video.min.js' %}"></script>
     
     <script>
-        // Global playback position & resume prompt handlers
+        // Global playback position, state & resume prompt handlers
         let currentPlaybackPosition = {{ resume_position|default:0 }};
+        let isPlaybackPaused = false;
+        let isIframeMuted = false;
+
+        function showToast(message, duration = 2800) {
+            let container = document.getElementById('player-toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'player-toast-container';
+                container.className = 'fixed top-16 left-1/2 -translate-x-1/2 z-[2147483647] pointer-events-none flex flex-col items-center gap-2 max-w-xs sm:max-w-md w-[90%] text-center';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            toast.className = 'bg-gray-950/95 border border-gray-700/80 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-2xl backdrop-blur-xl flex items-center gap-2 transform transition-all duration-300 opacity-0 -translate-y-2';
+            toast.innerHTML = `
+                <span class="w-2 h-2 rounded-full bg-brand-500 shrink-0"></span>
+                <span class="truncate">${message}</span>
+            `;
+            container.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', '-translate-y-2');
+                toast.classList.add('opacity-100', 'translate-y-0');
+            });
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
 
         function formatTimestamp(seconds) {
             const s = Math.floor(seconds || 0);
@@ -801,10 +779,68 @@
             return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
         }
 
+        // Universal multi-server playback command dispatcher (Sends standard commands to any embed player)
+        function sendIframePlaybackCommand(action, val) {
+            const iframe = document.getElementById('filvora-embed-frame') || document.querySelector('iframe');
+            if (!iframe || !iframe.contentWindow) return;
+            try {
+                const packets = [];
+                if (action === 'toggle_play') {
+                    const act = isPlaybackPaused ? 'play' : 'pause';
+                    packets.push({ event: act, action: act, type: act, method: act });
+                    packets.push({ event: 'command', func: isPlaybackPaused ? 'playVideo' : 'pauseVideo' });
+                    isPlaybackPaused = !isPlaybackPaused;
+                } else if (action === 'play') {
+                    packets.push({ event: 'play', action: 'play', type: 'play', method: 'play' });
+                    packets.push({ event: 'command', func: 'playVideo' });
+                    isPlaybackPaused = false;
+                } else if (action === 'pause') {
+                    packets.push({ event: 'pause', action: 'pause', type: 'pause', method: 'pause' });
+                    packets.push({ event: 'command', func: 'pauseVideo' });
+                    isPlaybackPaused = true;
+                } else if (action === 'seek') {
+                    const newPos = Math.max(0, (currentPlaybackPosition || 0) + val);
+                    packets.push({ event: 'seek', action: 'seek', type: 'seek', method: 'seek', value: newPos, time: newPos, position: newPos });
+                    packets.push({ event: 'seekTo', action: 'seekTo', value: newPos, time: newPos });
+                    packets.push({ event: 'command', func: 'seekTo', args: [newPos, true] });
+                    packets.push({ method: 'setCurrentTime', value: newPos });
+                    packets.push({ api: 'seekTo', value: newPos });
+                    currentPlaybackPosition = newPos;
+                } else if (action === 'seek_to') {
+                    const targetPos = Math.max(0, val || 0);
+                    packets.push({ event: 'seek', action: 'seek', type: 'seek', method: 'seek', value: targetPos, time: targetPos, position: targetPos });
+                    packets.push({ event: 'seekTo', action: 'seekTo', value: targetPos, time: targetPos });
+                    packets.push({ event: 'command', func: 'seekTo', args: [targetPos, true] });
+                    packets.push({ method: 'setCurrentTime', value: targetPos });
+                    packets.push({ api: 'seekTo', value: targetPos });
+                    currentPlaybackPosition = targetPos;
+                } else if (action === 'mute') {
+                    isIframeMuted = !isIframeMuted;
+                    packets.push({ event: 'mute', action: 'mute', type: 'mute', method: isIframeMuted ? 'mute' : 'unMute', value: isIframeMuted });
+                    packets.push({ event: 'command', func: isIframeMuted ? 'mute' : 'unMute' });
+                }
+                packets.forEach(p => {
+                    iframe.contentWindow.postMessage(p, '*');
+                    iframe.contentWindow.postMessage(JSON.stringify(p), '*');
+                });
+            } catch(e) {}
+        }
+        window.sendIframePlaybackCommand = sendIframePlaybackCommand;
+
+        function switchServer(serverId) {
+            if (!serverId) return;
+            let url = `?server=${serverId}`;
+            if (typeof currentPlaybackPosition === 'number' && currentPlaybackPosition > 15) {
+                url += `&t=${Math.floor(currentPlaybackPosition)}`;
+            }
+            window.location.href = url;
+        }
+
         function resumePlayback(pos) {
             const prompt = document.getElementById('resume-prompt');
             if (prompt) prompt.style.display = 'none';
             currentPlaybackPosition = pos;
+            isPlaybackPaused = false;
             const videoEl = document.getElementById('filvora-player');
             if (videoEl && typeof videojs !== 'undefined') {
                 try {
@@ -813,25 +849,32 @@
                     player.play().catch(() => {});
                 } catch(e) {}
             } else {
-                const iframe = document.querySelector('iframe');
+                const iframe = document.getElementById('filvora-embed-frame') || document.querySelector('iframe');
                 if (iframe) {
                     try {
-                        iframe.contentWindow.postMessage(JSON.stringify({event: 'seek', time: pos, currentTime: pos}), '*');
-                        iframe.contentWindow.postMessage({event: 'seek', time: pos, currentTime: pos}, '*');
+                        sendIframePlaybackCommand('seek_to', pos);
                     } catch (e) {}
                     try {
                         const url = new URL(iframe.src, window.location.origin);
-                        url.searchParams.set('t', Math.floor(pos));
-                        iframe.src = url.toString();
+                        const targetSec = Math.floor(pos);
+                        url.searchParams.set('startAt', targetSec);
+                        url.searchParams.set('t', targetSec);
+                        url.searchParams.set('start', targetSec);
+                        url.searchParams.set('time', targetSec);
+                        if (iframe.src !== url.toString()) {
+                            iframe.src = url.toString();
+                        }
                     } catch(e) {}
                 }
             }
+            showToast(`Resumed playback @ ${formatTimestamp(pos)}`);
         }
 
         function startOverPlayback() {
             const prompt = document.getElementById('resume-prompt');
             if (prompt) prompt.style.display = 'none';
             currentPlaybackPosition = 0;
+            isPlaybackPaused = false;
             const videoEl = document.getElementById('filvora-player');
             if (videoEl && typeof videojs !== 'undefined') {
                 try {
@@ -840,14 +883,34 @@
                     player.play().catch(() => {});
                 } catch(e) {}
             } else {
-                const iframe = document.querySelector('iframe');
+                const iframe = document.getElementById('filvora-embed-frame') || document.querySelector('iframe');
                 if (iframe) {
                     try {
-                        iframe.contentWindow.postMessage(JSON.stringify({event: 'seek', time: 0, currentTime: 0}), '*');
+                        sendIframePlaybackCommand('seek_to', 0);
+                        const url = new URL(iframe.src, window.location.origin);
+                        let changed = false;
+                        ['startAt', 't', 'start', 'time'].forEach(k => {
+                            if (url.searchParams.has(k)) {
+                                url.searchParams.delete(k);
+                                changed = true;
+                            }
+                        });
+                        if (changed) {
+                            iframe.src = url.toString();
+                        }
                     } catch (e) {}
                 }
             }
+            showToast('Playback restarted from beginning');
         }
+
+        {% if is_direct_jump and resume_formatted %}
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                showToast('Jumped to scene @ {{ resume_formatted }}');
+            }, 600);
+        });
+        {% endif %}
 
         // Bookmark Modal & Management Functions
         function openBookmarkModal() {
@@ -887,9 +950,7 @@
         function jumpToBookmark(seconds) {
             closeBookmarkModal();
             resumePlayback(seconds);
-            if (typeof showToast === 'function') {
-                showToast(`Jumped to scene @ ${formatTimestamp(seconds)}`);
-            }
+            showToast(`Jumped to scene @ ${formatTimestamp(seconds)}`);
         }
         async function saveSceneBookmark() {
             const noteInput = document.getElementById('bookmark-note-input');
@@ -1053,22 +1114,36 @@
         }
 
         // ==========================================
-        // Responsive Server Dropdown & Mobile Sheet
+        // Responsive Server Dropdown, Backdrops & Mobile Sheet
         // ==========================================
+        function closeAllPlayerDropdowns() {
+            closeOverlayServerMenu();
+            closeSleepTimerMenu();
+            const globalBackdrop = document.getElementById('player-dropdown-backdrop');
+            if (globalBackdrop) globalBackdrop.classList.add('hidden');
+        }
+
         function toggleOverlayServerMenu(e) {
             if (e) e.stopPropagation();
             const menu = document.getElementById('overlay-server-menu');
             const chevron = document.getElementById('overlay-server-chevron');
+            const localBackdrop = document.getElementById('overlay-server-backdrop');
+            const globalBackdrop = document.getElementById('player-dropdown-backdrop');
             if (!menu) return;
             const isHidden = menu.classList.contains('hidden');
             if (isHidden) {
+                closeSleepTimerMenu();
                 menu.classList.remove('hidden');
+                if (localBackdrop) localBackdrop.classList.remove('hidden');
+                if (globalBackdrop) globalBackdrop.classList.remove('hidden');
                 if (chevron) chevron.classList.add('rotate-180');
                 clearTimeout(hideTimeout);
             } else {
                 menu.classList.add('hidden');
+                if (localBackdrop) localBackdrop.classList.add('hidden');
+                if (globalBackdrop) globalBackdrop.classList.add('hidden');
                 if (chevron) chevron.classList.remove('rotate-180');
-                scheduleHide(3000);
+                scheduleHide(1500);
             }
         }
 
@@ -1080,8 +1155,13 @@
             showOverlay();
             const menu = document.getElementById('overlay-server-menu');
             const chevron = document.getElementById('overlay-server-chevron');
+            const localBackdrop = document.getElementById('overlay-server-backdrop');
+            const globalBackdrop = document.getElementById('player-dropdown-backdrop');
+            closeSleepTimerMenu();
             if (menu) {
                 menu.classList.remove('hidden');
+                if (localBackdrop) localBackdrop.classList.remove('hidden');
+                if (globalBackdrop) globalBackdrop.classList.remove('hidden');
                 if (chevron) chevron.classList.add('rotate-180');
             }
             clearTimeout(hideTimeout);
@@ -1090,14 +1170,22 @@
         function closeOverlayServerMenu() {
             const menu = document.getElementById('overlay-server-menu');
             const chevron = document.getElementById('overlay-server-chevron');
+            const localBackdrop = document.getElementById('overlay-server-backdrop');
+            const globalBackdrop = document.getElementById('player-dropdown-backdrop');
             if (menu && !menu.classList.contains('hidden')) {
                 menu.classList.add('hidden');
+                if (localBackdrop) localBackdrop.classList.add('hidden');
                 if (chevron) chevron.classList.remove('rotate-180');
-                scheduleHide(3000);
+                scheduleHide(1500);
+            }
+            const sleepMenu = document.getElementById('sleep-timer-menu');
+            if (globalBackdrop && (!sleepMenu || sleepMenu.classList.contains('hidden'))) {
+                globalBackdrop.classList.add('hidden');
             }
         }
 
         function openMobilePlayerSheet() {
+            closeAllPlayerDropdowns();
             const sheet = document.getElementById('mobile-player-controls-sheet');
             if (sheet) sheet.classList.remove('hidden');
         }
@@ -1118,22 +1206,31 @@
         function toggleSleepTimerMenu() {
             const menu = document.getElementById('sleep-timer-menu');
             const backdrop = document.getElementById('sleep-timer-backdrop');
+            const globalBackdrop = document.getElementById('player-dropdown-backdrop');
             if (!menu) return;
             const isHidden = menu.classList.contains('hidden');
             if (isHidden) {
+                closeOverlayServerMenu();
                 menu.classList.remove('hidden');
                 if (backdrop) backdrop.classList.remove('hidden');
+                if (globalBackdrop) globalBackdrop.classList.remove('hidden');
             } else {
                 menu.classList.add('hidden');
                 if (backdrop) backdrop.classList.add('hidden');
+                if (globalBackdrop) globalBackdrop.classList.add('hidden');
             }
         }
 
         function closeSleepTimerMenu() {
             const menu = document.getElementById('sleep-timer-menu');
             const backdrop = document.getElementById('sleep-timer-backdrop');
+            const globalBackdrop = document.getElementById('player-dropdown-backdrop');
             if (menu) menu.classList.add('hidden');
             if (backdrop) backdrop.classList.add('hidden');
+            const serverMenu = document.getElementById('overlay-server-menu');
+            if (globalBackdrop && (!serverMenu || serverMenu.classList.contains('hidden'))) {
+                globalBackdrop.classList.add('hidden');
+            }
         }
 
         function setSleepTimer(val) {
@@ -1520,55 +1617,36 @@
 
         function showOverlay() {
             const overlay = document.getElementById('player-overlay');
-            const quickContainer = document.getElementById('quick-server-container');
-            const topNotch = document.getElementById('top-notch-trigger');
+            const wrapper = document.getElementById('player-wrapper');
             if (overlay) {
                 overlay.style.opacity = '1';
                 overlay.style.pointerEvents = 'auto';
                 overlay.style.transform = 'translateY(0)';
             }
-            if (topNotch) {
-                topNotch.style.opacity = '0';
-                topNotch.style.pointerEvents = 'none';
-                topNotch.style.transform = 'translate(-50%, -100%)';
-            }
-            if (quickContainer) {
-                quickContainer.style.opacity = '0';
-                quickContainer.style.pointerEvents = 'none';
+            if (wrapper) {
+                wrapper.classList.remove('hide-cursor');
             }
             clearTimeout(hideTimeout);
             if (!isInteractiveMenuOpen()) {
-                scheduleHide(3000);
+                scheduleHide(2000);
             }
         }
 
         function hideOverlay() {
             if (isInteractiveMenuOpen()) return;
             const overlay = document.getElementById('player-overlay');
-            const quickContainer = document.getElementById('quick-server-container');
-            const topNotch = document.getElementById('top-notch-trigger');
+            const wrapper = document.getElementById('player-wrapper');
             if (overlay) {
                 overlay.style.opacity = '0';
                 overlay.style.pointerEvents = 'none';
                 overlay.style.transform = 'translateY(-100%)';
             }
-            if (topNotch) {
-                topNotch.style.opacity = '0.9';
-                topNotch.style.pointerEvents = 'auto';
-                topNotch.style.transform = 'translate(-50%, 0)';
-            }
-            if (quickContainer) {
-                if (window.innerWidth >= 640) {
-                    quickContainer.style.opacity = '0.9';
-                    quickContainer.style.pointerEvents = 'auto';
-                } else {
-                    quickContainer.style.opacity = '0';
-                    quickContainer.style.pointerEvents = 'none';
-                }
+            if (wrapper) {
+                wrapper.classList.add('hide-cursor');
             }
         }
 
-        function scheduleHide(ms = 3000) {
+        function scheduleHide(ms = 2000) {
             clearTimeout(hideTimeout);
             if (isInteractiveMenuOpen()) return;
             hideTimeout = setTimeout(() => {
@@ -1578,7 +1656,7 @@
 
         function toggleOverlay() {
             const overlay = document.getElementById('player-overlay');
-            if (overlay && overlay.style.opacity === '1') {
+            if (overlay && overlay.style.opacity === '1' && overlay.style.pointerEvents !== 'none') {
                 hideOverlay();
             } else {
                 showOverlay();
@@ -1588,12 +1666,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('player-overlay');
             const topSensor = document.getElementById('top-sensor');
-            const quickContainer = document.getElementById('quick-server-container');
             const videoEl = document.getElementById('filvora-player');
             const currentServerId = '{{ current_server }}';
             const nextServerId = '{% if next_provider %}{{ next_provider.id }}{% else %}{% endif %}';
 
-            // Top sensor hover triggers
+            // Top sensor hover triggers: smooth reveal when cursor moves to top edge
             if (topSensor) {
                 topSensor.addEventListener('mouseenter', () => {
                     showOverlay();
@@ -1602,17 +1679,7 @@
                     showOverlay();
                 });
                 topSensor.addEventListener('mouseleave', () => {
-                    scheduleHide(1500);
-                });
-            }
-
-            // Quick server container hover
-            if (quickContainer) {
-                quickContainer.addEventListener('mouseenter', () => {
-                    showOverlay();
-                });
-                quickContainer.addEventListener('mouseleave', () => {
-                    scheduleHide(1500);
+                    scheduleHide(800);
                 });
             }
 
@@ -1622,35 +1689,75 @@
                     showOverlay();
                 });
                 overlay.addEventListener('mousemove', () => {
-                    showOverlay();
+                    clearTimeout(hideTimeout);
+                    if (!isInteractiveMenuOpen()) {
+                        scheduleHide(2000);
+                    }
                 });
                 overlay.addEventListener('mouseleave', () => {
-                    scheduleHide(1500);
+                    scheduleHide(800);
                 });
             }
 
+            // Global mousemove: restore cursor, show overlay if near top edge, and restore keyboard focus
             document.addEventListener('mousemove', (e) => {
-                if (e.clientY <= 100) {
+                const wrapper = document.getElementById('player-wrapper');
+                if (wrapper) wrapper.classList.remove('hide-cursor');
+
+                if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+                    window.focus();
+                }
+
+                if (e.clientY <= 36) {
                     showOverlay();
+                } else if (!e.target.closest('#player-overlay') && !isInteractiveMenuOpen()) {
+                    scheduleHide(1500);
                 }
             });
 
-            document.addEventListener('click', (e) => {
+            // Universal capture-phase outside interaction listener: dismiss dropdowns immediately on click/touch outside
+            document.addEventListener('pointerdown', (e) => {
                 const srvContainer = document.getElementById('overlay-server-dropdown-container');
-                const quickContainer = document.getElementById('quick-server-container');
-                if (srvContainer && !srvContainer.contains(e.target) && (!quickContainer || !quickContainer.contains(e.target))) {
+                const sleepContainer = document.getElementById('sleep-timer-container');
+                if (srvContainer && !srvContainer.contains(e.target)) {
                     closeOverlayServerMenu();
                 }
-                if (!isInteractiveMenuOpen() && !e.target.closest('#player-overlay') && !e.target.closest('#bookmark-modal') && !e.target.closest('#sleep-timer-container') && !e.target.closest('#quick-server-container') && !e.target.closest('#mobile-player-controls-sheet')) {
+                if (sleepContainer && !sleepContainer.contains(e.target)) {
+                    closeSleepTimerMenu();
+                }
+            }, true);
+
+            document.addEventListener('click', (e) => {
+                const srvContainer = document.getElementById('overlay-server-dropdown-container');
+                const sleepContainer = document.getElementById('sleep-timer-container');
+                if (srvContainer && !srvContainer.contains(e.target)) {
+                    closeOverlayServerMenu();
+                }
+                if (sleepContainer && !sleepContainer.contains(e.target)) {
+                    closeSleepTimerMenu();
+                }
+                if (!isInteractiveMenuOpen() && !e.target.closest('#player-overlay') && !e.target.closest('#bookmark-modal') && !e.target.closest('#sleep-timer-container') && !e.target.closest('#mobile-player-controls-sheet')) {
                     const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-                    scheduleHide(isTouch ? 3500 : 1000);
+                    scheduleHide(isTouch ? 2500 : 600);
+                }
+            });
+
+            // Focus preservation across all servers & automatic menu dismissal when iframe receives focus/click
+            window.addEventListener('blur', () => {
+                closeAllPlayerDropdowns();
+                if (document.visibilityState === 'visible') {
+                    setTimeout(() => {
+                        if (document.visibilityState === 'visible' && document.activeElement && document.activeElement.tagName === 'IFRAME') {
+                            window.focus();
+                        }
+                    }, 150);
                 }
             });
 
             document.addEventListener('touchstart', (e) => {
-                if (!isInteractiveMenuOpen() && !e.target.closest('#player-overlay') && !e.target.closest('#bookmark-modal') && !e.target.closest('#sleep-timer-container') && !e.target.closest('#quick-server-container') && !e.target.closest('#mobile-player-controls-sheet')) {
+                if (!isInteractiveMenuOpen() && !e.target.closest('#player-overlay') && !e.target.closest('#bookmark-modal') && !e.target.closest('#sleep-timer-container') && !e.target.closest('#mobile-player-controls-sheet')) {
                     showOverlay();
-                    scheduleHide(3500);
+                    scheduleHide(2500);
                 }
             }, { passive: true });
 
@@ -1690,7 +1797,9 @@
                     } catch(e) {}
                 }
 
+                // In fullscreen, show briefly (1.8s) then auto-hide cleanly into cinema view!
                 showOverlay();
+                scheduleHide(1800);
             }
 
             document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -1698,8 +1807,9 @@
             document.addEventListener('mozfullscreenchange', handleFullscreenChange);
             document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 
-            // Initial display on load
+            // Initial display on load: show for 2.0s then hide cleanly
             showOverlay();
+            scheduleHide(2000);
 
             // Progress tracking & server recording
             const tmdbId = {{ tmdb_id }};
@@ -1761,7 +1871,7 @@
                         if (pos > currentPlaybackPosition) {
                             if (isPlaybackPaused) {
                                 isPlaybackPaused = false;
-                                scheduleHide(2000);
+                                scheduleHide(1500);
                             }
                         }
                         currentPlaybackPosition = pos;
@@ -1779,12 +1889,16 @@
 
                     // Check explicit pause, play, fullscreen, and ended events from embed player
                     const eventName = ((d.event || d.type || d.action || d.status || (d.data && d.data.event) || (d.data && d.data.type) || '') + '').toLowerCase();
-                    if (eventName.includes('pause') || d.paused === true || (d.data && d.data.paused === true)) {
+                    const isExplicitPause = (eventName === 'pause' || eventName === 'paused' || (!eventName.includes('timeupdate') && !eventName.includes('progress') && (d.paused === true || (d.data && d.data.paused === true))));
+                    const isExplicitPlay = (eventName === 'play' || eventName === 'playing' || (!eventName.includes('timeupdate') && !eventName.includes('progress') && (eventName.includes('start') || d.paused === false || (d.data && d.data.paused === false))));
+
+                    if (isExplicitPause && !isPlaybackPaused) {
                         isPlaybackPaused = true;
                         showOverlay();
-                    } else if (eventName.includes('play') || eventName.includes('start') || d.paused === false || (d.data && d.data.paused === false)) {
+                        scheduleHide(2500);
+                    } else if (isExplicitPlay && isPlaybackPaused) {
                         isPlaybackPaused = false;
-                        scheduleHide(2000);
+                        scheduleHide(1500);
                     }
 
                     if (eventName.includes('fullscreen')) {
@@ -1803,7 +1917,7 @@
                 } catch (err) {}
             });
 
-            // Universal Global Keyboard Shortcuts (Works for Video.js AND all embed providers: VidFast, VidLink, AutoEmbed, etc.)
+            // Universal Global Keyboard Shortcuts (Works across Video.js AND all streaming servers: VidLink, VidFast, AutoEmbed, VidSrc, 2Embed, NontonGo)
             function handleGlobalKeydown(e) {
                 const active = document.activeElement;
                 if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
@@ -1856,7 +1970,7 @@
                 if (e.altKey && key === 's') {
                     e.preventDefault();
                     if (nextServerId) {
-                        window.location.replace('?server=' + nextServerId);
+                        switchServer(nextServerId);
                     }
                     return;
                 }
@@ -1879,33 +1993,56 @@
                     return;
                 }
 
-                // Direct video player shortcuts (when local Video.js is active)
-                if (videoEl && typeof videojs !== 'undefined') {
-                    try {
-                        const player = videojs('filvora-player');
-                        if (key === ' ' || key === 'k') {
-                            e.preventDefault();
+                // Direct video player shortcuts (Universal across ALL servers)
+                if (key === ' ' || key === 'k') {
+                    e.preventDefault();
+                    if (videoEl && typeof videojs !== 'undefined') {
+                        try {
+                            const player = videojs('filvora-player');
                             player.paused() ? player.play() : player.pause();
-                        } else if (key === 'm') {
-                            e.preventDefault();
+                        } catch (err) {}
+                    } else {
+                        sendIframePlaybackCommand('toggle_play');
+                    }
+                } else if (key === 'm') {
+                    e.preventDefault();
+                    if (videoEl && typeof videojs !== 'undefined') {
+                        try {
+                            const player = videojs('filvora-player');
                             player.muted(!player.muted());
-                        } else if (key === 'arrowright' || key === 'l') {
-                            e.preventDefault();
+                        } catch (err) {}
+                    } else {
+                        sendIframePlaybackCommand('mute');
+                    }
+                } else if (key === 'arrowright' || key === 'l') {
+                    e.preventDefault();
+                    showSeekIndicator('seek-ripple-right');
+                    if (videoEl && typeof videojs !== 'undefined') {
+                        try {
+                            const player = videojs('filvora-player');
                             player.currentTime(Math.min(player.duration() || 99999, player.currentTime() + 10));
-                            showSeekIndicator('seek-ripple-right');
-                        } else if (key === 'arrowleft' || key === 'j') {
-                            e.preventDefault();
+                        } catch (err) {}
+                    } else {
+                        sendIframePlaybackCommand('seek', 10);
+                    }
+                } else if (key === 'arrowleft' || key === 'j') {
+                    e.preventDefault();
+                    showSeekIndicator('seek-ripple-left');
+                    if (videoEl && typeof videojs !== 'undefined') {
+                        try {
+                            const player = videojs('filvora-player');
                             player.currentTime(Math.max(0, player.currentTime() - 10));
-                            showSeekIndicator('seek-ripple-left');
-                        }
-                    } catch (err) {}
+                        } catch (err) {}
+                    } else {
+                        sendIframePlaybackCommand('seek', -10);
+                    }
                 }
             }
 
             window.addEventListener('keydown', handleGlobalKeydown, true);
             document.addEventListener('keydown', handleGlobalKeydown, true);
 
-            // Double Tap Left / Right Seek Detection
+            // Double Tap Left / Right Seek Detection (Universal across Video.js and Embed Servers)
             let lastTap = 0;
             document.addEventListener('touchend', (e) => {
                 const currentTime = new Date().getTime();
@@ -1917,15 +2054,23 @@
                         // Left double-tap: Seek backward 10s
                         showSeekIndicator('seek-ripple-left');
                         if (videoEl && typeof videojs !== 'undefined') {
-                            const p = videojs('filvora-player');
-                            p.currentTime(Math.max(0, p.currentTime() - 10));
+                            try {
+                                const p = videojs('filvora-player');
+                                p.currentTime(Math.max(0, p.currentTime() - 10));
+                            } catch (err) {}
+                        } else {
+                            sendIframePlaybackCommand('seek', -10);
                         }
                     } else if (touchX > screenWidth * 0.6) {
                         // Right double-tap: Seek forward 10s
                         showSeekIndicator('seek-ripple-right');
                         if (videoEl && typeof videojs !== 'undefined') {
-                            const p = videojs('filvora-player');
-                            p.currentTime(Math.min(p.duration() || 99999, p.currentTime() + 10));
+                            try {
+                                const p = videojs('filvora-player');
+                                p.currentTime(Math.min(p.duration() || 99999, p.currentTime() + 10));
+                            } catch (err) {}
+                        } else {
+                            sendIframePlaybackCommand('seek', 10);
                         }
                     }
                 }
@@ -1939,34 +2084,6 @@
                 setTimeout(() => el.classList.add('hidden'), 600);
             }
 
-            // Global Fullscreen Change Listener
-            function onFullscreenChange() {
-                const isFull = !!(
-                    document.fullscreenElement ||
-                    document.webkitFullscreenElement ||
-                    document.mozFullScreenElement ||
-                    document.msFullscreenElement
-                );
-                const label = document.getElementById('fullscreen-label');
-                const icon = document.getElementById('fullscreen-icon');
-                if (label) {
-                    label.innerText = isFull ? 'Exit Fullscreen' : 'Fullscreen';
-                }
-                if (icon) {
-                    if (isFull) {
-                        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />';
-                    } else {
-                        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />';
-                    }
-                }
-                showOverlay();
-                scheduleHide(3500);
-            }
-
-            document.addEventListener('fullscreenchange', onFullscreenChange);
-            document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-            document.addEventListener('mozfullscreenchange', onFullscreenChange);
-            document.addEventListener('MSFullscreenChange', onFullscreenChange);
 
             // Bind Fullscreen Button Click directly
             const fsBtn = document.getElementById('fullscreen-toggle-btn');
@@ -1998,7 +2115,6 @@
                     const pEl = player.el();
                     if (pEl) {
                         const topSensor = document.getElementById('top-sensor');
-                        const quickContainer = document.getElementById('quick-server-container');
                         const overlay = document.getElementById('player-overlay');
                         const resumePrompt = document.getElementById('resume-prompt');
                         const autoplayModal = document.getElementById('autoplay-modal');
@@ -2007,7 +2123,6 @@
                         const seekRight = document.getElementById('seek-ripple-right');
 
                         if (topSensor && !pEl.contains(topSensor)) pEl.appendChild(topSensor);
-                        if (quickContainer && !pEl.contains(quickContainer)) pEl.appendChild(quickContainer);
                         if (overlay && !pEl.contains(overlay)) pEl.appendChild(overlay);
                         if (resumePrompt && !pEl.contains(resumePrompt)) pEl.appendChild(resumePrompt);
                         if (autoplayModal && !pEl.contains(autoplayModal)) pEl.appendChild(autoplayModal);
@@ -2027,29 +2142,29 @@
                     if (p !== undefined) p.catch(() => {});
                 });
 
-                // Show top overlay and server switcher on fullscreen changes
+                // Show top overlay on fullscreen changes
                 player.on('fullscreenchange', () => {
                     showOverlay();
-                    scheduleHide(2000);
+                    scheduleHide(1800);
                 });
 
-                // When paused, keep player controls visible so user can access bookmarks, sleep timer, servers
+                // When paused, show controls briefly and auto-hide on inactivity
                 player.on('pause', () => {
                     isPlaybackPaused = true;
                     showOverlay();
+                    scheduleHide(2500);
                 });
 
                 player.on('play', () => {
                     isPlaybackPaused = false;
                     showOverlay();
-                    scheduleHide(2000);
+                    scheduleHide(1800);
                 });
 
                 player.on('timeupdate', () => {
                     if (!player.paused()) {
                         if (isPlaybackPaused) {
                             isPlaybackPaused = false;
-                            scheduleHide(2000);
                         }
                         const cur = player.currentTime();
                         const dur = player.duration();
