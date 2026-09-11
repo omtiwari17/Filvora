@@ -53,3 +53,61 @@ class AccountsTestCase(TestCase):
         self.assertEqual(p.name, 'Updated Name')
         self.assertTrue(p.is_kids)
         self.assertIn('3b82f6', p.avatar)
+
+    def test_register_view_get(self):
+        response = self.client.get('/accounts/register/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('form', response.context)
+
+    def test_register_valid_submission(self):
+        response = self.client.post('/accounts/register/', {
+            'username': 'newuser123',
+            'password1': 'SecretP@ssword123!',
+            'password2': 'SecretP@ssword123!'
+        })
+        self.assertEqual(response.status_code, 302)
+        new_user = User.objects.filter(username='newuser123').first()
+        self.assertIsNotNone(new_user)
+        # Default profile auto-created
+        profile = UserProfile.objects.filter(user=new_user).first()
+        self.assertIsNotNone(profile)
+        self.assertEqual(profile.name, 'Newuser123')
+        self.assertEqual(self.client.session.get('active_profile_id'), profile.id)
+
+    def test_register_invalid_submission(self):
+        response = self.client.post('/accounts/register/', {
+            'username': 'baduser',
+            'password1': 'passwordOne',
+            'password2': 'passwordMismatch'
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(User.objects.filter(username='baduser').exists())
+
+    def test_delete_last_remaining_profile_prevented(self):
+        self.client.login(username='accountuser', password='password123')
+        # Ensure only 1 profile exists
+        UserProfile.objects.filter(user=self.user).delete()
+        sole_profile = UserProfile.objects.create(user=self.user, name='Sole Profile')
+        self.assertEqual(UserProfile.objects.filter(user=self.user).count(), 1)
+        # Attempt delete
+        response = self.client.post(f'/accounts/profiles/{sole_profile.id}/delete/')
+        self.assertEqual(response.status_code, 302)
+        # Profile still exists because count was 1
+        self.assertTrue(UserProfile.objects.filter(id=sole_profile.id).exists())
+
+    def test_cross_user_profile_access_forbidden(self):
+        other_user = User.objects.create_user(username='otheruser', password='password123')
+        other_profile = UserProfile.objects.create(user=other_user, name='Other Profile')
+        self.client.login(username='accountuser', password='password123')
+        # Switching to someone else's profile returns 404
+        res_switch = self.client.get(f'/accounts/profiles/{other_profile.id}/switch/')
+        self.assertEqual(res_switch.status_code, 404)
+        # Deleting someone else's profile returns 404
+        res_del = self.client.post(f'/accounts/profiles/{other_profile.id}/delete/')
+        self.assertEqual(res_del.status_code, 404)
+
+    def test_unauthenticated_profiles_redirect(self):
+        response = self.client.get('/accounts/profiles/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response.url)
+

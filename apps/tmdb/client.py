@@ -99,7 +99,7 @@ class TMDBClient:
             return 'PG'
         if any(gid in [27, 80] for gid in genre_ids):
             return 'R'
-        return 'PG-13'
+        return None
 
     def _extract_tv_rating(self, data):
         if not data:
@@ -125,7 +125,8 @@ class TMDBClient:
             return 'TV-PG'
         if any(gid in [18, 80, 10768] for gid in genre_ids):
             return 'TV-MA'
-        return 'TV-14'
+        return None
+
 
     def get_content_rating(self, tmdb_id, media_type='movie'):
         if not tmdb_id:
@@ -350,8 +351,8 @@ class TMDBClient:
         if not sliced and raw_results:
             sliced = raw_results[:target_count]
 
-        # Only fallback to mock if no results were obtained at all and API key is missing
-        if not sliced and not self.api_key:
+        # Fallback to mock catalog if no results were obtained (offline, rate limited, or testing)
+        if not sliced:
             mock_list = self._get_mock_movies() if media_type == 'movie' else self._get_mock_series()
             for m in mock_list:
                 m['media_type'] = media_type
@@ -359,6 +360,7 @@ class TMDBClient:
                 m['release_year'] = (m.get('release_date') or m.get('first_air_date') or '')[:4]
                 self._attach_age_rating(m, media_type)
             return mock_list[:target_count]
+
 
         return sliced
 

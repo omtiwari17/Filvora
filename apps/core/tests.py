@@ -122,6 +122,35 @@ class CoreViewsTestCase(TestCase):
         self.assertIn('http://127.0.0.1:8000', settings.CSRF_TRUSTED_ORIGINS)
         self.assertIn('http://127.0.0.1', settings.CSRF_TRUSTED_ORIGINS)
 
+    def test_404_handler(self):
+        response = self.client.get('/definitely-non-existent-page-xyz-123/')
+        self.assertEqual(response.status_code, 404)
+
+    def test_kids_mode_homepage_content_filtering(self):
+        from apps.accounts.models import UserProfile
+        kids_profile = UserProfile.objects.create(user=self.user, name='Kids Profile', is_kids=True)
+        self.client.login(username='testuser', password='password123')
+        session = self.client.session
+        session['active_profile_id'] = kids_profile.id
+        session.save()
+
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(response.context['active_profile'])
+        self.assertTrue(response.context['active_profile'].is_kids)
+
+
+    def test_recommendations_with_empty_history(self):
+        from apps.core.recommendations import RecommendationEngine
+        engine = RecommendationEngine()
+        # User has 0 watch progress
+        recs = engine.get_personalized_recommendations(self.user)
+        self.assertIsInstance(recs, list)
+        self.assertGreater(len(recs), 0)
+        because = engine.get_because_you_watched(self.user)
+        self.assertIsNone(because)
+
+
 
 
 

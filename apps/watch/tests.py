@@ -293,6 +293,83 @@ class UserRatingTestCase(TestCase):
         self.assertEqual(UserRating.objects.get(user=self.user, profile=p1, tmdb_id=157336).score, 5)
         self.assertEqual(UserRating.objects.get(user=self.user, profile=p2, tmdb_id=157336).score, 2)
 
+    def test_save_progress_below_threshold_ignored(self):
+        self.client.login(username=self.user.username, password='password123')
+        payload = {
+            'tmdb_id': 157336,
+            'media_type': 'movie',
+            'position': 10, # below 15s threshold
+            'duration': 6000
+        }
+        response = self.client.post(
+            '/progress/save/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'ignored')
+        self.assertFalse(WatchProgress.objects.filter(user=self.user, tmdb_id=157336).exists())
+
+    def test_save_progress_tv_series(self):
+        self.client.login(username=self.user.username, password='password123')
+        payload = {
+            'tmdb_id': 1399,
+            'media_type': 'tv',
+            'season': 3,
+            'episode': 9,
+            'position': 1800,
+            'duration': 3600
+        }
+        response = self.client.post(
+            '/progress/save/',
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        wp = WatchProgress.objects.filter(user=self.user, tmdb_id=1399, season=3, episode=9).first()
+        self.assertIsNotNone(wp)
+        self.assertEqual(wp.position_seconds, 1800)
+
+    def test_save_progress_get_rejected(self):
+        self.client.login(username=self.user.username, password='password123')
+        response = self.client.get('/progress/save/')
+        self.assertEqual(response.status_code, 400)
+
+    def test_clear_history_get_safely_redirects(self):
+        self.client.login(username=self.user.username, password='password123')
+        WatchProgress.objects.create(
+
+            user=self.user,
+            tmdb_id=157336,
+            media_type='movie',
+            position_seconds=1200,
+            duration_seconds=7200
+        )
+        # GET should not delete history
+        response = self.client.get('/history/clear/')
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(WatchProgress.objects.filter(user=self.user).exists())
+
+    def test_rate_content_missing_fields(self):
+        self.client.login(username='rateuser', password='password123')
+        response = self.client.post(
+            '/progress/rate/',
+            data=json.dumps({}),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_rate_content_htmx_partial(self):
+        self.client.login(username='rateuser', password='password123')
+        response = self.client.post(
+            '/progress/rate/',
+            {'tmdb_id': 550, 'media_type': 'movie', 'score': 4},
+            HTTP_HX_REQUEST='true'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('rating-container', response.content.decode('utf-8'))
+
+
 
 
 

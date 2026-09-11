@@ -158,3 +158,70 @@ class PlaybackTestCase(TestCase):
         self.assertTrue(response.context['is_direct_jump'])
         self.assertIn('startAt=2450', response.context['video_url'])
 
+    def test_report_server_success_missing_payload(self):
+        self.client.login(username='playbackuser', password='password123')
+        response = self.client.post(
+            '/watch/server-success/',
+            data=json.dumps({}),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_report_server_success_get_rejected(self):
+        self.client.login(username='playbackuser', password='password123')
+        response = self.client.get('/watch/server-success/')
+        self.assertEqual(response.status_code, 400)
+
+    def test_multi_profile_server_preference_isolation(self):
+        from apps.accounts.models import UserProfile
+        p1 = UserProfile.objects.create(user=self.user, name='Streamer 1')
+        p2 = UserProfile.objects.create(user=self.user, name='Streamer 2')
+
+        self.client.login(username='playbackuser', password='password123')
+
+        # Set preference on Profile 1
+        session = self.client.session
+        session['active_profile_id'] = p1.id
+        session.save()
+        PlaybackServerPreference.objects.create(
+            user=self.user,
+            profile=p1,
+            tmdb_id=157336,
+            media_type='movie',
+            provider_id='vidfast'
+        )
+
+        # Set preference on Profile 2
+        PlaybackServerPreference.objects.create(
+            user=self.user,
+            profile=p2,
+            tmdb_id=157336,
+            media_type='movie',
+            provider_id='autoembed'
+        )
+
+        # Loading on Profile 1 picks vidfast
+        res_p1 = self.client.get('/watch/movie/157336/')
+        self.assertEqual(res_p1.context['current_server'], 'vidfast')
+
+        # Switch to Profile 2 -> picks autoembed
+        session['active_profile_id'] = p2.id
+        session.save()
+        res_p2 = self.client.get('/watch/movie/157336/')
+        self.assertEqual(res_p2.context['current_server'], 'autoembed')
+
+    def test_all_providers_movie_and_tv_urls(self):
+        providers = registry.get_ordered_providers()
+        self.assertEqual(len(providers), 6)
+        for p in providers:
+            # Movie
+            movie_url = p.get_movie_url(157336)
+            self.assertTrue(movie_url.startswith('http'))
+            self.assertIn('157336', movie_url)
+            # TV
+            tv_url = p.get_tv_url(1399, 1, 1)
+            self.assertTrue(tv_url.startswith('http'))
+            self.assertIn('1399', tv_url)
+
+
+

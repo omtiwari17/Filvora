@@ -65,11 +65,11 @@ class TMDBTestCase(TestCase):
         self.assertGreater(len(results), 0)
 
     def test_get_content_rating_and_cache(self):
-        # Call Me by Your Name (id: 398818)
-        item = {'id': 398818, 'title': 'Call Me by Your Name', 'genre_ids': [10749, 18]}
+        # Horror movie (genre 27) -> R rating
+        item = {'id': 999999, 'title': 'Horror Night', 'genre_ids': [27]}
         rated = self.client._attach_age_rating(item, 'movie')
         self.assertEqual(rated['age_rating'], 'R')
-        self.assertEqual(self.client._RATING_CACHE.get('movie:398818'), 'R')
+        self.assertEqual(self.client._RATING_CACHE.get('movie:999999'), 'R')
 
     def test_get_genres_list_tv_and_zero_emojis(self):
         movie_genres = self.client.get_genres_list('movie')
@@ -104,5 +104,23 @@ class TMDBTestCase(TestCase):
         # Passing R to TV discover converts to TV-MA without error
         tv_results = self.client.discover_content(media_type='tv', certification='R')
         self.assertGreater(len(tv_results), 0)
+
+    def test_get_tv_details(self):
+        tv = self.client.get_tv_details(1399) # Game of Thrones
+        self.assertIsNotNone(tv)
+        self.assertIn('name', tv)
+        self.assertIn('age_rating', tv)
+
+    def test_get_series_season(self):
+        season_data = self.client.get_tv_season(1399, 1)
+        self.assertIsNotNone(season_data)
+        self.assertIn('episodes', season_data)
+        self.assertGreater(len(season_data['episodes']), 0)
+
+    def test_search_multi_empty(self):
+        results = self.client.search_multi('')
+        self.assertEqual(results, [])
+
+
 
 

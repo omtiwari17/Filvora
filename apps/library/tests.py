@@ -150,3 +150,73 @@ class LibraryTestCase(TestCase):
         self.assertEqual(lib_res.status_code, 200)
         self.assertEqual(len(lib_res.context['bookmarks']), 0)
 
+    def test_toggle_item_hero_variant(self):
+        self.client.login(username='libuser', password='password123')
+        # Add item with hero variant
+        res_add = self.client.post('/library/toggle/', {'tmdb_id': '157336', 'media_type': 'movie', 'variant': 'hero'})
+        self.assertEqual(res_add.status_code, 200)
+        self.assertIn('Saved', res_add.content.decode('utf-8'))
+
+        # Remove item with hero variant
+        res_del = self.client.post('/library/toggle/', {'tmdb_id': '157336', 'media_type': 'movie', 'variant': 'hero'})
+        self.assertEqual(res_del.status_code, 200)
+        self.assertIn('My List', res_del.content.decode('utf-8'))
+
+    def test_toggle_item_missing_params(self):
+        self.client.login(username='libuser', password='password123')
+        res = self.client.post('/library/toggle/', {})
+        self.assertEqual(res.status_code, 400)
+
+    def test_toggle_item_unauthenticated(self):
+        self.client.logout()
+        res = self.client.post('/library/toggle/', {'tmdb_id': '157336', 'media_type': 'movie'})
+        self.assertEqual(res.status_code, 302)
+
+    def test_add_bookmark_tv_episode(self):
+        from apps.library.models import SceneBookmark
+        self.client.login(username='libuser', password='password123')
+        response = self.client.post('/library/bookmark/add/', {
+            'tmdb_id': 1399,
+            'media_type': 'tv',
+            'title': 'Game of Thrones',
+            'season': 2,
+            'episode': 5,
+            'position': 1845,
+            'note': 'Epic dragon scene'
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['status'], 'success')
+        bm = SceneBookmark.objects.filter(user=self.user, tmdb_id=1399).first()
+        self.assertIsNotNone(bm)
+        self.assertEqual(bm.season, 2)
+        self.assertEqual(bm.episode, 5)
+
+    def test_delete_bookmark_htmx(self):
+        from apps.library.models import SceneBookmark
+        self.client.login(username='libuser', password='password123')
+        bm = SceneBookmark.objects.create(
+            user=self.user,
+            tmdb_id=157336,
+            media_type='movie',
+            title='Interstellar',
+            position_seconds=500
+        )
+        response = self.client.post(
+            f'/library/bookmark/{bm.id}/delete/',
+            HTTP_HX_REQUEST='true'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content.decode('utf-8'), '')
+        self.assertFalse(SceneBookmark.objects.filter(id=bm.id).exists())
+
+    def test_delete_collection_cross_user_forbidden(self):
+        from apps.library.models import CustomCollection
+        other_user = User.objects.create_user(username='otherlib', password='password123')
+        col = CustomCollection.objects.create(user=other_user, name='Other User Collection')
+        self.client.login(username='libuser', password='password123')
+        response = self.client.post(f'/library/collection/{col.id}/delete/')
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(CustomCollection.objects.filter(id=col.id).exists())
+
+

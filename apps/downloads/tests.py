@@ -255,14 +255,17 @@ class DownloadViewsTestCase(TestCase):
         self.assertIn('failed_count', response.context)
 
     def test_start_download_post(self):
+        from unittest.mock import patch
         self.client.login(username='downloaduser', password='password123')
-        response = self.client.post('/downloads/start/', {
-            'tmdb_id': 157336,
-            'media_type': 'movie',
-            'quality': '1080p'
-        })
+        with patch('apps.downloads.services.manager.DownloadManager._dispatch_worker'):
+            response = self.client.post('/downloads/start/', {
+                'tmdb_id': 157336,
+                'media_type': 'movie',
+                'quality': '1080p'
+            })
         self.assertEqual(response.status_code, 302)
         self.assertTrue(DownloadJob.objects.filter(user=self.user, tmdb_id=157336).exists())
+
 
     def test_start_download_get_rejected(self):
         self.client.login(username='downloaduser', password='password123')
@@ -349,3 +352,108 @@ class DownloadViewsTestCase(TestCase):
         self.client.login(username='downloaduser', password='password123')
         response = self.client.post(f'/downloads/cancel/{job.id}/')
         self.assertEqual(response.status_code, 404)
+
+    def test_download_file_serving_ready_file(self):
+        with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as f:
+            f.write(b'sample video content data')
+            temp_path = f.name
+
+        job = DownloadJob.objects.create(
+            user=self.user,
+            tmdb_id=157336,
+            media_type='movie',
+            title='Interstellar',
+            filename='Interstellar (2014) [1080p].mp4',
+            status='READY',
+            temporary_path=temp_path
+        )
+        self.client.login(username='downloaduser', password='password123')
+        response = None
+        try:
+            response = self.client.get(f'/downloads/file/{job.id}/')
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response['Content-Type'], 'video/mp4')
+            self.assertIn('attachment', response['Content-Disposition'])
+            self.assertIn(job.filename, response['Content-Disposition'])
+        finally:
+            if response is not None:
+                response.close()
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+
+
+    def test_download_file_not_ready_returns_404(self):
+        job = DownloadJob.objects.create(
+            user=self.user,
+            tmdb_id=157336,
+            media_type='movie',
+            title='Interstellar',
+            status='DOWNLOADING'
+        )
+        self.client.login(username='downloaduser', password='password123')
+        response = self.client.get(f'/downloads/file/{job.id}/')
+        self.assertEqual(response.status_code, 404)
+
+    def test_download_file_missing_disk_file_returns_404(self):
+        job = DownloadJob.objects.create(
+            user=self.user,
+            tmdb_id=157336,
+            media_type='movie',
+            title='Interstellar',
+            status='READY',
+            temporary_path='/nonexistent/disk/path/movie.mp4'
+        )
+        self.client.login(username='downloaduser', password='password123')
+        response = self.client.get(f'/downloads/file/{job.id}/')
+        self.assertEqual(response.status_code, 404)
+
+    def test_start_download_tv_episode(self):
+        from unittest.mock import patch
+        self.client.login(username='downloaduser', password='password123')
+        with patch('apps.downloads.services.manager.DownloadManager._dispatch_worker'):
+            response = self.client.post('/downloads/start/', {
+                'tmdb_id': 1399,
+                'media_type': 'tv',
+                'season': 1,
+                'episode': 3,
+                'quality': '720p'
+            })
+        self.assertEqual(response.status_code, 302)
+        job = DownloadJob.objects.filter(user=self.user, tmdb_id=1399, season=1, episode=3).first()
+        self.assertIsNotNone(job)
+        self.assertEqual(job.quality, '720p')
+
+    def test_retry_cancelled_job(self):
+        self.client.login(username='downloaduser', password='password123')
+        job = DownloadJob.objects.create(
+            user=self.user,
+            tmdb_id=157336,
+            media_type='movie',
+            title='Interstellar',
+            status='CANCELLED'
+        )
+        response = self.client.post(f'/downloads/retry/{job.id}/')
+        self.assertEqual(response.status_code, 302)
+        job.refresh_from_db()
+        self.assertEqual(job.status, 'QUEUED')
+
+    def test_delete_failed_job(self):
+        self.client.login(username='downloaduser', password='password123')
+        job = DownloadJob.objects.create(
+            user=self.user,
+            tmdb_id=157336,
+            media_type='movie',
+            title='Interstellar',
+            status='FAILED'
+        )
+        response = self.client.post(f'/downloads/delete/{job.id}/')
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(DownloadJob.objects.filter(id=job.id).exists())
+
+    def test_unauthenticated_download_views_redirect(self):
+        self.client.logout()
+        res_dialog = self.client.get('/downloads/dialog/?tmdb_id=157336')
+        self.assertEqual(res_dialog.status_code, 302)
+        res_dash = self.client.get('/downloads/')
+        self.assertEqual(res_dash.status_code, 302)
+

@@ -217,5 +217,31 @@ class CatalogViewsTestCase(TestCase):
         self.assertEqual(eps[0]['episode_number'], 101)
         self.assertEqual(eps[-1]['episode_number'], 200)
 
+    def test_search_empty_query(self):
+        response = self.client.get('/search/?q=')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('results', response.context)
+        self.assertEqual(len(response.context['results']), 0)
+
+    def test_trailer_api_tv_series(self):
+        response = self.client.get('/trailer/tv/1399/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('trailer_key', data)
+        self.assertEqual(data['tmdb_id'], 1399)
+        self.assertEqual(data['media_type'], 'tv')
+
+    def test_surprise_me_tv_type(self):
+        response = self.client.get('/surprise-me/?type=tv')
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith('/series/'))
+
+    def test_movie_browse_sort_ratings(self):
+        response = self.client.get('/movies/?category=popular&sort=vote_average.desc')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('movies', response.context)
+        self.assertEqual(response.context['selected_sort'], 'vote_average.desc')
+
+
 
 
