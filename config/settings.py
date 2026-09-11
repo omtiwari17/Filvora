@@ -80,7 +80,7 @@ INSTALLED_APPS = [
     'apps.playback',
     'apps.watch',
     'apps.library',
-    'apps.downloads',
+    # 'apps.downloads',  # [ON HOLD / DROPPED] Offline download pipeline deactivated
     'apps.core',
 ]
 

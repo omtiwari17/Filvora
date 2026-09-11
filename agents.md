@@ -17,9 +17,9 @@
   - Django Development Server is active on **`http://127.0.0.1:8000/`** & **`http://192.168.1.5:8000/`**
   - Command: `.\venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000`
   - All active routes (`/`, `/movies/`, `/series/`, `/discover/`, `/genres/`, `/history/`, `/analytics/`, `/library/`, `/search/`, `/watch/`) return `200 OK`.
-- **One-Click Launcher**:
-  - `Start Filvora.bat` located at root: verifies venv, silently checks database migrations, auto-opens browser, and runs dev server bound to `0.0.0.0:8000`.
-- **Automated Test Suite**: **124 tests** across all 8 apps (`apps.core`, `apps.catalog`, `apps.playback`, `apps.library`, `apps.watch`, `apps.tmdb`, `apps.accounts`, `apps.downloads`), **100% passing**.
+- **Automated Test Suite**: **122 tests** across all 7 active production apps (`apps.core`, `apps.catalog`, `apps.playback`, `apps.library`, `apps.watch`, `apps.tmdb`, `apps.accounts`), **100% passing**.
+- **Master Test Runner & Launcher**:
+  - `run_all_tests.py` & `Run Tests.bat` located at root: single command/one-click execution running all 122 tests across all 7 active subsystems with ANSI-colorized tabular scorecard, execution times, detailed failure diagnostics, and exit code 0. Supports `--verbose`, `--failfast`, `--app <name>`, `--category <1-7>`, and `--fast`.
 
 ---
 
@@ -27,7 +27,9 @@
 
 ### 2.1 ✅ Active & 100% Working Features (v2.4 Production State)
 
+| **Master Automated Test Runner & 122-Test Scorecard Engine** | `run_all_tests.py`, `Run Tests.bat`, `apps/*/tests.py` | Unified one-command (`python run_all_tests.py`) and one-click (`Run Tests.bat`) test execution running 122 tests across all 7 active production apps. Covers every active feature, API, button, modal, HTMX action, security boundary, and failover engine. Features ANSI-colorized terminal scorecard tables categorized into 7 architectural subsystems, timing diagnostics, zero-emoji compliance, and `--fast` mock acceleration. |
 | **Dynamic CSRF Auto-Sync & Branded Auto-Healing Engine** | `config/settings.py`, `apps/core/views.py`, `templates/403_csrf.html`, `static/js/main.js`, `templates/base.html` | Completely eliminates "CSRF token from POST incorrect" errors across all devices and browsers. Frontend global capture interceptor (`initCsrfSync`) synchronizes `csrfmiddlewaretoken` on every `<form method="POST">` submission with the live `csrftoken` browser cookie, dynamically updating stale tokens from back-forward cache (bfcache), old tabs, or post-login cookie rotations. HTMX headers dynamically bind to live cookies (`getCookie('csrftoken')`). Configures comprehensive `CSRF_TRUSTED_ORIGINS` across port and portless origins. Provides a branded cinematic CSRF recovery view (`csrf_failure`) and template (`403_csrf.html`) featuring automated cookie renewal (`rotate_token`), an animated 3-second recovery countdown, and 1-click retry. Purged legacy invalid session entries from SQLite WAL. |
+
 | **High-Precision Catalog Filtering & Audience Engine** | `apps/catalog/`, `apps/tmdb/`, `templates/catalog/` | Eliminates obscure 0-vote titles from Popular/Top Rated via adaptive TMDB vote floors (`vote_count.gte >= 80` for movies, `>= 40` for TV, `>= 300` for top rated) and unreleased date filtering (`primary_release_date.lte`). Introduces Audience Segments (All Content, Live-Action / General, Kids & Family, Mature 18+/TV-MA) that cleanly separate toddler cartoons and mature films in Comedy. Features complete multi-directional genre mapping between Movies (28, 878, 53) and TV (10759, 10765), pipe-separated (`\|`) OR mood discovery, TV certification translation, dual-universe `/genres/` switcher, and 100% URL filter state preservation across tabs, rails, and pagination. |
 | **True Cinema Fullscreen & Clean Canvas Overlay** | `apps/playback/`, `templates/playback/watch.html` | Hardware-composited fullscreen engine. Resolves the W3C isolated iframe spec trap via the **Embedded Fullscreen Hotspot Router** (`#embed-fullscreen-hotspot`), ensuring clicks on server player default `⛶` buttons, top bar buttons, or <kbd>F</kbd> trigger `#player-wrapper` cinema fullscreen. All controls hide 100% cleanly off-screen with zero persistent notches, pills, or screen clutter during playback. |
 | **Snappy 2-Second Cinema Auto-Hide & Cursor Conceal Engine** | `templates/playback/watch.html` | Snappy inactivity auto-hide sliding controls off-screen (`translateY(-100%)`) after 2.0s. Eliminates postMessage loop resets where periodic `timeupdate` packets repeatedly cancelled the hide timer. Fast dismissal (600ms–800ms) on click outside or cursor exit. Auto-conceals mouse cursor (`cursor: none`) during playback. Responsive 36px top sensor (`#top-sensor`) smoothly slides controls down on approaching the top edge. Keyboard shortcuts (<kbd>C</kbd>, <kbd>F</kbd>, <kbd>Alt</kbd>+<kbd>S</kbd>) and interactive modals (Bookmarks, Sleep Timer) cleanly integrate without getting stuck. |
@@ -240,6 +242,19 @@
 
 ---
 
+### 2.6 ⏸️ Decommissioned / Dropped Features (Standby Architecture)
+
+#### 2.6.1 Offline Download Pipeline (`apps/downloads/`) — ON HOLD / DROPPED
+- **Status**: **ON HOLD / DROPPED (Deactivated)**
+- **Architectural Rationale**: Filvora is fundamentally engineered and optimized as an instant high-bitrate multi-server online streaming platform with 6 circular failover providers (VidLink, VidFast, AutoEmbed, VidSrc, 2Embed, NontonGo). Offline downloading of fragmented iframe/HLS streaming sources is bandwidth-heavy, storage-prohibitive, and redundant given 100% cloud-stream reliability and instant multi-server failover.
+- **Codebase State**:
+  - `apps.downloads` is **commented out** in `config/settings.py` (`INSTALLED_APPS`).
+  - `/downloads/` routing is **commented out** in `config/urls.py` and `apps/downloads/urls.py`.
+  - Views in `apps/downloads/views.py` and test cases in `apps/downloads/tests.py` are preserved commented out on hold for future architectural reference.
+  - The active automated test suite (`run_all_tests.py`, `Run Tests.bat`, `manage.py test`) excludes downloads and tests exclusively the 7 active production apps (122 tests, 100% passing).
+
+---
+
 ## 3. Project Architecture & Apps Overview
 
 ```text
@@ -250,7 +265,7 @@ Filvora/
 │   ├── playback/              # Video player view, provider registry, server switcher, diagnostics, smart autoplay
 │   ├── watch/                 # WatchProgress & UserRating models, history (with tabs), analytics & Wrapped
 │   ├── library/               # Watchlist (with live search & star filters), custom collections & playlists
-│   ├── downloads/             # Standby download pipeline, DownloadJob model, services & 34 tests
+│   ├── downloads/             # [ON HOLD / DROPPED] Decommissioned standby download pipeline
 │   ├── tmdb/                  # TMDB API client with curl/requests fallback & caching
 │   └── accounts/              # Authentication, UserProfile multi-profile switcher & QR pairing
 ├── config/
@@ -320,8 +335,11 @@ Filvora/
 # Run Development Server manually
 .\venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000
 
-# Run Automated Test Suite (124 tests across 8 apps)
-.\venv\Scripts\python.exe manage.py test apps.core apps.catalog apps.playback apps.library apps.watch apps.tmdb apps.accounts apps.downloads
+# Run Automated Test Suite (122 tests across 7 active apps)
+.\venv\Scripts\python.exe run_all_tests.py
+
+# Or via Django test runner
+.\venv\Scripts\python.exe manage.py test apps.core apps.catalog apps.playback apps.library apps.watch apps.tmdb apps.accounts
 
 # Backup Local Database
 .\venv\Scripts\python.exe manage.py backup_db

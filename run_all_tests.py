@@ -4,10 +4,11 @@
   FILVORA — MASTER AUTOMATED TEST RUNNER & SYSTEM VERIFICATION ENGINE
 ================================================================================
 
-PURPOSE:
+  PURPOSE:
   Runs the complete end-to-end test suite for Filvora in a single command,
-  testing every feature, API endpoint, UI button, HTMX interaction, security boundary,
-  and background engine across all 8 Django applications.
+  testing every active feature, API endpoint, UI button, HTMX interaction,
+  security boundary, and background engine across all 7 production applications
+  (122 tests; apps.downloads dropped/on hold).
 
 WHICH TESTING METHOD IS BEST FOR FILVORA?
   -----------------------------------------------------------------------------
@@ -24,7 +25,7 @@ WHICH TESTING METHOD IS BEST FOR FILVORA?
        when dealing with external third-party video iframes (cross-origin frame
        security restrictions, ad-blocker interference, network latencies).
   2. Django TestCase + Emulated Client + HTMX Headers:
-     - PROS: Lightning fast (<10 seconds for 150+ tests), 100% deterministic,
+     - PROS: Lightning fast (<10 seconds for 120+ tests), 100% deterministic,
        tests complete request-response cycle, database transactions, session isolation,
        HTMX fragment swaps, context dictionaries, redirect chains, and security.
      - VERDICT: Django Integration & HTMX Emulation with In-Memory Database
@@ -32,11 +33,12 @@ WHICH TESTING METHOD IS BEST FOR FILVORA?
   -----------------------------------------------------------------------------
 
 USAGE:
-  python run_all_tests.py                  # Run all tests across all 8 apps
+  python run_all_tests.py                  # Run all tests across active apps (122 tests)
   python run_all_tests.py --verbose        # Show individual test method names & times
   python run_all_tests.py --failfast       # Stop immediately on first failure
   python run_all_tests.py --app accounts   # Run only tests for a specific app
   python run_all_tests.py --category 3     # Run only category 3 (Playback)
+  python run_all_tests.py --fast           # Accelerated run with mocked provider checks
 ================================================================================
 """
 
@@ -63,7 +65,6 @@ import django
 django.setup()
 
 from django.test.runner import DiscoverRunner
-from apps.downloads.services.manager import DownloadManager
 
 
 # ==============================================================================
@@ -121,22 +122,17 @@ CATEGORIES = [
     },
     {
         'id': 6,
-        'name': 'Downloads, Storage & Media Pipeline',
-        'apps': ['apps.downloads'],
-        'description': 'Download job lifecycle (QUEUED->READY), deterministic naming, storage management, disk space validator & file streaming'
-    },
-    {
-        'id': 7,
         'name': 'Core Engine, CSRF Healing & Recommendations',
         'apps': ['apps.core'],
         'description': 'Hero billboard, continue watching rails, affinity recommendations, branded CSRF auto-healing (browser, HTMX, JSON) & PWA'
     },
     {
-        'id': 8,
+        'id': 7,
         'name': 'TMDB API Client, Caching & Resilience',
         'apps': ['apps.tmdb'],
         'description': 'TMDB API client requests, in-memory caching, age rating extraction, cross-media genre mapping & zero-emoji compliance'
     },
+    # Note: apps.downloads is ON HOLD / DROPPED (Standby offline pipeline deactivated)
 ]
 
 
@@ -434,7 +430,7 @@ def main():
     if args.category:
         cat_match = next((c for c in CATEGORIES if c['id'] == args.category), None)
         if not cat_match:
-            print(f"{Colors.RED}Error: Category {args.category} not found. Available categories: 1 to 8.{Colors.RESET}")
+            print(f"{Colors.RED}Error: Category {args.category} not found. Available categories: 1 to 7.{Colors.RESET}")
             sys.exit(1)
         test_labels = [f"{app}.tests" for app in cat_match['apps']]
         print_categories_overview(selected_cat_id=args.category)
@@ -451,7 +447,7 @@ def main():
             'apps.playback.tests',
             'apps.watch.tests',
             'apps.library.tests',
-            'apps.downloads.tests',
+            # 'apps.downloads.tests',  # [ON HOLD / DROPPED]
             'apps.core.tests',
             'apps.tmdb.tests',
         ]
@@ -475,9 +471,7 @@ def main():
     start_wall_time = time.time()
 
     # Patches to protect database and accelerate runs
-    patches = [
-        patch.object(DownloadManager, '_dispatch_worker', return_value=None)
-    ]
+    patches = []
     if args.fast:
         from apps.playback.providers import PlaybackProvider
         patches.append(

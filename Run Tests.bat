@@ -21,7 +21,7 @@ if not exist "venv\Scripts\python.exe" (
 )
 
 echo  [*] Python Environment: OK
-echo  [*] Launching Master Test Suite across all 8 apps...
+echo  [*] Launching Master Test Suite across 7 active subsystems (122 tests)...
 echo.
 
 venv\Scripts\python.exe run_all_tests.py %*

@@ -75,8 +75,8 @@ After initial setup (cloning & creating the `venv`), you **do not need to use th
 - **Installable PWA**: Includes `manifest.json` and Service Worker (`sw.js`) for offline caching of app shell assets.
 - **Mobile Bottom Navigation**: Glassmorphic bottom bar for effortless one-thumb mobile browsing.
 
-### ⚙️ 9. Standby Download Architecture (`apps/downloads/`)
-- **Complete Pipeline Preserved**: Full backend download architecture (`DownloadJob` model, dual-mode `curl`/`requests` downloader, FFmpeg remuxer, validator, and cleanup service) preserved in standby with **34 automated tests**. User buttons are hidden from the UI since 3rd-party embed providers stream via tokenized web iframes.
+### ⏸️ 9. Decommissioned / Dropped Features (Standby Architecture)
+- **Offline Download Pipeline (`apps/downloads/`)**: Dropped from active product features in favor of high-bitrate multi-server online streaming (VidLink, VidFast, AutoEmbed, VidSrc, 2Embed, NontonGo). Code and models are preserved commented out on hold for architectural reference.
 
 ---
 
@@ -104,7 +104,7 @@ Filvora/
 │   ├── playback/              # Video player view, provider registry, server switcher, diagnostics
 │   ├── watch/                 # WatchProgress & UserRating models, history (streamed & rated tabs), analytics
 │   ├── library/               # Watchlist, custom collections & playlists with rating support
-│   ├── downloads/             # Standby download pipeline, DownloadJob model & 34 tests
+│   ├── downloads/             # [ON HOLD / DROPPED] Decommissioned standby download pipeline
 │   ├── tmdb/                  # TMDB API client with curl/requests fallback & caching
 │   └── accounts/              # Authentication & UserProfile multi-profile switcher
 ├── config/
@@ -183,9 +183,12 @@ Once setup is complete, you never need to activate the venv manually again:
 
 ### 4. Running Automated Tests
 
-Run the full automated test suite (**97 tests** across all 8 apps, 100% passing):
+Run the full automated test suite (**122 tests** across all 7 active production apps, 100% passing):
 ```powershell
-.\venv\Scripts\python.exe manage.py test apps.core apps.catalog apps.playback apps.library apps.watch apps.tmdb apps.accounts apps.downloads
+.\venv\Scripts\python.exe run_all_tests.py
+
+# Or via Django test runner
+.\venv\Scripts\python.exe manage.py test apps.core apps.catalog apps.playback apps.library apps.watch apps.tmdb apps.accounts
 ```
 
 ---
@@ -224,7 +227,7 @@ Run the full automated test suite (**97 tests** across all 8 apps, 100% passing)
 | `/library/` | `library_list` | `apps.library` | Watchlist and custom collections manager with inline star ratings |
 | `/history/` | `history_view` | `apps.watch` | Dual-tab history (Streamed History timeline & Rated Titles poster grid) |
 | `/analytics/` | `analytics_view` | `apps.watch` | Viewing analytics, avg rating metric, season watch hours & Filvora Wrapped |
-| `/downloads/` | `downloads_dashboard` | `apps.downloads` | Standby video download manager pipeline |
+| `/downloads/` | `downloads_dashboard` | `apps.downloads` | [ON HOLD / DROPPED] Deactivated standby download pipeline |
 | `/accounts/profiles/` | `profiles_view` | `apps.accounts` | Multi-profile switcher & creator with Kids mode gating |
 
 ---
