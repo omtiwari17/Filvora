@@ -337,6 +337,8 @@ class CategorizedTestResult(unittest.TestResult):
         super().__init__()
         self.verbose = verbose
         self.test_records = []
+        self.current_category_id = None
+        self._is_line_active = False
         self.category_stats = {cat['id']: {
             'name': cat['name'],
             'total': 0,
@@ -352,9 +354,40 @@ class CategorizedTestResult(unittest.TestResult):
         }
         self._test_start_time = 0.0
 
+    def _ensure_category_header(self, cat):
+        """Prints category header banner in real-time when switching to a new subsystem."""
+        if cat['id'] != self.current_category_id:
+            if self._is_line_active:
+                sys.stdout.write("\r" + " " * 84 + "\r")
+                self._is_line_active = False
+            self.current_category_id = cat['id']
+            cid = cat['id']
+            width = 86
+            print(f"\n{Colors.CYAN}{'=' * width}{Colors.RESET}")
+            print(f"{Colors.BOLD}{Colors.CYAN}--- CATEGORY [{cid}/7] {cat['name'].upper()} ---{Colors.RESET}")
+            print(f"{Colors.DIM}    Subsystem: {cat['description']}{Colors.RESET}")
+            print(f"{Colors.CYAN}{'=' * width}{Colors.RESET}\n")
+            sys.stdout.flush()
+
     def startTest(self, test):
         super().startTest(test)
         self._test_start_time = time.time()
+        cat = get_category_for_test(test)
+        self._ensure_category_header(cat)
+
+        test_name = getattr(test, '_testMethodName', str(test))
+        display_name = test_name if len(test_name) <= 50 else test_name[:47] + '...'
+        # Real-time indicator showing which test is currently running
+        sys.stdout.write(f"\r  {Colors.CYAN}[RUN ]{Colors.RESET}  {Colors.BOLD}{display_name:<50}{Colors.RESET} {Colors.DIM}...{Colors.RESET}")
+        sys.stdout.flush()
+        self._is_line_active = True
+
+    def stopTest(self, test):
+        super().stopTest(test)
+        if self._is_line_active:
+            sys.stdout.write("\r" + " " * 84 + "\r")
+            sys.stdout.flush()
+            self._is_line_active = False
 
     def addSuccess(self, test):
         super().addSuccess(test)
@@ -365,7 +398,7 @@ class CategorizedTestResult(unittest.TestResult):
         self.category_stats[cat_id]['passed'] += 1
         self.category_stats[cat_id]['duration'] += duration
 
-        test_name = test._testMethodName
+        test_name = getattr(test, '_testMethodName', str(test))
         class_name = test.__class__.__name__
         desc = get_test_description(test, test_name, class_name)
         self.test_records.append({
@@ -379,12 +412,13 @@ class CategorizedTestResult(unittest.TestResult):
             'description': desc,
             'error': None
         })
-        if self.verbose:
-            dur_str = f"{duration*1000:.1f}ms" if duration < 1.0 else f"{duration:.2f}s"
-            print(f"  {Colors.GREEN}[PASS]{Colors.RESET} {class_name}.{test_name} {Colors.DIM}({dur_str}){Colors.RESET}")
-        else:
-            sys.stdout.write(f"{Colors.GREEN}.{Colors.RESET}")
-            sys.stdout.flush()
+
+        dur_str = f"{duration*1000:.1f}ms" if duration < 1.0 else f"{duration:.2f}s"
+        sys.stdout.write("\r" + " " * 84 + "\r")
+        sys.stdout.write(f"  {Colors.GREEN}[PASS]{Colors.RESET}  {Colors.BOLD}{test_name}{Colors.RESET} {Colors.DIM}({dur_str}){Colors.RESET}\n")
+        sys.stdout.write(f"          {Colors.WHITE}{desc}{Colors.RESET}\n")
+        sys.stdout.flush()
+        self._is_line_active = False
 
     def addFailure(self, test, err):
         super().addFailure(test, err)
@@ -395,9 +429,10 @@ class CategorizedTestResult(unittest.TestResult):
         self.category_stats[cat_id]['failed'] += 1
         self.category_stats[cat_id]['duration'] += duration
 
-        test_name = test._testMethodName
+        test_name = getattr(test, '_testMethodName', str(test))
         class_name = test.__class__.__name__
         desc = get_test_description(test, test_name, class_name)
+        err_str = self._exc_info_to_string(err, test)
         self.test_records.append({
             'status': 'FAIL',
             'test': test,
@@ -407,13 +442,15 @@ class CategorizedTestResult(unittest.TestResult):
             'category_id': cat_id,
             'duration': duration,
             'description': desc,
-            'error': self._exc_info_to_string(err, test)
+            'error': err_str
         })
-        if self.verbose:
-            print(f"\n  {Colors.RED}[FAIL]{Colors.RESET} {class_name}.{test_name}")
-        else:
-            sys.stdout.write(f"{Colors.RED}F{Colors.RESET}")
-            sys.stdout.flush()
+
+        dur_str = f"{duration*1000:.1f}ms" if duration < 1.0 else f"{duration:.2f}s"
+        sys.stdout.write("\r" + " " * 84 + "\r")
+        sys.stdout.write(f"  {Colors.RED}[FAIL]{Colors.RESET}  {Colors.BOLD}{test_name}{Colors.RESET} {Colors.DIM}({dur_str}){Colors.RESET}\n")
+        sys.stdout.write(f"          {Colors.WHITE}{desc}{Colors.RESET}\n")
+        sys.stdout.flush()
+        self._is_line_active = False
 
     def addError(self, test, err):
         super().addError(test, err)
@@ -424,9 +461,10 @@ class CategorizedTestResult(unittest.TestResult):
         self.category_stats[cat_id]['errored'] += 1
         self.category_stats[cat_id]['duration'] += duration
 
-        test_name = test._testMethodName
+        test_name = getattr(test, '_testMethodName', str(test))
         class_name = test.__class__.__name__
         desc = get_test_description(test, test_name, class_name)
+        err_str = self._exc_info_to_string(err, test)
         self.test_records.append({
             'status': 'ERROR',
             'test': test,
@@ -436,13 +474,15 @@ class CategorizedTestResult(unittest.TestResult):
             'category_id': cat_id,
             'duration': duration,
             'description': desc,
-            'error': self._exc_info_to_string(err, test)
+            'error': err_str
         })
-        if self.verbose:
-            print(f"\n  {Colors.RED}[ERROR]{Colors.RESET} {class_name}.{test_name}")
-        else:
-            sys.stdout.write(f"{Colors.RED}E{Colors.RESET}")
-            sys.stdout.flush()
+
+        dur_str = f"{duration*1000:.1f}ms" if duration < 1.0 else f"{duration:.2f}s"
+        sys.stdout.write("\r" + " " * 84 + "\r")
+        sys.stdout.write(f"  {Colors.MAGENTA}[ERR ]{Colors.RESET}  {Colors.BOLD}{test_name}{Colors.RESET} {Colors.DIM}({dur_str}){Colors.RESET}\n")
+        sys.stdout.write(f"          {Colors.WHITE}{desc}{Colors.RESET}\n")
+        sys.stdout.flush()
+        self._is_line_active = False
 
     def addSkip(self, test, reason):
         super().addSkip(test, reason)
@@ -451,7 +491,7 @@ class CategorizedTestResult(unittest.TestResult):
         self.category_stats[cat_id]['total'] += 1
         self.category_stats[cat_id]['skipped'] += 1
 
-        test_name = test._testMethodName
+        test_name = getattr(test, '_testMethodName', str(test))
         class_name = test.__class__.__name__
         desc = get_test_description(test, test_name, class_name)
         self.test_records.append({
@@ -465,11 +505,12 @@ class CategorizedTestResult(unittest.TestResult):
             'description': desc,
             'error': reason
         })
-        if self.verbose:
-            print(f"  {Colors.YELLOW}[SKIP]{Colors.RESET} {class_name}.{test_name} ({reason})")
-        else:
-            sys.stdout.write(f"{Colors.YELLOW}S{Colors.RESET}")
-            sys.stdout.flush()
+
+        sys.stdout.write("\r" + " " * 84 + "\r")
+        sys.stdout.write(f"  {Colors.YELLOW}[SKIP]{Colors.RESET}  {Colors.BOLD}{test_name}{Colors.RESET} {Colors.DIM}({reason}){Colors.RESET}\n")
+        sys.stdout.write(f"          {Colors.WHITE}{desc}{Colors.RESET}\n")
+        sys.stdout.flush()
+        self._is_line_active = False
 
 
 
@@ -760,7 +801,6 @@ def main():
 
     # Print results
     print_scorecard_table(custom_result.category_stats, total_duration)
-    print_detailed_category_breakdown(custom_result.test_records, custom_result.category_stats)
     print_failures_and_errors(custom_result.test_records)
 
     total_tests = len(custom_result.test_records)
