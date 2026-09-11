@@ -243,6 +243,16 @@
                         {% endif %}
                     </a>
                     {% endfor %}
+                    <!-- Auto-Failover Watchdog Status & Toggle -->
+                    <div class="pt-1.5 mt-1 border-t border-gray-800/80 px-2.5 py-1.5 flex items-center justify-between text-[11px] text-gray-400">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="font-bold text-gray-300">Auto-Failover</span>
+                        </span>
+                        <button type="button" id="auto-failover-toggle-btn" onclick="toggleAutoFailoverSetting(event)" title="Toggle Automatic Server Switch on Failure" class="text-[10px] font-mono font-black text-emerald-400 hover:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-lg transition cursor-pointer">
+                            ON
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -581,7 +591,10 @@
             <!-- Video Server Selector -->
             <div class="space-y-1.5">
                 <label class="text-[10px] font-black uppercase text-gray-400 tracking-wider flex items-center justify-between">
-                    <span>Video Server Failover</span>
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span>Server Failover (Auto)</span>
+                    </span>
                     <a href="/watch/diagnostics/" target="_blank" class="text-gray-500 hover:text-white text-[10px] lowercase underline">diagnostics</a>
                 </label>
                 <div class="space-y-1 max-h-48 overflow-y-auto">
@@ -721,6 +734,8 @@
             class="w-full h-full border-0 absolute inset-0 bg-black"
             allow="accelerometer *; autoplay *; clipboard-write *; encrypted-media *; gyroscope *; picture-in-picture *; web-share *; display-capture *"
             referrerpolicy="origin"
+            onload="if (typeof markServerResponded === 'function') markServerResponded(false);"
+            onerror="if (typeof triggerAutoSwitch === 'function') triggerAutoSwitch('Connection Failed');"
         ></iframe>
 
         <!-- Embed Player Fullscreen Button Hotspot (Routes clicks on the embed's bottom-right ⛶ button to Filvora's cinema fullscreen) -->
@@ -747,6 +762,43 @@
         <span class="text-[11px] font-black mt-1">+10s</span>
     </div>
 
+    <!-- Automatic Server Failover HUD (Appears when a server is unresponsive, stalled, or errors) -->
+    <div id="auto-switch-hud" class="hidden fixed top-16 sm:top-20 left-1/2 -translate-x-1/2 z-[2147483647] max-w-sm sm:max-w-md w-[92%] bg-gray-950/98 border border-amber-500/50 rounded-2xl p-4 shadow-2xl backdrop-blur-2xl transition-all duration-300 transform select-none">
+        <div class="flex items-start gap-3">
+            <div class="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 shrink-0">
+                <svg class="w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-2">
+                    <h4 class="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                        <span id="auto-switch-status-label">Server Not Responding</span>
+                    </h4>
+                    <span id="auto-switch-timer-badge" class="font-mono text-[11px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full shrink-0">3s</span>
+                </div>
+                <p class="text-xs text-gray-300 mt-1 leading-snug">
+                    <span id="auto-switch-current-name" class="font-bold text-white">Server {{ current_server|upper }}</span> is unresponsive. Switching to <span id="auto-switch-target-name" class="font-bold text-brand-400">{% if next_provider %}{{ next_provider.name }}{% else %}next server{% endif %}</span>...
+                </p>
+                <!-- Animated Progress Bar for 3-second countdown -->
+                <div class="w-full bg-gray-900 h-1 rounded-full overflow-hidden mt-2.5 border border-gray-800">
+                    <div id="auto-switch-progress-bar" class="bg-gradient-to-r from-amber-500 to-brand-500 h-full w-full transition-all duration-1000 ease-linear"></div>
+                </div>
+                <div class="flex items-center gap-2 mt-3">
+                    <button id="auto-switch-now-btn" type="button" onclick="executeAutoSwitchNow()" class="flex-1 bg-brand-500 hover:bg-red-600 text-white font-bold py-1.5 px-3 rounded-xl text-xs transition shadow-lg shadow-brand-500/25 active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer">
+                        <svg class="w-3.5 h-3.5 fill-none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                        </svg>
+                        <span>Switch Now</span>
+                    </button>
+                    <button id="auto-switch-cancel-btn" type="button" onclick="cancelAutoSwitch(false)" class="px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white font-bold rounded-xl text-xs transition border border-gray-700/80 active:scale-95 cursor-pointer">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Fallback Recovery Dialog (Hidden by Default) -->
     <div id="fallback-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-gray-900 border border-gray-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl text-center">
@@ -755,18 +807,18 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
             </div>
-            <h3 class="text-lg font-black text-white">Playback Interrupted</h3>
-            <p class="text-xs text-gray-300 mt-2 leading-relaxed">
+            <h3 class="text-lg font-black text-white" id="fallback-modal-title">Playback Interrupted</h3>
+            <p class="text-xs text-gray-300 mt-2 leading-relaxed" id="fallback-modal-desc">
                 We encountered an issue loading from <strong>Server {{ current_server|upper }}</strong>. Would you like to switch to the next server?
             </p>
-            <div class="flex items-center gap-3 mt-6">
+            <div class="flex items-center gap-3 mt-6" id="fallback-modal-actions">
                 {% if next_provider %}
-                <button onclick="switchServer('{{ next_provider.id }}')" 
+                <button id="fallback-switch-btn" onclick="switchServer('{{ next_provider.id }}', false)" 
                         class="flex-1 bg-brand-500 hover:bg-red-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow-lg shadow-brand-500/30">
                     Switch to {{ next_provider.name }}
                 </button>
                 {% endif %}
-                <button onclick="window.location.reload()" 
+                <button id="fallback-retry-btn" onclick="window.location.reload()" 
                         class="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-xl text-xs transition border border-gray-700">
                     Retry
                 </button>
@@ -778,10 +830,294 @@
     <script src="{% static 'js/videojs/video.min.js' %}"></script>
     
     <script>
+        // Global media metadata & server parameters
+        const tmdbId = {{ tmdb_id }};
+        const mediaType = '{{ media_type }}';
+        const seasonNum = {% if season %}{{ season }}{% else %}null{% endif %};
+        const episodeNum = {% if episode %}{{ episode }}{% else %}null{% endif %};
+        const currentServerId = '{{ current_server }}';
+        const nextServerId = '{% if next_provider %}{{ next_provider.id }}{% else %}{% endif %}';
+        const currentServerName = '{{ current_provider.name|escapejs }}' || (`Server ${currentServerId.toUpperCase()}`);
+        const availableServers = [
+            {% for p in providers %}
+            { id: '{{ p.id }}', name: '{{ p.name|escapejs }}', priority: {{ p.priority }} },
+            {% endfor %}
+        ];
+        const failoverStorageKey = `filvora_failover_${mediaType}_${tmdbId}_${seasonNum || 0}_${episodeNum || 0}`;
+
         // Global playback position, state & resume prompt handlers
         let currentPlaybackPosition = {{ resume_position|default:0 }};
         let isPlaybackPaused = false;
         let isIframeMuted = false;
+
+        // =========================================================================
+        // AUTOMATIC SERVER FAILOVER & WATCHDOG ENGINE
+        // Automatically detects unresponsive, dead, timed out, or stalled servers
+        // and transitions to the next available server with transparent user HUD.
+        // =========================================================================
+
+        let isAutoFailoverEnabled = true;
+        try {
+            const savedSetting = localStorage.getItem('filvora_auto_failover');
+            if (savedSetting !== null) {
+                isAutoFailoverEnabled = (savedSetting === 'true');
+            }
+        } catch(e) {}
+
+        function toggleAutoFailoverSetting(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            isAutoFailoverEnabled = !isAutoFailoverEnabled;
+            try {
+                localStorage.setItem('filvora_auto_failover', String(isAutoFailoverEnabled));
+            } catch(e) {}
+            updateAutoFailoverUi();
+            showToast(isAutoFailoverEnabled ? 'Auto-Server Failover Enabled' : 'Auto-Server Failover Disabled');
+        }
+
+        function updateAutoFailoverUi() {
+            const btn = document.getElementById('auto-failover-toggle-btn');
+            if (btn) {
+                if (isAutoFailoverEnabled) {
+                    btn.innerText = 'ON';
+                    btn.className = 'text-[10px] font-mono font-black text-emerald-400 hover:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-lg transition cursor-pointer';
+                } else {
+                    btn.innerText = 'OFF';
+                    btn.className = 'text-[10px] font-mono font-black text-gray-400 hover:text-gray-300 bg-gray-800 border border-gray-700 px-2 py-0.5 rounded-lg transition cursor-pointer';
+                }
+            }
+        }
+
+        let serverResponded = false;
+        let serverStartedPlaying = false;
+        let autoSwitchPending = false;
+        let autoSwitchCancelled = false;
+        let autoSwitchCountdown = 3;
+        let autoSwitchTimerId = null;
+        let autoSwitchTargetServer = null;
+        let initialWatchdogTimer = null;
+        let stallCheckInterval = null;
+        let lastProgressTimestamp = Date.now();
+        let lastReportedPosition = -1;
+
+        // Mark that the server is active, buffering, or playing
+        function markServerResponded(isPlaybackEvent = false) {
+            lastProgressTimestamp = Date.now();
+            if (!serverResponded) {
+                serverResponded = true;
+                if (initialWatchdogTimer) {
+                    clearTimeout(initialWatchdogTimer);
+                    initialWatchdogTimer = null;
+                }
+            }
+            if (isPlaybackEvent) {
+                serverStartedPlaying = true;
+                // If auto-switch HUD was counting down and the server suddenly played, cancel auto-switch!
+                if (autoSwitchPending) {
+                    cancelAutoSwitch(true);
+                    showToast(`Connected to ${currentServerName}`, 2500);
+                }
+                // After 4 seconds of continuous playback, clear failover history for this title
+                setTimeout(() => {
+                    if (serverStartedPlaying && !isPlaybackPaused) {
+                        try { sessionStorage.removeItem(failoverStorageKey); } catch(e) {}
+                    }
+                }, 4000);
+            }
+        }
+
+        // Determine the next untried server in sequence
+        function getNextUntriedServer() {
+            let failed = [];
+            try {
+                failed = JSON.parse(sessionStorage.getItem(failoverStorageKey) || '[]');
+            } catch(e) { failed = []; }
+
+            // Current server is failing or has failed
+            if (!failed.includes(currentServerId)) {
+                failed.push(currentServerId);
+                try {
+                    sessionStorage.setItem(failoverStorageKey, JSON.stringify(failed));
+                } catch(e) {}
+            }
+
+            // Find current server index in availableServers
+            const currentIdx = availableServers.findIndex(s => s.id === currentServerId);
+            const total = availableServers.length;
+
+            // Search ahead in circular order for an untried server
+            for (let i = 1; i < total; i++) {
+                const nextCandidate = availableServers[(currentIdx + i) % total];
+                if (!failed.includes(nextCandidate.id)) {
+                    return nextCandidate;
+                }
+            }
+            return null; // All servers have failed
+        }
+
+        // Trigger the automatic server switch countdown
+        function triggerAutoSwitch(reason = 'Server not responding') {
+            if (!isAutoFailoverEnabled || autoSwitchPending || autoSwitchCancelled) return;
+
+            const target = getNextUntriedServer();
+            if (!target) {
+                // Every server has been attempted and failed
+                showAllServersFailedModal();
+                return;
+            }
+
+            autoSwitchPending = true;
+            autoSwitchTargetServer = target;
+            autoSwitchCountdown = 3;
+
+            const hud = document.getElementById('auto-switch-hud');
+            const statusLabel = document.getElementById('auto-switch-status-label');
+            const timerBadge = document.getElementById('auto-switch-timer-badge');
+            const curName = document.getElementById('auto-switch-current-name');
+            const tgtName = document.getElementById('auto-switch-target-name');
+            const progBar = document.getElementById('auto-switch-progress-bar');
+
+            if (statusLabel) statusLabel.innerText = reason;
+            if (curName) curName.innerText = currentServerName;
+            if (tgtName) tgtName.innerText = target.name;
+            if (timerBadge) timerBadge.innerText = `${autoSwitchCountdown}s`;
+            if (progBar) {
+                progBar.style.transition = 'none';
+                progBar.style.width = '100%';
+                requestAnimationFrame(() => {
+                    progBar.style.transition = 'width 3s linear';
+                    progBar.style.width = '0%';
+                });
+            }
+
+            if (hud) {
+                hud.classList.remove('hidden');
+            }
+
+            if (autoSwitchTimerId) clearInterval(autoSwitchTimerId);
+            autoSwitchTimerId = setInterval(() => {
+                autoSwitchCountdown--;
+                if (timerBadge) timerBadge.innerText = `${autoSwitchCountdown}s`;
+                if (autoSwitchCountdown <= 0) {
+                    clearInterval(autoSwitchTimerId);
+                    autoSwitchTimerId = null;
+                    executeAutoSwitchNow();
+                }
+            }, 1000);
+        }
+
+        function executeAutoSwitchNow() {
+            if (autoSwitchTimerId) {
+                clearInterval(autoSwitchTimerId);
+                autoSwitchTimerId = null;
+            }
+            const hud = document.getElementById('auto-switch-hud');
+            if (hud) hud.classList.add('hidden');
+
+            const targetId = autoSwitchTargetServer ? autoSwitchTargetServer.id : nextServerId;
+            if (targetId) {
+                switchServer(targetId, true);
+            }
+        }
+
+        function cancelAutoSwitch(wasResumed = false) {
+            if (autoSwitchTimerId) {
+                clearInterval(autoSwitchTimerId);
+                autoSwitchTimerId = null;
+            }
+            autoSwitchPending = false;
+            if (!wasResumed) {
+                autoSwitchCancelled = true;
+                showToast('Auto-switch cancelled');
+            }
+            const hud = document.getElementById('auto-switch-hud');
+            if (hud) hud.classList.add('hidden');
+        }
+
+        function showAllServersFailedModal() {
+            if (autoSwitchTimerId) {
+                clearInterval(autoSwitchTimerId);
+                autoSwitchTimerId = null;
+            }
+            autoSwitchPending = false;
+            const hud = document.getElementById('auto-switch-hud');
+            if (hud) hud.classList.add('hidden');
+
+            const modal = document.getElementById('fallback-modal');
+            const titleEl = document.getElementById('fallback-modal-title');
+            const descEl = document.getElementById('fallback-modal-desc');
+            const switchBtn = document.getElementById('fallback-switch-btn');
+            const retryBtn = document.getElementById('fallback-retry-btn');
+
+            if (titleEl) titleEl.innerText = 'All Streaming Servers Unresponsive';
+            if (descEl) {
+                descEl.innerHTML = `Filvora attempted all <strong>${availableServers.length} streaming servers</strong>, but none responded with an active stream for this title. Please check your network connection or try again from Server 1.`;
+            }
+            if (switchBtn) {
+                switchBtn.innerText = 'Retry from Server 1';
+                switchBtn.onclick = () => {
+                    try { sessionStorage.removeItem(failoverStorageKey); } catch(e) {}
+                    switchServer(availableServers[0]?.id || 'vidlink', false);
+                };
+            }
+            if (retryBtn) {
+                retryBtn.innerText = 'Refresh Page';
+                retryBtn.onclick = () => {
+                    try { sessionStorage.removeItem(failoverStorageKey); } catch(e) {}
+                    window.location.reload();
+                };
+            }
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function armInitialWatchdog() {
+            if (serverResponded || autoSwitchPending || autoSwitchCancelled) return;
+            if (initialWatchdogTimer) clearTimeout(initialWatchdogTimer);
+            // 11-second watchdog for initial server response
+            initialWatchdogTimer = setTimeout(() => {
+                if (!serverStartedPlaying && !autoSwitchCancelled) {
+                    triggerAutoSwitch('Server Not Responding');
+                }
+            }, 11000);
+        }
+
+        function initServerWatchdog() {
+            // Check if user arrived here via auto-switch
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('auto') === '1') {
+                showToast(`Auto-switched to ${currentServerName}`, 3200);
+                urlParams.delete('auto');
+                const newQuery = urlParams.toString() ? '?' + urlParams.toString() : '';
+                window.history.replaceState(null, '', window.location.pathname + newQuery);
+            }
+
+            updateAutoFailoverUi();
+
+            // Wait if resume prompt is displayed
+            const resumePrompt = document.getElementById('resume-prompt');
+            const isPromptActive = (resumePrompt && resumePrompt.style.display !== 'none' && !resumePrompt.classList.contains('hidden'));
+
+            if (!isPromptActive) {
+                armInitialWatchdog();
+            }
+
+            // Arm mid-playback stall detector interval (every 3 seconds)
+            if (!stallCheckInterval) {
+                stallCheckInterval = setInterval(() => {
+                    if (!isAutoFailoverEnabled || autoSwitchPending || autoSwitchCancelled || isPlaybackPaused) return;
+                    // Only check stalls if server had previously responded/started
+                    if (serverResponded && serverStartedPlaying) {
+                        const elapsedSinceProgress = Date.now() - lastProgressTimestamp;
+                        // If no progress update for >13 seconds while supposed to be playing
+                        if (elapsedSinceProgress > 13000) {
+                            triggerAutoSwitch('Stream Stalled');
+                        }
+                    }
+                }, 3000);
+            }
+        }
 
         function showToast(message, duration = 2800) {
             let container = document.getElementById('player-toast-container');
@@ -931,9 +1267,17 @@
         }
         window.sendIframePlaybackCommand = sendIframePlaybackCommand;
 
-        function switchServer(serverId) {
+        function switchServer(serverId, isAuto = false) {
             if (!serverId) return;
+            if (!isAuto) {
+                try {
+                    sessionStorage.removeItem(failoverStorageKey);
+                } catch(e) {}
+            }
             let url = `?server=${serverId}`;
+            if (isAuto) {
+                url += `&auto=1`;
+            }
             if (typeof currentPlaybackPosition === 'number' && currentPlaybackPosition > 15) {
                 url += `&t=${Math.floor(currentPlaybackPosition)}`;
             }
@@ -945,6 +1289,9 @@
             if (prompt) {
                 prompt.style.display = 'none';
                 try { prompt.remove(); } catch(e) {}
+            }
+            if (typeof armInitialWatchdog === 'function') {
+                armInitialWatchdog();
             }
             currentPlaybackPosition = pos;
             isPlaybackPaused = false;
@@ -982,6 +1329,9 @@
             if (prompt) {
                 prompt.style.display = 'none';
                 try { prompt.remove(); } catch(e) {}
+            }
+            if (typeof armInitialWatchdog === 'function') {
+                armInitialWatchdog();
             }
             currentPlaybackPosition = 0;
             isPlaybackPaused = false;
@@ -1718,8 +2068,9 @@
             const overlay = document.getElementById('player-overlay');
             const topSensor = document.getElementById('top-sensor');
             const videoEl = document.getElementById('filvora-player');
-            const currentServerId = '{{ current_server }}';
-            const nextServerId = '{% if next_provider %}{{ next_provider.id }}{% else %}{% endif %}';
+
+            // Initialize Automatic Server Failover & Watchdog Engine
+            initServerWatchdog();
 
             // Top sensor hover triggers: smooth reveal when cursor moves to top edge
             if (topSensor) {
@@ -1863,11 +2214,6 @@
             scheduleHide(2000);
 
             // Progress tracking & server recording
-            const tmdbId = {{ tmdb_id }};
-            const mediaType = '{{ media_type }}';
-            const seasonNum = {% if season %}{{ season }}{% else %}null{% endif %};
-            const episodeNum = {% if episode %}{{ episode }}{% else %}null{% endif %};
-
             let successRecorded = false;
             let lastBeaconTime = 0;
 
@@ -1921,6 +2267,7 @@
                     const pos = (d && (d.currentTime || d.time || d.position || (d.data && (d.data.currentTime || d.data.time || d.data.position || d.data.seconds))));
                     const dur = (d && (d.duration || (d.data && (d.data.duration || d.data.totalTime))));
                     if (typeof pos === 'number' && pos >= 0) {
+                        markServerResponded(true);
                         // If playback position is advancing, video is playing!
                         if (pos > currentPlaybackPosition) {
                             if (isPlaybackPaused) {
@@ -1947,10 +2294,17 @@
                         else if (d.data && typeof d.data.muted === 'boolean') isIframeMuted = d.data.muted;
                     }
 
-                    // Check explicit pause, play, fullscreen, and ended events from embed player
+                    // Check explicit pause, play, error, fullscreen, and ended events from embed player
                     const eventName = ((d.event || d.type || d.action || d.status || (d.data && d.data.event) || (d.data && d.data.type) || '') + '').toLowerCase();
                     const isExplicitPause = (eventName === 'pause' || eventName === 'paused' || (!eventName.includes('timeupdate') && !eventName.includes('progress') && (d.paused === true || (d.data && d.data.paused === true))));
                     const isExplicitPlay = (eventName === 'play' || eventName === 'playing' || (!eventName.includes('timeupdate') && !eventName.includes('progress') && (eventName.includes('start') || d.paused === false || (d.data && d.data.paused === false))));
+                    const isExplicitError = (eventName === 'error' || eventName === 'media_error' || eventName.includes('fail') || Boolean(d.error) || Boolean(d.data && d.data.error));
+
+                    if (isExplicitError) {
+                        triggerAutoSwitch('Stream Error');
+                    } else if (isExplicitPlay) {
+                        markServerResponded(true);
+                    }
 
                     if (isExplicitPause && !isPlaybackPaused) {
                         isPlaybackPaused = true;
@@ -2030,13 +2384,17 @@
                 if (e.altKey && key === 's') {
                     e.preventDefault();
                     if (nextServerId) {
-                        switchServer(nextServerId);
+                        switchServer(nextServerId, false);
                     }
                     return;
                 }
 
-                // Escape key to exit floating PiP, theater mode, dialogs or fullscreen
+                // Escape key to exit floating PiP, auto-switch HUD, theater mode, dialogs or fullscreen
                 if (key === 'escape') {
+                    if (autoSwitchPending) {
+                        cancelAutoSwitch(false);
+                        return;
+                    }
                     if (isPipActive) {
                         togglePictureInPicture();
                         return;
@@ -2194,6 +2552,8 @@
                         if (resumePrompt && !pEl.contains(resumePrompt)) pEl.appendChild(resumePrompt);
                         if (autoplayModal && !pEl.contains(autoplayModal)) pEl.appendChild(autoplayModal);
                         if (fallbackModal && !pEl.contains(fallbackModal)) pEl.appendChild(fallbackModal);
+                        const autoSwitchHud = document.getElementById('auto-switch-hud');
+                        if (autoSwitchHud && !pEl.contains(autoSwitchHud)) pEl.appendChild(autoSwitchHud);
                         if (seekLeft && !pEl.contains(seekLeft)) pEl.appendChild(seekLeft);
                         if (seekRight && !pEl.contains(seekRight)) pEl.appendChild(seekRight);
                         const sleepOverlay = document.getElementById('sleep-timer-overlay');
@@ -2224,11 +2584,18 @@
 
                 player.on('play', () => {
                     isPlaybackPaused = false;
+                    markServerResponded(true);
                     showOverlay();
                     scheduleHide(1800);
                 });
 
+                player.on('playing', () => {
+                    isPlaybackPaused = false;
+                    markServerResponded(true);
+                });
+
                 player.on('timeupdate', () => {
+                    markServerResponded(true);
                     if (!player.paused()) {
                         if (isPlaybackPaused) {
                             isPlaybackPaused = false;
@@ -2262,8 +2629,12 @@
 
                 // Detect playback error in direct video player
                 player.on('error', () => {
-                    const modal = document.getElementById('fallback-modal');
-                    if (modal) modal.classList.remove('hidden');
+                    if (isAutoFailoverEnabled) {
+                        triggerAutoSwitch('Playback Error');
+                    } else {
+                        const modal = document.getElementById('fallback-modal');
+                        if (modal) modal.classList.remove('hidden');
+                    }
                 });
             }
 
@@ -2277,6 +2648,10 @@
 
             window.addEventListener('blur', () => {
                 closeSleepTimerMenu();
+                // Interaction with embed iframe extends watchdog grace period
+                if (typeof markServerResponded === 'function') {
+                    markServerResponded(false);
+                }
             });
         });
     </script>

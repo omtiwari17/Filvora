@@ -126,3 +126,35 @@ class PlaybackTestCase(TestCase):
         self.assertEqual(response.context['previous_episode']['episode'], 2)
         self.assertIsNotNone(response.context['next_episode'])
         self.assertEqual(response.context['next_episode']['episode'], 4)
+
+    def test_auto_failover_circular_sequence(self):
+        """Ensures the failover cycle steps cleanly through all 6 servers without skipping."""
+        ordered = registry.get_ordered_providers()
+        self.assertEqual(len(ordered), 6)
+        expected_chain = ['vidlink', 'vidfast', 'autoembed', 'vidsrc', '2embed', 'nontongo']
+        for i, s_id in enumerate(expected_chain):
+            next_expected = expected_chain[(i + 1) % len(expected_chain)]
+            next_p = registry.get_next_provider(s_id)
+            self.assertEqual(next_p.id, next_expected, f"Failed next provider for {s_id}")
+
+    def test_watch_view_with_auto_failover_parameter(self):
+        """Ensures watch view properly handles auto-switched incoming requests with auto=1."""
+        self.client.login(username='playbackuser', password='password123')
+        response = self.client.get('/watch/movie/157336/?server=vidfast&auto=1')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['current_server'], 'vidfast')
+        self.assertEqual(response.context['next_provider'].id, 'autoembed')
+        self.assertContains(response, 'id="auto-switch-hud"')
+        self.assertContains(response, 'id="auto-failover-toggle-btn"')
+        self.assertContains(response, 'initServerWatchdog')
+
+    def test_watch_view_preserves_timestamp_on_auto_failover(self):
+        """Ensures auto-switching carries the playback position into the new server embed URL."""
+        self.client.login(username='playbackuser', password='password123')
+        response = self.client.get('/watch/movie/157336/?server=vidsrc&t=2450&auto=1')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['current_server'], 'vidsrc')
+        self.assertEqual(response.context['resume_position'], 2450.0)
+        self.assertTrue(response.context['is_direct_jump'])
+        self.assertIn('startAt=2450', response.context['video_url'])
+
