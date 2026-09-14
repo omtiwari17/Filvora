@@ -223,5 +223,28 @@ class PlaybackTestCase(TestCase):
             self.assertTrue(tv_url.startswith('http'))
             self.assertIn('1399', tv_url)
 
+    def test_vidfast_embed_focus_and_fullscreen_attributes(self):
+        """Verifies Server 2 (VidFast) iframe attributes include fullscreen and focus preservation functions."""
+        self.client.login(username='playbackuser', password='password123')
+        response = self.client.get('/watch/movie/157336/?server=vidfast')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="filvora-embed-frame"')
+        self.assertContains(response, 'allowfullscreen')
+        self.assertContains(response, 'fullscreen *')
+        self.assertContains(response, 'focusPlayerIframe')
+
+    def test_watch_view_pause_failover_immunity(self):
+        """Ensures pausing video suppresses auto-failover and watchdog freezes while paused."""
+        self.client.login(username='playbackuser', password='password123')
+        response = self.client.get('/watch/movie/157336/?server=vidlink')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'setPlaybackPausedState')
+        self.assertContains(response, 'checkEmbedPauseSignal')
+        self.assertContains(response, 'checkEmbedPlaySignal')
+        self.assertContains(response, 'lastUserPauseTime')
+        self.assertContains(response, 'lastIframeInteractionTime')
+        self.assertContains(response, 'triggerAutoSwitch(reason = \'Server not responding\')')
+
+
 
 

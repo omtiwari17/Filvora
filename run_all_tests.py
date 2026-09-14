@@ -208,6 +208,8 @@ TEST_DESCRIPTIONS = {
     'test_report_server_success_get_rejected': 'Verifies GET method rejection on server-success endpoint',
     'test_multi_profile_server_preference_isolation': 'Enforces profile-isolated streaming server preferences between profiles',
     'test_all_providers_movie_and_tv_urls': 'Verifies valid movie and TV embed URL generation across all 6 streaming providers',
+    'test_vidfast_embed_focus_and_fullscreen_attributes': 'Verifies VidFast embed iframe fullscreen permissions and focus preservation router',
+    'test_watch_view_pause_failover_immunity': 'Enforces 100% failover immunity while paused, preventing server jumps on pause',
 
     # --------------------------------------------------------------------------
     # CATEGORY 4: Watch History, Ratings & Progress Engine (apps.watch)

@@ -732,9 +732,10 @@
             id="filvora-embed-frame"
             src="{{ video_url }}"
             class="w-full h-full border-0 absolute inset-0 bg-black"
-            allow="accelerometer *; autoplay *; clipboard-write *; encrypted-media *; gyroscope *; picture-in-picture *; web-share *; display-capture *"
+            allow="accelerometer *; autoplay *; clipboard-write *; encrypted-media *; gyroscope *; picture-in-picture *; web-share *; display-capture *; fullscreen *"
+            allowfullscreen
             referrerpolicy="origin"
-            onload="if (typeof markServerResponded === 'function') markServerResponded(false);"
+            onload="if (typeof markServerResponded === 'function') markServerResponded(false); if (typeof focusPlayerIframe === 'function') focusPlayerIframe();"
             onerror="if (typeof triggerAutoSwitch === 'function') triggerAutoSwitch('Connection Failed');"
         ></iframe>
 
@@ -849,6 +850,23 @@
         let currentPlaybackPosition = {{ resume_position|default:0 }};
         let isPlaybackPaused = false;
         let isIframeMuted = false;
+        let lastUserPauseTime = 0;
+        let lastIframeInteractionTime = 0;
+
+        function setPlaybackPausedState(isPaused, source = 'unknown') {
+            if (isPaused) {
+                isPlaybackPaused = true;
+                lastUserPauseTime = Date.now();
+                lastProgressTimestamp = Date.now();
+                if (autoSwitchPending) {
+                    cancelAutoSwitch(false);
+                }
+            } else {
+                isPlaybackPaused = false;
+                lastUserPauseTime = 0;
+                lastProgressTimestamp = Date.now();
+            }
+        }
 
         // =========================================================================
         // AUTOMATIC SERVER FAILOVER & WATCHDOG ENGINE
@@ -959,7 +977,7 @@
 
         // Trigger the automatic server switch countdown
         function triggerAutoSwitch(reason = 'Server not responding') {
-            if (!isAutoFailoverEnabled || autoSwitchPending || autoSwitchCancelled) return;
+            if (!isAutoFailoverEnabled || autoSwitchPending || autoSwitchCancelled || isPlaybackPaused) return;
 
             const target = getNextUntriedServer();
             if (!target) {
@@ -1073,11 +1091,11 @@
         }
 
         function armInitialWatchdog() {
-            if (serverResponded || autoSwitchPending || autoSwitchCancelled) return;
+            if (serverResponded || autoSwitchPending || autoSwitchCancelled || isPlaybackPaused) return;
             if (initialWatchdogTimer) clearTimeout(initialWatchdogTimer);
             // 11-second watchdog for initial server response
             initialWatchdogTimer = setTimeout(() => {
-                if (!serverStartedPlaying && !autoSwitchCancelled) {
+                if (!serverStartedPlaying && !autoSwitchCancelled && !isPlaybackPaused) {
                     triggerAutoSwitch('Server Not Responding');
                 }
             }, 11000);
@@ -1099,18 +1117,42 @@
             const resumePrompt = document.getElementById('resume-prompt');
             const isPromptActive = (resumePrompt && resumePrompt.style.display !== 'none' && !resumePrompt.classList.contains('hidden'));
 
-            if (!isPromptActive) {
+            if (!isPromptActive && !isPlaybackPaused) {
                 armInitialWatchdog();
             }
 
             // Arm mid-playback stall detector interval (every 3 seconds)
             if (!stallCheckInterval) {
                 stallCheckInterval = setInterval(() => {
-                    if (!isAutoFailoverEnabled || autoSwitchPending || autoSwitchCancelled || isPlaybackPaused) return;
+                    if (!isAutoFailoverEnabled || autoSwitchPending || autoSwitchCancelled) return;
+
+                    // Directly check native HTML5 Video.js player if active
+                    if (videoEl && typeof videojs !== 'undefined') {
+                        try {
+                            const p = videojs('filvora-player');
+                            if (p && p.paused()) {
+                                setPlaybackPausedState(true, 'videojs_native_paused');
+                            }
+                        } catch(e) {}
+                    }
+
+                    // If playback is paused or was recently paused by user, freeze the watchdog & keep timestamp fresh
+                    if (isPlaybackPaused || (lastUserPauseTime > 0 && Date.now() - lastUserPauseTime < 30000)) {
+                        lastProgressTimestamp = Date.now();
+                        return;
+                    }
+
+                    // If user recently interacted with embed player and progress stopped, treat as user pause rather than stall!
+                    if (lastIframeInteractionTime > 0 && (Date.now() - lastIframeInteractionTime < 45000)) {
+                        setPlaybackPausedState(true, 'iframe_interaction_pause');
+                        lastProgressTimestamp = Date.now();
+                        return;
+                    }
+
                     // Only check stalls if server had previously responded/started
                     if (serverResponded && serverStartedPlaying) {
                         const elapsedSinceProgress = Date.now() - lastProgressTimestamp;
-                        // If no progress update for >13 seconds while supposed to be playing
+                        // If no progress update for >13 seconds while supposed to be actively playing
                         if (elapsedSinceProgress > 13000) {
                             triggerAutoSwitch('Stream Stalled');
                         }
@@ -1172,7 +1214,13 @@
                     packets.push({ event: act, action: act, type: act, method: act });
                     packets.push({ event: 'command', func: isPlaybackPaused ? 'playVideo' : 'pauseVideo' });
                     packets.push({ method: act });
-                    isPlaybackPaused = !isPlaybackPaused;
+                    setPlaybackPausedState(!isPlaybackPaused, 'toggle_play');
+                    if (isPlaybackPaused) {
+                        showOverlay();
+                        scheduleHide(2500);
+                    } else {
+                        scheduleHide(1500);
+                    }
                 } else if (action === 'play') {
                     packets.push({ command: 'play' });
                     packets.push({ action: 'play' });
@@ -1182,7 +1230,8 @@
                     packets.push({ event: 'play', action: 'play', type: 'play', method: 'play' });
                     packets.push({ event: 'command', func: 'playVideo' });
                     packets.push({ method: 'play' });
-                    isPlaybackPaused = false;
+                    setPlaybackPausedState(false, 'command_play');
+                    scheduleHide(1500);
                 } else if (action === 'pause') {
                     packets.push({ command: 'pause' });
                     packets.push({ action: 'pause' });
@@ -1192,7 +1241,9 @@
                     packets.push({ event: 'pause', action: 'pause', type: 'pause', method: 'pause' });
                     packets.push({ event: 'command', func: 'pauseVideo' });
                     packets.push({ method: 'pause' });
-                    isPlaybackPaused = true;
+                    setPlaybackPausedState(true, 'command_pause');
+                    showOverlay();
+                    scheduleHide(2500);
                 } else if (action === 'seek') {
                     const newPos = Math.max(0, (currentPlaybackPosition || 0) + val);
                     packets.push({ command: 'seek', time: newPos, value: newPos, offset: val });
@@ -1266,6 +1317,17 @@
             } catch(e) {}
         }
         window.sendIframePlaybackCommand = sendIframePlaybackCommand;
+
+        // Proactively restore keyboard focus to embed iframe (essential for VidFast / Server 2 space play/pause)
+        function focusPlayerIframe() {
+            const iframe = document.getElementById('filvora-embed-frame') || document.querySelector('iframe');
+            if (iframe && typeof iframe.focus === 'function') {
+                try {
+                    iframe.focus();
+                } catch(e) {}
+            }
+        }
+        window.focusPlayerIframe = focusPlayerIframe;
 
         function switchServer(serverId, isAuto = false) {
             if (!serverId) return;
@@ -1388,6 +1450,7 @@
         function closeBookmarkModal() {
             const modal = document.getElementById('bookmark-modal');
             if (modal) modal.classList.add('hidden');
+            focusPlayerIframe();
         }
 
         function syncCurrentTimestamp() {
@@ -1642,6 +1705,7 @@
             if (globalBackdrop && (!sleepMenu || sleepMenu.classList.contains('hidden'))) {
                 globalBackdrop.classList.add('hidden');
             }
+            focusPlayerIframe();
         }
 
         function openMobilePlayerSheet() {
@@ -1653,6 +1717,7 @@
         function closeMobilePlayerSheet() {
             const sheet = document.getElementById('mobile-player-controls-sheet');
             if (sheet) sheet.classList.add('hidden');
+            focusPlayerIframe();
         }
 
         // ==========================================
@@ -1678,6 +1743,7 @@
                 menu.classList.add('hidden');
                 if (backdrop) backdrop.classList.add('hidden');
                 if (globalBackdrop) globalBackdrop.classList.add('hidden');
+                focusPlayerIframe();
             }
         }
 
@@ -1691,6 +1757,7 @@
             if (globalBackdrop && (!serverMenu || serverMenu.classList.contains('hidden'))) {
                 globalBackdrop.classList.add('hidden');
             }
+            focusPlayerIframe();
         }
 
         function setSleepTimer(val) {
@@ -2101,18 +2168,18 @@
                 });
             }
 
-            // Global mousemove: restore cursor, show overlay if near top edge, and restore keyboard focus
+            // Global mousemove: restore cursor, show overlay if near top edge, and restore parent focus only when interacting with top controls
             document.addEventListener('mousemove', (e) => {
                 const wrapper = document.getElementById('player-wrapper');
                 if (wrapper) wrapper.classList.remove('hide-cursor');
 
-                if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
-                    window.focus();
-                }
-
-                if (e.clientY <= 36) {
+                const isNearTopControls = (e.clientY <= 45) || !!(e.target && e.target.closest && e.target.closest('#player-overlay'));
+                if (isNearTopControls) {
+                    if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+                        window.focus();
+                    }
                     showOverlay();
-                } else if (!e.target.closest('#player-overlay') && !isInteractiveMenuOpen()) {
+                } else if (!isInteractiveMenuOpen()) {
                     scheduleHide(1500);
                 }
             });
@@ -2139,20 +2206,25 @@
                     closeSleepTimerMenu();
                 }
                 if (!isInteractiveMenuOpen() && !e.target.closest('#player-overlay') && !e.target.closest('#bookmark-modal') && !e.target.closest('#sleep-timer-container') && !e.target.closest('#mobile-player-controls-sheet')) {
+                    focusPlayerIframe();
                     const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
                     scheduleHide(isTouch ? 2500 : 600);
                 }
             });
 
-            // Focus preservation across all servers & automatic menu dismissal when iframe receives focus/click
+            // Track user cursor presence over player canvas to detect user interaction clicks
+            let isCursorOverVideo = false;
+            const playerWrap = document.getElementById('player-wrapper') || document.getElementById('video-container');
+            if (playerWrap) {
+                playerWrap.addEventListener('mouseenter', () => { isCursorOverVideo = true; });
+                playerWrap.addEventListener('mouseleave', () => { isCursorOverVideo = false; });
+            }
+
+            // Automatic menu dismissal when iframe receives focus/click without stealing focus away from embed player
             window.addEventListener('blur', () => {
                 closeAllPlayerDropdowns();
-                if (document.visibilityState === 'visible') {
-                    setTimeout(() => {
-                        if (document.visibilityState === 'visible' && document.activeElement && document.activeElement.tagName === 'IFRAME') {
-                            window.focus();
-                        }
-                    }, 150);
+                if (isCursorOverVideo || (document.activeElement && document.activeElement.tagName === 'IFRAME')) {
+                    lastIframeInteractionTime = Date.now();
                 }
             });
 
@@ -2212,6 +2284,7 @@
             // Initial display on load: show for 2.0s then hide cleanly
             showOverlay();
             scheduleHide(2000);
+            setTimeout(() => focusPlayerIframe(), 500);
 
             // Progress tracking & server recording
             let successRecorded = false;
@@ -2253,6 +2326,40 @@
                 }
             }
 
+            function checkEmbedPauseSignal(obj) {
+                if (!obj || typeof obj !== 'object') return false;
+                if (obj.paused === true || obj.playing === false || obj.isPlaying === false) return true;
+                const candidates = [obj.event, obj.type, obj.action, obj.status, obj.state, obj.playerState, obj.event_type];
+                for (const c of candidates) {
+                    if (typeof c === 'string') {
+                        const s = c.toLowerCase();
+                        if (s === 'pause' || s === 'paused' || s.endsWith(':pause') || s.endsWith('.pause') || s === 'player_paused') return true;
+                    } else if (c === 2) {
+                        return true; // YouTube / standard API state 2 = PAUSED
+                    }
+                }
+                if (obj.data && typeof obj.data === 'object' && checkEmbedPauseSignal(obj.data)) return true;
+                if (obj.payload && typeof obj.payload === 'object' && checkEmbedPauseSignal(obj.payload)) return true;
+                return false;
+            }
+
+            function checkEmbedPlaySignal(obj) {
+                if (!obj || typeof obj !== 'object') return false;
+                if (obj.paused === false || obj.playing === true || obj.isPlaying === true) return true;
+                const candidates = [obj.event, obj.type, obj.action, obj.status, obj.state, obj.playerState, obj.event_type];
+                for (const c of candidates) {
+                    if (typeof c === 'string') {
+                        const s = c.toLowerCase();
+                        if (s === 'play' || s === 'playing' || s.endsWith(':play') || s.endsWith('.play') || s === 'player_playing') return true;
+                    } else if (c === 1) {
+                        return true; // YouTube / standard API state 1 = PLAYING
+                    }
+                }
+                if (obj.data && typeof obj.data === 'object' && checkEmbedPlaySignal(obj.data)) return true;
+                if (obj.payload && typeof obj.payload === 'object' && checkEmbedPlaySignal(obj.payload)) return true;
+                return false;
+            }
+
             // Listen for postMessage progress updates from supported embed players (VidFast, VidLink, etc.)
             window.addEventListener('message', (e) => {
                 if (!e.data) return;
@@ -2264,15 +2371,43 @@
                     if (d && typeof d.data === 'string' && (d.data.startsWith('{') || d.data.startsWith('['))) {
                         try { d.data = JSON.parse(d.data); } catch(err) {}
                     }
+
+                    const isExplicitPause = checkEmbedPauseSignal(d);
+                    const isExplicitPlay = checkEmbedPlaySignal(d);
+
+                    // Check explicit error from embed player
+                    const eventName = ((d.event || d.type || d.action || d.status || (d.data && d.data.event) || (d.data && d.data.type) || '') + '').toLowerCase();
+                    const isExplicitError = (eventName === 'error' || eventName === 'media_error' || eventName.includes('fail') || Boolean(d.error) || Boolean(d.data && d.data.error));
+
+                    if (isExplicitError) {
+                        triggerAutoSwitch('Stream Error');
+                        return;
+                    }
+
+                    if (isExplicitPause) {
+                        setPlaybackPausedState(true, 'embed_explicit_pause');
+                        showOverlay();
+                        scheduleHide(2500);
+                    } else if (isExplicitPlay) {
+                        setPlaybackPausedState(false, 'embed_explicit_play');
+                        markServerResponded(true);
+                        scheduleHide(1500);
+                    }
+
                     const pos = (d && (d.currentTime || d.time || d.position || (d.data && (d.data.currentTime || d.data.time || d.data.position || d.data.seconds))));
                     const dur = (d && (d.duration || (d.data && (d.data.duration || d.data.totalTime))));
                     if (typeof pos === 'number' && pos >= 0) {
                         markServerResponded(true);
-                        // If playback position is advancing, video is playing!
-                        if (pos > currentPlaybackPosition) {
-                            if (isPlaybackPaused) {
-                                isPlaybackPaused = false;
-                                scheduleHide(1500);
+                        
+                        const recentlyPausedByUser = (lastUserPauseTime > 0 && Date.now() - lastUserPauseTime < 4000);
+                        // Only resume playing if not explicit pause, not recently paused by user,
+                        // and position is genuinely advancing (> 0.4s) or explicit play
+                        if (!isExplicitPause && !recentlyPausedByUser) {
+                            if (isExplicitPlay || (pos - currentPlaybackPosition > 0.4)) {
+                                if (isPlaybackPaused) {
+                                    setPlaybackPausedState(false, 'position_advancing');
+                                    scheduleHide(1500);
+                                }
                             }
                         }
                         currentPlaybackPosition = pos;
@@ -2292,27 +2427,6 @@
                     if (d && (d.event === 'volumechange' || d.type === 'volumechange' || (d.data && d.data.event === 'volumechange'))) {
                         if (typeof d.muted === 'boolean') isIframeMuted = d.muted;
                         else if (d.data && typeof d.data.muted === 'boolean') isIframeMuted = d.data.muted;
-                    }
-
-                    // Check explicit pause, play, error, fullscreen, and ended events from embed player
-                    const eventName = ((d.event || d.type || d.action || d.status || (d.data && d.data.event) || (d.data && d.data.type) || '') + '').toLowerCase();
-                    const isExplicitPause = (eventName === 'pause' || eventName === 'paused' || (!eventName.includes('timeupdate') && !eventName.includes('progress') && (d.paused === true || (d.data && d.data.paused === true))));
-                    const isExplicitPlay = (eventName === 'play' || eventName === 'playing' || (!eventName.includes('timeupdate') && !eventName.includes('progress') && (eventName.includes('start') || d.paused === false || (d.data && d.data.paused === false))));
-                    const isExplicitError = (eventName === 'error' || eventName === 'media_error' || eventName.includes('fail') || Boolean(d.error) || Boolean(d.data && d.data.error));
-
-                    if (isExplicitError) {
-                        triggerAutoSwitch('Stream Error');
-                    } else if (isExplicitPlay) {
-                        markServerResponded(true);
-                    }
-
-                    if (isExplicitPause && !isPlaybackPaused) {
-                        isPlaybackPaused = true;
-                        showOverlay();
-                        scheduleHide(2500);
-                    } else if (isExplicitPlay && isPlaybackPaused) {
-                        isPlaybackPaused = false;
-                        scheduleHide(1500);
                     }
 
                     if (eventName.includes('fullscreen')) {
@@ -2425,6 +2539,7 @@
                         } catch (err) {}
                     } else {
                         sendIframePlaybackCommand('toggle_play');
+                        focusPlayerIframe();
                     }
                 } else if (key === 'm') {
                     e.preventDefault();
@@ -2438,6 +2553,7 @@
                     } else {
                         sendIframePlaybackCommand('mute');
                         showToast(isIframeMuted ? 'Muted' : 'Unmuted', 1500);
+                        focusPlayerIframe();
                     }
                 } else if (key === 'arrowright' || key === 'l') {
                     e.preventDefault();
@@ -2449,6 +2565,7 @@
                         } catch (err) {}
                     } else {
                         sendIframePlaybackCommand('seek', 10);
+                        focusPlayerIframe();
                     }
                 } else if (key === 'arrowleft' || key === 'j') {
                     e.preventDefault();
@@ -2460,6 +2577,7 @@
                         } catch (err) {}
                     } else {
                         sendIframePlaybackCommand('seek', -10);
+                        focusPlayerIframe();
                     }
                 }
             }
@@ -2577,20 +2695,20 @@
 
                 // When paused, show controls briefly and auto-hide on inactivity
                 player.on('pause', () => {
-                    isPlaybackPaused = true;
+                    setPlaybackPausedState(true, 'videojs_pause');
                     showOverlay();
                     scheduleHide(2500);
                 });
 
                 player.on('play', () => {
-                    isPlaybackPaused = false;
+                    setPlaybackPausedState(false, 'videojs_play');
                     markServerResponded(true);
                     showOverlay();
                     scheduleHide(1800);
                 });
 
                 player.on('playing', () => {
-                    isPlaybackPaused = false;
+                    setPlaybackPausedState(false, 'videojs_playing');
                     markServerResponded(true);
                 });
 
@@ -2598,7 +2716,7 @@
                     markServerResponded(true);
                     if (!player.paused()) {
                         if (isPlaybackPaused) {
-                            isPlaybackPaused = false;
+                            setPlaybackPausedState(false, 'videojs_timeupdate');
                         }
                         const cur = player.currentTime();
                         const dur = player.duration();
