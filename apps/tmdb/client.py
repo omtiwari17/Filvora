@@ -11,6 +11,22 @@ class TMDBClient:
     _cache = {}
     CACHE_TTL = 900  # 15 minutes in-memory cache
     _session = None
+    _offline_until = 0
+
+    @classmethod
+    def is_offline(cls):
+        """Returns True if TMDB API is currently detected as offline / unreachable."""
+        return time.time() < cls._offline_until
+
+    @classmethod
+    def mark_offline(cls, duration=15):
+        """Short-circuits remote requests for `duration` seconds when network connectivity is lost."""
+        cls._offline_until = time.time() + duration
+
+    @classmethod
+    def mark_online(cls):
+        """Clears offline backoff when a request succeeds."""
+        cls._offline_until = 0
 
     def __init__(self):
         self.api_key = os.environ.get('TMDB_API_KEY')
@@ -35,9 +51,15 @@ class TMDBClient:
         if not self.api_key:
             return {}
 
+        # Fast short-circuit if offline to avoid 30s timeout cascades
+        if time.time() < self._offline_until:
+            return {}
+
         req_params['api_key'] = self.api_key
         query_string = urllib.parse.urlencode(req_params)
         url = f"{self.BASE_URL}{endpoint}?{query_string}"
+
+        is_dns_error = False
 
         # Method 1: Requests with persistent keep-alive connection pool (Fastest, ~100-200ms)
         try:
@@ -45,26 +67,35 @@ class TMDBClient:
             if r.status_code == 200:
                 data = r.json()
                 self._cache[cache_key] = (data, time.time())
+                TMDBClient._offline_until = 0
                 return data
+        except requests.exceptions.ConnectionError as e:
+            err_str = str(e).lower()
+            # If DNS resolution failed or host is unreachable, system is offline
+            if 'getaddrinfo' in err_str or 'nameresolutionerror' in err_str or 'failed to establish a new connection' in err_str:
+                is_dns_error = True
+                self.mark_offline(15)
         except Exception:
             pass
 
-        # Method 2: Windows Schannel curl fallback if requests encounters SSL/network glitch
-        try:
-            res = subprocess.run(
-                ['curl.exe', '-s', '--ssl-no-revoke', '-4', '--connect-timeout', '4', url],
-                capture_output=True,
-                text=True,
-                encoding='utf-8',
-                timeout=5
-            )
-            if res.returncode == 0 and res.stdout.strip():
-                data = json.loads(res.stdout)
-                if not data.get('status_code'):  # Not an error response
-                    self._cache[cache_key] = (data, time.time())
-                    return data
-        except Exception:
-            pass
+        # Method 2: Windows Schannel curl fallback if requests encounters SSL glitch (skip if offline/DNS error)
+        if not is_dns_error and time.time() >= self._offline_until:
+            try:
+                res = subprocess.run(
+                    ['curl.exe', '-s', '--ssl-no-revoke', '-4', '--connect-timeout', '3', url],
+                    capture_output=True,
+                    text=True,
+                    encoding='utf-8',
+                    timeout=4
+                )
+                if res.returncode == 0 and res.stdout.strip():
+                    data = json.loads(res.stdout)
+                    if not data.get('status_code'):  # Not an error response
+                        self._cache[cache_key] = (data, time.time())
+                        TMDBClient._offline_until = 0
+                        return data
+            except Exception:
+                pass
 
         return {}
 
@@ -127,6 +158,166 @@ class TMDBClient:
             return 'TV-MA'
         return None
 
+    @staticmethod
+    def _format_date(date_str):
+        """Format an ISO date string (YYYY-MM-DD) into human-friendly format (e.g. 'Jun 26, 2026')."""
+        if not date_str:
+            return ""
+        try:
+            import datetime
+            clean = str(date_str)[:10]
+            dt = datetime.datetime.strptime(clean, "%Y-%m-%d")
+            return dt.strftime("%b %d, %Y")
+        except Exception:
+            return str(date_str)
+
+    def _extract_movie_release_info(self, data):
+        """
+        Extracts theatrical release date, digital release date, OTT streaming release date,
+        OTT platform name, and flatrate streaming providers from TMDB movie payload.
+        """
+        import datetime
+        if not data or not isinstance(data, dict):
+            return {}
+
+        main_date = (data.get('release_date') or '')[:10]
+        theatrical_date = None
+        digital_date = None
+        ott_date = None
+        ott_platform = None
+
+        release_results = data.get('release_dates', {}).get('results', [])
+        if not release_results and isinstance(data.get('results'), list):
+            release_results = data.get('results', [])
+
+        # Priority 1: US releases, Priority 2: other countries
+        us_entry = next((r for r in release_results if isinstance(r, dict) and r.get('iso_3166_1') == 'US'), None)
+        countries_to_check = [us_entry] if us_entry else []
+        for r in release_results:
+            if r != us_entry and isinstance(r, dict):
+                countries_to_check.append(r)
+
+        known_streaming_keywords = [
+            'netflix', 'disney+', 'disney plus', 'hbo max', 'max', 'hulu', 'prime video', 
+            'amazon prime', 'apple tv', 'peacock', 'paramount+', 'paramount plus', 'jiocinema', 'hotstar'
+        ]
+
+        for country in countries_to_check:
+            if not country:
+                continue
+            rd_list = country.get('release_dates', [])
+            for rd in sorted(rd_list, key=lambda x: x.get('release_date') or ''):
+                rtype = rd.get('type')
+                rdate = (rd.get('release_date') or '')[:10]
+                rnote = (rd.get('note') or '').strip()
+                if not rdate:
+                    continue
+
+                # Type 3: Theatrical
+                if rtype == 3 and not theatrical_date:
+                    theatrical_date = rdate
+
+                # Type 4: Digital / OTT
+                if rtype == 4:
+                    if not digital_date:
+                        digital_date = rdate
+
+                    note_lower = rnote.lower()
+                    is_platform_note = any(kw in note_lower for kw in known_streaming_keywords)
+                    if is_platform_note:
+                        ott_date = rdate
+                        ott_platform = rnote
+                    elif not ott_date:
+                        ott_date = rdate
+                        if rnote:
+                            ott_platform = rnote
+
+            if theatrical_date and ott_date:
+                break
+
+        # Check watch/providers for active flatrate streaming
+        wp = data.get('watch/providers', {}).get('results', {})
+        flatrate_providers = []
+        us_wp = wp.get('US', {})
+        for p in us_wp.get('flatrate', []):
+            pname = p.get('provider_name')
+            if pname and pname not in flatrate_providers:
+                flatrate_providers.append(pname)
+
+        if not flatrate_providers:
+            for ccode, cdata in wp.items():
+                if isinstance(cdata, dict):
+                    for p in cdata.get('flatrate', []):
+                        pname = p.get('provider_name')
+                        if pname and pname not in flatrate_providers:
+                            flatrate_providers.append(pname)
+                if len(flatrate_providers) >= 2:
+                    break
+
+        if not ott_platform and flatrate_providers:
+            ott_platform = flatrate_providers[0]
+
+        if not ott_date and digital_date:
+            ott_date = digital_date
+
+        if not theatrical_date and main_date:
+            theatrical_date = main_date
+
+        today_str = datetime.date.today().isoformat()
+        theatrical_status = 'released' if theatrical_date and theatrical_date <= today_str else 'upcoming'
+        ott_status = 'released' if ott_date and ott_date <= today_str else 'upcoming'
+
+        return {
+            'theatrical_release_date': theatrical_date,
+            'theatrical_release_display': self._format_date(theatrical_date),
+            'theatrical_status': theatrical_status,
+            'digital_release_date': digital_date,
+            'digital_release_display': self._format_date(digital_date),
+            'ott_release_date': ott_date,
+            'ott_release_display': self._format_date(ott_date),
+            'ott_platform': ott_platform,
+            'ott_status': ott_status,
+            'streaming_providers': flatrate_providers,
+        }
+
+    def _extract_tv_release_info(self, data):
+        """
+        Extracts air dates, networks, and streaming home for TV series.
+        """
+        if not data or not isinstance(data, dict):
+            return {}
+
+        first_air = (data.get('first_air_date') or '')[:10]
+        last_air = (data.get('last_air_date') or '')[:10]
+        networks = [n.get('name') for n in data.get('networks', []) if isinstance(n, dict) and n.get('name')]
+
+        wp = data.get('watch/providers', {}).get('results', {})
+        flatrate = []
+        for ccode in ['US', 'IN']:
+            for p in wp.get(ccode, {}).get('flatrate', []):
+                pname = p.get('provider_name')
+                if pname and pname not in flatrate:
+                    flatrate.append(pname)
+        if not flatrate:
+            for ccode, cdata in wp.items():
+                if isinstance(cdata, dict):
+                    for p in cdata.get('flatrate', []):
+                        pname = p.get('provider_name')
+                        if pname and pname not in flatrate:
+                            flatrate.append(pname)
+                if len(flatrate) >= 2:
+                    break
+
+        primary_platform = flatrate[0] if flatrate else (networks[0] if networks else None)
+
+        return {
+            'first_air_display': self._format_date(first_air),
+            'last_air_display': self._format_date(last_air),
+            'networks_list': networks,
+            'streaming_providers': flatrate,
+            'primary_platform': primary_platform,
+            'status_label': data.get('status', 'Returning Series'),
+        }
 
     def get_content_rating(self, tmdb_id, media_type='movie'):
         if not tmdb_id:
@@ -507,14 +698,16 @@ class TMDBClient:
 
     def get_movie_details(self, movie_id):
         if str(movie_id) in ["1744462", "1222222"]:
-            data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates,videos"})
+            data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates,videos,watch/providers"})
             if data and (data.get('title') or data.get('poster_path')):
                 data['age_rating'] = self._extract_movie_rating(data) or '18+'
                 data['trailer_key'] = self.extract_official_trailer(data.get('videos')) or "QdBZY2fkU-0"
+                rel_info = self._extract_movie_release_info(data)
+                data.update(rel_info)
                 return data
             return self._get_gta_vi_special()
 
-        data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates,videos"})
+        data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates,videos,watch/providers"})
         if data and (data.get('title') or data.get('poster_path')):
             data['age_rating'] = self._extract_movie_rating(data)
             if data['age_rating']:
@@ -524,6 +717,8 @@ class TMDBClient:
                     self._attach_age_rating(r, 'movie') for r in data['recommendations']['results']
                 ]
             data['trailer_key'] = self.extract_official_trailer(data.get('videos'))
+            rel_info = self._extract_movie_release_info(data)
+            data.update(rel_info)
             return data
 
         # Check mock data fallback
@@ -531,9 +726,11 @@ class TMDBClient:
             if m['id'] == int(movie_id):
                 m['age_rating'] = m.get('age_rating', 'PG-13')
                 self._RATING_CACHE[f"movie:{movie_id}"] = m['age_rating']
+                rel_info = self._extract_movie_release_info(m)
+                m.update(rel_info)
                 return m
 
-        return {
+        fallback_movie = {
             "id": movie_id,
             "title": f"Movie {movie_id}",
             "tagline": "A cinematic journey on Filvora.",
@@ -549,6 +746,9 @@ class TMDBClient:
             "recommendations": {"results": []},
             "trailer_key": None
         }
+        rel_info = self._extract_movie_release_info(fallback_movie)
+        fallback_movie.update(rel_info)
+        return fallback_movie
 
     def get_collection(self, collection_id):
         """Fetch full franchise collection details with chronologically ordered movie parts."""
@@ -611,7 +811,7 @@ class TMDBClient:
         return self.get_tv_details(tv_id)
 
     def get_tv_details(self, tv_id):
-        data = self._fetch(f"/tv/{tv_id}", {"append_to_response": "credits,recommendations,content_ratings,videos"})
+        data = self._fetch(f"/tv/{tv_id}", {"append_to_response": "credits,recommendations,content_ratings,videos,watch/providers"})
         if data and (data.get('name') or data.get('poster_path')):
             data['age_rating'] = self._extract_tv_rating(data)
             if data['age_rating']:
@@ -621,6 +821,8 @@ class TMDBClient:
                     self._attach_age_rating(r, 'tv') for r in data['recommendations']['results']
                 ]
             data['trailer_key'] = self.extract_official_trailer(data.get('videos'))
+            tv_rel = self._extract_tv_release_info(data)
+            data.update(tv_rel)
             return data
 
         # Check mock data fallback
@@ -628,9 +830,11 @@ class TMDBClient:
             if s['id'] == int(tv_id):
                 s['age_rating'] = s.get('age_rating', 'TV-MA')
                 self._RATING_CACHE[f"tv:{tv_id}"] = s['age_rating']
+                tv_rel = self._extract_tv_release_info(s)
+                s.update(tv_rel)
                 return s
 
-        return {
+        fallback_tv = {
             "id": tv_id,
             "name": f"Series {tv_id}",
             "tagline": "An extraordinary episodic journey.",
@@ -647,6 +851,9 @@ class TMDBClient:
             "credits": {"cast": []},
             "recommendations": {"results": []}
         }
+        tv_rel = self._extract_tv_release_info(fallback_tv)
+        fallback_tv.update(tv_rel)
+        return fallback_tv
 
     def get_tv_season(self, tv_id, season_number):
         data = self._fetch(f"/tv/{tv_id}/season/{season_number}")
@@ -992,6 +1199,14 @@ class TMDBClient:
             "release_date": "2026-08-27",
             "first_air_date": "2026-08-27",
             "release_year": "2026",
+            "theatrical_release_date": "2026-08-27",
+            "theatrical_release_display": "Aug 27, 2026",
+            "theatrical_status": "upcoming",
+            "ott_release_date": "2026-08-27",
+            "ott_release_display": "Aug 27, 2026",
+            "ott_platform": "YouTube / Rockstar Games",
+            "ott_status": "upcoming",
+            "streaming_providers": ["YouTube"],
             "runtime": 65,
             "vote_average": 9.6,
             "vote_count": 12500,
@@ -1031,6 +1246,16 @@ class TMDBClient:
                 "poster_path": "/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
                 "backdrop_path": "/xJHokMbljvjADYdit5fK5VQsXEG.jpg",
                 "release_date": "2014-11-05",
+                "theatrical_release_date": "2014-11-05",
+                "theatrical_release_display": "Nov 05, 2014",
+                "theatrical_status": "released",
+                "digital_release_date": "2015-03-17",
+                "digital_release_display": "Mar 17, 2015",
+                "ott_release_date": "2015-03-31",
+                "ott_release_display": "Mar 31, 2015",
+                "ott_platform": "Paramount+",
+                "ott_status": "released",
+                "streaming_providers": ["Paramount+", "Prime Video"],
                 "runtime": 169,
                 "vote_average": 8.4,
                 "genres": [{"id": 12, "name": "Adventure"}, {"id": 18, "name": "Drama"}, {"id": 878, "name": "Science Fiction"}]
@@ -1043,6 +1268,16 @@ class TMDBClient:
                 "poster_path": "/d5NXSklXo0qyIYkgV94XAgMIckC.jpg",
                 "backdrop_path": "/lzWHmYdfeFiMIY4JaMmtR7GEli3.jpg",
                 "release_date": "2021-09-15",
+                "theatrical_release_date": "2021-10-22",
+                "theatrical_release_display": "Oct 22, 2021",
+                "theatrical_status": "released",
+                "digital_release_date": "2021-12-03",
+                "digital_release_display": "Dec 03, 2021",
+                "ott_release_date": "2021-12-03",
+                "ott_release_display": "Dec 03, 2021",
+                "ott_platform": "Max",
+                "ott_status": "released",
+                "streaming_providers": ["Max"],
                 "runtime": 155,
                 "vote_average": 7.8,
                 "genres": [{"id": 878, "name": "Science Fiction"}, {"id": 12, "name": "Adventure"}]
@@ -1055,6 +1290,16 @@ class TMDBClient:
                 "poster_path": "/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg",
                 "backdrop_path": "/s3TBrRGB1jav7cUneYISv9NVIuu.jpg",
                 "release_date": "2010-07-15",
+                "theatrical_release_date": "2010-07-16",
+                "theatrical_release_display": "Jul 16, 2010",
+                "theatrical_status": "released",
+                "digital_release_date": "2010-12-07",
+                "digital_release_display": "Dec 07, 2010",
+                "ott_release_date": "2010-12-07",
+                "ott_release_display": "Dec 07, 2010",
+                "ott_platform": "Netflix",
+                "ott_status": "released",
+                "streaming_providers": ["Netflix"],
                 "runtime": 148,
                 "vote_average": 8.4,
                 "genres": [{"id": 28, "name": "Action"}, {"id": 878, "name": "Science Fiction"}, {"id": 12, "name": "Adventure"}]
@@ -1071,6 +1316,14 @@ class TMDBClient:
                 "poster_path": "/1XS1oqL89opfnbLl8WnZY1O1uJx.jpg",
                 "backdrop_path": "/2OMB0ynKlyIenMJWI2Dy9IWT4c.jpg",
                 "first_air_date": "2011-04-17",
+                "first_air_display": "Apr 17, 2011",
+                "last_air_date": "2019-05-19",
+                "last_air_display": "May 19, 2019",
+                "networks_list": ["HBO"],
+                "primary_platform": "HBO Max",
+                "streaming_providers": ["HBO Max"],
+                "status_label": "Ended",
+                "status": "Ended",
                 "number_of_seasons": 8,
                 "number_of_episodes": 73,
                 "vote_average": 8.4,
@@ -1089,6 +1342,14 @@ class TMDBClient:
                 "poster_path": "/49WJfeN0moxb9IPfGn8AIqMGskD.jpg",
                 "backdrop_path": "/56v2KjBlU4XaOv9rVYEQypROD7P.jpg",
                 "first_air_date": "2016-07-15",
+                "first_air_display": "Jul 15, 2016",
+                "last_air_date": "2025-12-31",
+                "last_air_display": "Dec 31, 2025",
+                "networks_list": ["Netflix"],
+                "primary_platform": "Netflix",
+                "streaming_providers": ["Netflix"],
+                "status_label": "Ended",
+                "status": "Ended",
                 "number_of_seasons": 4,
                 "number_of_episodes": 34,
                 "vote_average": 8.6,

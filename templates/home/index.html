@@ -113,6 +113,68 @@
         </div>
     </div>
 </section>
+{% else %}
+<!-- Cinematic Offline / Empty Catalog Billboard -->
+<section id="offline-hero-billboard" class="relative pt-28 sm:pt-36 md:pt-40 pb-12 px-4 sm:px-8 md:px-12 flex flex-col items-center justify-center text-center">
+    <div class="relative w-full max-w-3xl bg-gradient-to-b from-gray-900/90 via-gray-900/60 to-gray-950/90 border border-gray-800/80 rounded-3xl p-8 sm:p-14 shadow-2xl backdrop-blur-2xl overflow-hidden">
+        <!-- Ambient Glow -->
+        <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- Offline Badge -->
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold uppercase tracking-wider mb-6">
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+            <span>Offline Mode • Catalog Disconnected</span>
+        </div>
+
+        <!-- Offline Icon -->
+        <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gray-950 border border-gray-800/90 flex items-center justify-center mx-auto mb-6 text-brand-500 shadow-2xl ring-1 ring-white/5">
+            <svg class="w-10 h-10 sm:w-12 sm:h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 4.243a9 9 0 01-2.828-6.364m0 0l2.828 2.829M3 3l18 18M9.879 9.879a3 3 0 004.242 4.242" />
+            </svg>
+        </div>
+
+        <h2 class="text-2xl sm:text-4xl font-black text-white tracking-tight">You're Currently Offline</h2>
+        <p class="text-xs sm:text-sm md:text-base text-gray-400 max-w-xl mx-auto mt-3 leading-relaxed">
+            Filvora is running locally, but requires an active internet connection to load live TMDB cinema catalogs, trending blockbusters, and official trailers.
+        </p>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap items-center justify-center gap-3 pt-8">
+            <button type="button" 
+                    onclick="window.location.reload()" 
+                    class="inline-flex items-center gap-2 bg-brand-500 hover:bg-red-600 text-white px-6 sm:px-8 py-3 rounded-full font-bold text-xs sm:text-sm shadow-xl shadow-brand-500/25 transition transform hover:scale-105 active:scale-95 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Check Connection & Retry</span>
+            </button>
+
+            <a href="/library/" class="inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-gray-200 border border-gray-700/80 px-5 sm:px-7 py-3 rounded-full font-bold text-xs sm:text-sm transition transform hover:scale-105 active:scale-95">
+                <svg class="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                <span>Go to My Watchlist</span>
+            </a>
+
+            {% if user.is_authenticated %}
+            <a href="/accounts/profiles/" class="inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-gray-200 border border-gray-700/80 px-5 sm:px-7 py-3 rounded-full font-bold text-xs sm:text-sm transition transform hover:scale-105 active:scale-95">
+                <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span>Switch Profiles</span>
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Helpful Network Tip -->
+        <div class="mt-8 pt-6 border-t border-gray-800/80 text-[11px] text-gray-500 flex items-center justify-center gap-2">
+            <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>Local database, saved bookmarks, and custom watchlists remain safely stored.</span>
+        </div>
+    </div>
+</section>
 {% endif %}
 
 <!-- Content Rails Container -->

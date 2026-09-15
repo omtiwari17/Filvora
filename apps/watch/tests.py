@@ -369,6 +369,17 @@ class UserRatingTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('rating-container', response.content.decode('utf-8'))
 
+    def test_analytics_empty_state(self):
+        """Verifies analytics view displays clean empty state when user has zero watch history."""
+        self.client.force_login(self.user)
+        response = self.client.get('/analytics/')
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode('utf-8')
+        self.assertIn('No Streaming Activity Yet', html)
+        self.assertIn('Start Streaming', html)
+        self.assertNotIn('None Aficionado', html)
+
+
 
 
 

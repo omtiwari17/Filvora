@@ -1,3 +1,39 @@
+/* Base Dark Mode Architecture & Offline Safe Guards */
+html, body {
+    background-color: #030712; /* Tailwind gray-950 */
+    color: #f3f4f6;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color-scheme: dark;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* Global SVG Safeguards: Prevents unstyled icon explosion when offline */
+svg {
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
+    max-width: 100%;
+}
+
+/* Core SVG dimension fallback classes matching Tailwind sizes */
+svg.w-2, svg.h-2 { width: 0.5rem; height: 0.5rem; }
+svg.w-2\.5, svg.h-2\.5 { width: 0.625rem; height: 0.625rem; }
+svg.w-3, svg.h-3 { width: 0.75rem; height: 0.75rem; }
+svg.w-3\.5, svg.h-3\.5 { width: 0.875rem; height: 0.875rem; }
+svg.w-4, svg.h-4 { width: 1rem; height: 1rem; }
+svg.w-5, svg.h-5 { width: 1.25rem; height: 1.25rem; }
+svg.w-6, svg.h-6 { width: 1.5rem; height: 1.5rem; }
+svg.w-7, svg.h-7 { width: 1.75rem; height: 1.75rem; }
+svg.w-8, svg.h-8 { width: 2rem; height: 2rem; }
+svg.w-9, svg.h-9 { width: 2.25rem; height: 2.25rem; }
+svg.w-10, svg.h-10 { width: 2.5rem; height: 2.5rem; }
+svg.w-12, svg.h-12 { width: 3rem; height: 3rem; }
+svg.w-16, svg.h-16 { width: 4rem; height: 4rem; }
+
 /* Mobile-first touch enhancements & safe-area insets */
 :root {
     --safe-area-inset-top: env(safe-area-inset-top, 0px);

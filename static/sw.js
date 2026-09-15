@@ -1,6 +1,6 @@
 /**
  * Filvora - Service Worker (Static Asset Caching Only)
- * Version: filvora-static-v3
+ * Version: filvora-static-v4
  *
  * IMPORTANT ARCHITECTURAL RULE:
  * Never cache dynamic HTML responses (/, /movies/*, /series/*, /library/*, /accounts/*, etc.)
@@ -8,10 +8,12 @@
  * and CSRF tokens that must ALWAYS come live from the network.
  */
 
-const CACHE_NAME = 'filvora-static-v3';
+const CACHE_NAME = 'filvora-static-v4';
 const STATIC_ASSETS = [
     '/static/css/main.css',
     '/static/js/main.js',
+    '/static/vendor/tailwind.min.js',
+    '/static/vendor/htmx.min.js',
     '/static/manifest.json'
 ];
 

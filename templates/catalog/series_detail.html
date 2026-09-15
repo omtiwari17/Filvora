@@ -48,8 +48,22 @@
                     </span>
                     <span>•</span>
                     {% endif %}
-                    {% if series.first_air_date %}
-                    <span class="font-medium text-white">{{ series.first_air_date|slice:":4" }}</span>
+                    {% if series.first_air_display or series.first_air_date %}
+                    <span class="inline-flex items-center gap-1.5 font-semibold text-white" title="First Aired / Premiere Date">
+                        <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span>{{ series.first_air_display|default:series.first_air_date }}</span>
+                    </span>
+                    <span>•</span>
+                    {% endif %}
+                    {% if series.primary_platform or series.networks_list %}
+                    <span class="inline-flex items-center gap-1.5 bg-gradient-to-r from-purple-950/90 via-indigo-950/90 to-purple-900/70 border border-purple-500/50 text-purple-300 font-bold px-2.5 py-0.5 rounded-full text-xs shadow-sm hover:border-purple-400 transition" title="Network / Streaming Home">
+                        <svg class="w-3.5 h-3.5 text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        <span>{% if series.primary_platform %}{{ series.primary_platform }}{% else %}{{ series.networks_list.0 }}{% endif %}</span>
+                    </span>
                     <span>•</span>
                     {% endif %}
                     {% if series.number_of_seasons %}
@@ -67,6 +81,36 @@
                     {% for g in series.genres %}
                     <span class="bg-gray-800/80 border border-gray-700 hover:border-gray-500 text-gray-300 hover:text-white text-xs px-3 py-1 rounded-full transition shadow-sm">{{ g.name }}</span>
                     {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Release & Network Availability Cards -->
+                {% if series.first_air_display or series.networks_list or series.status %}
+                <div class="flex flex-wrap items-center justify-center md:justify-start gap-2.5 text-xs pt-1">
+                    {% if series.first_air_display %}
+                    <div class="flex items-center gap-1.5 bg-gray-900/80 border border-gray-700/80 px-3 py-1.5 rounded-lg text-gray-300 shadow-sm backdrop-blur-sm">
+                        <svg class="w-4 h-4 text-brand-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Premiere: <strong class="text-white font-semibold">{{ series.first_air_display }}</strong></span>
+                    </div>
+                    {% endif %}
+
+                    {% if series.networks_list %}
+                    <div class="flex items-center gap-1.5 bg-gradient-to-r from-purple-950/70 via-indigo-950/70 to-purple-900/50 border border-purple-500/40 px-3 py-1.5 rounded-lg text-purple-200 shadow-sm backdrop-blur-sm">
+                        <svg class="w-4 h-4 text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        <span>Network: <strong class="text-white font-semibold">{{ series.networks_list|join:", " }}</strong></span>
+                    </div>
+                    {% endif %}
+
+                    {% if series.status %}
+                    <div class="flex items-center gap-1.5 bg-gray-900/80 border border-gray-700/80 px-3 py-1.5 rounded-lg text-gray-300 shadow-sm backdrop-blur-sm">
+                        <span class="text-gray-400 font-medium">Status:</span>
+                        <span class="text-white font-semibold">{{ series.status }}</span>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endif %}
 

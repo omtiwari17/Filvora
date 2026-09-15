@@ -13,6 +13,11 @@
         <p class="text-xs sm:text-sm text-gray-400 mt-1">Deep insights into your cinematic streaming milestones, genres, and watch time.</p>
     </div>
 
+    {% if total_movies == 0 and total_episodes == 0 %}
+    <div class="py-12 max-w-lg mx-auto">
+        {% include 'components/empty_state.html' with icon="analytics" title="No Streaming Activity Yet" message="Your watch statistics, time metrics, and Filvora Wrapped will generate automatically once you stream movies or TV episodes." cta_url="/movies/" cta_text="Start Streaming" secondary_url="/library/" secondary_text="Open Watchlist" %}
+    </div>
+    {% else %}
     <!-- Core Metrics Overview Grid -->
     <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-10">
         <!-- Metric 1: Watch Time -->
@@ -190,6 +195,7 @@
             {% endfor %}
         </div>
     </div>
+    {% endif %}
     {% endif %}
 </div>
 {% endblock %}

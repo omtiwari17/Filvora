@@ -34,6 +34,61 @@ class TMDBTestCase(TestCase):
         self.assertIsNotNone(movie)
         self.assertIn('title', movie)
         self.assertIn('age_rating', movie)
+        self.assertIn('theatrical_release_display', movie)
+        self.assertIn('ott_release_display', movie)
+
+    def test_movie_release_date_and_ott_extraction(self):
+        sample_payload = {
+            'id': 1081003,
+            'title': 'Supergirl',
+            'release_date': '2026-06-24',
+            'release_dates': {
+                'results': [
+                    {
+                        'iso_3166_1': 'US',
+                        'release_dates': [
+                            {'type': 1, 'release_date': '2026-06-22T00:00:00.000Z', 'note': 'Premiere'},
+                            {'type': 3, 'release_date': '2026-06-26T00:00:00.000Z', 'note': ''},
+                            {'type': 4, 'release_date': '2026-07-28T00:00:00.000Z', 'note': ''},
+                            {'type': 4, 'release_date': '2026-09-10T00:00:00.000Z', 'note': 'HBO Max'},
+                        ]
+                    }
+                ]
+            },
+            'watch/providers': {
+                'results': {
+                    'US': {'flatrate': [{'provider_name': 'HBO Max'}]}
+                }
+            }
+        }
+        rel_info = self.client._extract_movie_release_info(sample_payload)
+        self.assertEqual(rel_info['theatrical_release_date'], '2026-06-26')
+        self.assertEqual(rel_info['theatrical_release_display'], 'Jun 26, 2026')
+        self.assertEqual(rel_info['digital_release_date'], '2026-07-28')
+        self.assertEqual(rel_info['ott_release_date'], '2026-09-10')
+        self.assertEqual(rel_info['ott_release_display'], 'Sep 10, 2026')
+        self.assertEqual(rel_info['ott_platform'], 'HBO Max')
+        self.assertIn('HBO Max', rel_info['streaming_providers'])
+
+    def test_tv_release_info_extraction(self):
+        sample_payload = {
+            'id': 100088,
+            'name': 'The Last of Us',
+            'first_air_date': '2023-01-15',
+            'last_air_date': '2025-05-25',
+            'status': 'Returning Series',
+            'networks': [{'name': 'HBO'}],
+            'watch/providers': {
+                'results': {
+                    'US': {'flatrate': [{'provider_name': 'HBO Max'}]}
+                }
+            }
+        }
+        tv_info = self.client._extract_tv_release_info(sample_payload)
+        self.assertEqual(tv_info['first_air_display'], 'Jan 15, 2023')
+        self.assertEqual(tv_info['last_air_display'], 'May 25, 2025')
+        self.assertEqual(tv_info['primary_platform'], 'HBO Max')
+        self.assertIn('HBO', tv_info['networks_list'])
 
     def test_search_categorized(self):
         res = self.client.search_categorized('Batman')

@@ -150,6 +150,52 @@ class CoreViewsTestCase(TestCase):
         because = engine.get_because_you_watched(self.user)
         self.assertIsNone(because)
 
+    def test_home_view_offline_empty_state(self):
+        """Verifies cinematic offline empty state billboard renders when catalog is empty or offline."""
+        from unittest.mock import patch
+        with patch('apps.tmdb.client.TMDBClient.get_trending_movies', return_value=[]), \
+             patch('apps.tmdb.client.TMDBClient.get_popular_movies', return_value=[]), \
+             patch('apps.tmdb.client.TMDBClient.get_popular_series', return_value=[]), \
+             patch('apps.tmdb.client.TMDBClient.get_top_rated_movies', return_value=[]), \
+             patch('apps.tmdb.client.TMDBClient.get_top_rated_series', return_value=[]), \
+             patch('apps.tmdb.client.TMDBClient.get_action_movies', return_value=[]), \
+             patch('apps.tmdb.client.TMDBClient.get_scifi_movies', return_value=[]), \
+             patch('apps.tmdb.client.TMDBClient.get_animation_movies', return_value=[]), \
+             patch('apps.tmdb.client.TMDBClient.get_movies_catalog', return_value=[]):
+            response = self.client.get('/')
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.context['is_empty_catalog'])
+            html = response.content.decode('utf-8')
+            self.assertIn('offline-hero-billboard', html)
+            self.assertIn("You're Currently Offline", html)
+            self.assertIn('Check Connection & Retry', html)
+            self.assertIn('/library/', html)
+
+    def test_offline_vendor_assets_and_critical_css(self):
+        """Verifies offline vendor assets exist locally and critical inline CSS safeguards against FOUC & SVG explosion."""
+        import os
+        from django.conf import settings
+        tailwind_vendor = os.path.join(settings.BASE_DIR, 'static', 'vendor', 'tailwind.min.js')
+        htmx_vendor = os.path.join(settings.BASE_DIR, 'static', 'vendor', 'htmx.min.js')
+        self.assertTrue(os.path.exists(tailwind_vendor), "static/vendor/tailwind.min.js must exist for offline use")
+        self.assertTrue(os.path.exists(htmx_vendor), "static/vendor/htmx.min.js must exist for offline use")
+
+        response = self.client.get('/')
+        html = response.content.decode('utf-8')
+        # Critical inline CSS safeguards
+        self.assertIn('background-color: #030712', html)
+        self.assertIn('svg.w-4', html)
+        self.assertIn('vendor/tailwind.min.js', html)
+        self.assertIn('vendor/htmx.min.js', html)
+
+    def test_network_status_indicator_present(self):
+        """Verifies ambient floating network status HUD indicator is rendered in base template."""
+        response = self.client.get('/')
+        html = response.content.decode('utf-8')
+        self.assertIn('id="network-status-indicator"', html)
+        self.assertIn('id="network-status-badge"', html)
+
+
 
 
 

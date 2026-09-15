@@ -53,6 +53,10 @@ class HomeView(TemplateView):
         context['scifi_movies'] = scifi_movies
         context['animation_movies'] = animation_movies
         
+        has_catalog = bool(trending_movies or popular_movies or popular_series or top_rated_movies or action_movies)
+        context['is_empty_catalog'] = not has_catalog
+        context['is_offline'] = client.is_offline() or not has_catalog
+        
         # User saved library IDs & My List quick preview rail
         my_list_preview = []
         custom_collections = []
@@ -61,7 +65,7 @@ class HomeView(TemplateView):
             profile = get_active_profile(self.request)
             context['user_saved_ids'] = set(LibraryItem.objects.filter(user=self.request.user, profile=profile).values_list('tmdb_id', flat=True))
             library_items = list(LibraryItem.objects.filter(user=self.request.user, profile=profile).order_by('-added_at')[:10])
-            if library_items:
+            if library_items and not client.is_offline():
                 with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(library_items), 6)) as ex:
                     def _fetch_lib_item(item):
                         if item.media_type == 'movie':
@@ -72,7 +76,17 @@ class HomeView(TemplateView):
                             d = dict(client.get_tv(item.tmdb_id))
                             d['media_type'] = 'tv'
                             return d
-                    my_list_preview = list(ex.map(_fetch_lib_item, library_items))
+                    my_list_preview = [i for i in ex.map(_fetch_lib_item, library_items) if i and i.get('id')]
+            elif library_items and client.is_offline():
+                for item in library_items:
+                    my_list_preview.append({
+                        'id': item.tmdb_id,
+                        'tmdb_id': item.tmdb_id,
+                        'title': f"{item.media_type.capitalize()} #{item.tmdb_id}",
+                        'display_title': f"{item.media_type.capitalize()} #{item.tmdb_id}",
+                        'media_type': item.media_type,
+                        'poster_path': None
+                    })
             
             custom_collections = list(CustomCollection.objects.filter(user=self.request.user, profile=profile).prefetch_related('items'))
         else:
@@ -100,13 +114,18 @@ class HomeView(TemplateView):
                     continue
                 seen.add(key)
                 
+                data = {}
+                if not client.is_offline():
+                    if p.media_type == 'movie':
+                        data = dict(client.get_movie(p.tmdb_id))
+                    else:
+                        data = dict(client.get_tv(p.tmdb_id))
+                
                 if p.media_type == 'movie':
-                    data = dict(client.get_movie(p.tmdb_id))
                     data['display_title'] = data.get('title', f"Movie {p.tmdb_id}")
                     data['sub_label'] = "Movie"
                     data['watch_url'] = f"/watch/movie/{p.tmdb_id}/"
                 else:
-                    data = dict(client.get_tv(p.tmdb_id))
                     s_num = p.season or 1
                     ep_num = p.episode or 1
                     series_name = data.get('name', f"Series {p.tmdb_id}")
@@ -127,12 +146,17 @@ class HomeView(TemplateView):
         context['continue_watching'] = continue_watching
 
         # Personalized recommendations & Explainable "Because You Watched"
-        context['recommended_for_you'] = engine.get_personalized_recommendations(self.request.user, profile=profile)
-        because_data = engine.get_because_you_watched(self.request.user, profile=profile)
-        if because_data:
-            context['because_title'] = because_data['title']
-            context['because_items'] = because_data['items']
+        if not client.is_offline():
+            context['recommended_for_you'] = engine.get_personalized_recommendations(self.request.user, profile=profile)
+            because_data = engine.get_because_you_watched(self.request.user, profile=profile)
+            if because_data:
+                context['because_title'] = because_data['title']
+                context['because_items'] = because_data['items']
+            else:
+                context['because_title'] = None
+                context['because_items'] = []
         else:
+            context['recommended_for_you'] = []
             context['because_title'] = None
             context['because_items'] = []
             

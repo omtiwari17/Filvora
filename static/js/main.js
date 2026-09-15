@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initKeyboardShortcuts();
     initHorizontalRails();
     initHtmxFeedback();
+    initNetworkMonitor();
 });
 
 // --- Navbar & Navigation ---
@@ -631,3 +632,53 @@ function initCsrfSync() {
         syncFormCsrfTokens();
     });
 }
+
+// --- Ambient Network Connection Monitor ---
+function initNetworkMonitor() {
+    const indicator = document.getElementById('network-status-indicator');
+    const badge = document.getElementById('network-status-badge');
+    const dot = document.getElementById('network-status-dot');
+    const text = document.getElementById('network-status-text');
+    if (!indicator || !badge || !dot || !text) return;
+
+    let hideTimeout = null;
+
+    const showStatus = (isOnline) => {
+        clearTimeout(hideTimeout);
+        indicator.classList.remove('hidden');
+
+        if (isOnline) {
+            badge.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold shadow-2xl backdrop-blur-xl border flex items-center gap-2 bg-emerald-950/90 border-emerald-500/40 text-emerald-300';
+            dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+            text.textContent = 'Connection Restored';
+            // Auto hide after 3.5 seconds
+            hideTimeout = setTimeout(() => {
+                indicator.classList.add('hidden');
+            }, 3500);
+        } else {
+            badge.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold shadow-2xl backdrop-blur-xl border flex items-center gap-2 bg-red-950/95 border-red-500/50 text-red-300';
+            dot.className = 'w-2 h-2 rounded-full bg-red-500 animate-ping';
+            text.textContent = 'You are offline — Running in local mode';
+        }
+    };
+
+    window.addEventListener('online', () => {
+        showStatus(true);
+        // If viewing an offline empty state, automatically reload to re-sync
+        if (document.getElementById('offline-hero-billboard')) {
+            setTimeout(() => {
+                window.location.reload();
+            }, 1200);
+        }
+    });
+
+    window.addEventListener('offline', () => {
+        showStatus(false);
+    });
+
+    // Check initial connectivity status
+    if (typeof navigator.onLine !== 'undefined' && !navigator.onLine) {
+        showStatus(false);
+    }
+}
+

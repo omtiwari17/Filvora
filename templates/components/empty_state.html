@@ -1,29 +1,73 @@
 <div class="py-16 px-4 text-center max-w-md mx-auto flex flex-col items-center justify-center">
-    <div class="w-16 h-16 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center text-gray-500 mb-4 shadow-xl">
+    <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gray-900/90 border border-gray-800 flex items-center justify-center text-gray-500 mb-4 shadow-xl ring-1 ring-white/5">
         {% if icon == 'watchlist' %}
-        <svg class="w-8 h-8 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        <svg class="w-8 h-8 sm:w-9 sm:h-9 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
         </svg>
         {% elif icon == 'search' %}
-        <svg class="w-8 h-8 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <svg class="w-8 h-8 sm:w-9 sm:h-9 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        {% elif icon == 'offline' or icon == 'wifi_off' %}
+        <svg class="w-8 h-8 sm:w-9 sm:h-9 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 4.243a9 9 0 01-2.828-6.364m0 0l2.828 2.829M3 3l18 18M9.879 9.879a3 3 0 004.242 4.242" />
+        </svg>
+        {% elif icon == 'star' %}
+        <svg class="w-8 h-8 sm:w-9 sm:h-9 text-yellow-400 fill-yellow-400/20" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+        </svg>
+        {% elif icon == 'analytics' %}
+        <svg class="w-8 h-8 sm:w-9 sm:h-9 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        {% elif icon == 'genre' %}
+        <svg class="w-8 h-8 sm:w-9 sm:h-9 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+        </svg>
+        {% elif icon == 'history' %}
+        <svg class="w-8 h-8 sm:w-9 sm:h-9 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {% elif icon == 'tv' %}
+        <svg class="w-8 h-8 sm:w-9 sm:h-9 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
         {% else %}
-        <svg class="w-8 h-8 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+        <svg class="w-8 h-8 sm:w-9 sm:h-9 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
         </svg>
         {% endif %}
     </div>
     <h3 class="text-lg sm:text-xl font-black text-white">{{ title|default:"Nothing Found" }}</h3>
-    <p class="text-xs sm:text-sm text-gray-400 mt-1.5 leading-relaxed">
+    <p class="text-xs sm:text-sm text-gray-400 mt-1.5 leading-relaxed max-w-sm">
         {{ message|default:"There is no content available in this section yet." }}
     </p>
-    {% if cta_url %}
-    <a href="{{ cta_url }}" class="mt-5 inline-flex items-center gap-2 bg-brand-500 hover:bg-red-600 text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-full transition shadow-lg shadow-brand-500/25 hover:scale-105 active:scale-95">
-        <span>{{ cta_text|default:"Browse Catalog" }}</span>
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-        </svg>
-    </a>
-    {% endif %}
+
+    <div class="flex flex-wrap items-center justify-center gap-3 mt-6">
+        {% if action_btn_text and action_btn_onclick %}
+        <button type="button" 
+                onclick="{{ action_btn_onclick }}" 
+                class="inline-flex items-center gap-2 bg-brand-500 hover:bg-red-600 text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-full transition shadow-lg shadow-brand-500/25 hover:scale-105 active:scale-95">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>{{ action_btn_text }}</span>
+        </button>
+        {% endif %}
+
+        {% if cta_url %}
+        <a href="{{ cta_url }}" class="inline-flex items-center gap-2 bg-brand-500 hover:bg-red-600 text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-full transition shadow-lg shadow-brand-500/25 hover:scale-105 active:scale-95">
+            <span>{{ cta_text|default:"Browse Catalog" }}</span>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+        </a>
+        {% endif %}
+
+        {% if secondary_url %}
+        <a href="{{ secondary_url }}" class="inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/80 font-bold text-xs sm:text-sm px-5 py-2.5 rounded-full transition hover:scale-105 active:scale-95">
+            <span>{{ secondary_text|default:"Go Back" }}</span>
+        </a>
+        {% endif %}
+    </div>
 </div>

@@ -20,6 +20,17 @@ class CatalogViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('movie', response.context)
         self.assertEqual(response.context['movie']['id'], 157336)
+        self.assertIn('theatrical_release_display', response.context['movie'])
+        self.assertIn('ott_release_display', response.context['movie'])
+        content = response.content.decode('utf-8')
+        self.assertIn('OTT:', content)
+
+    def test_series_detail_air_dates_rendering(self):
+        response = self.client.get('/series/1399/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('first_air_display', response.context['series'])
+        content = response.content.decode('utf-8')
+        self.assertIn('Premiere:', content)
 
     def test_series_browse(self):
         response = self.client.get('/series/?category=trending&page=1')
@@ -241,6 +252,17 @@ class CatalogViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('movies', response.context)
         self.assertEqual(response.context['selected_sort'], 'vote_average.desc')
+
+    def test_genres_empty_state(self):
+        """Verifies empty state is rendered when genres list is empty."""
+        from unittest.mock import patch
+        with patch('apps.tmdb.client.TMDBClient.get_genres_list', return_value=[]):
+            response = self.client.get('/genres/')
+            self.assertEqual(response.status_code, 200)
+            html = response.content.decode('utf-8')
+            self.assertIn('Genres Unavailable', html)
+            self.assertIn('Check Connection & Retry', html)
+
 
 
 

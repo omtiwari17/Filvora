@@ -39,6 +39,10 @@
                 </p>
             </div>
         </a>
+        {% empty %}
+        <div class="col-span-full">
+            {% include 'components/empty_state.html' with icon="offline" title="Genres Unavailable" message="Could not load genre categories. Please check your network connection and try again." action_btn_text="Check Connection & Retry" action_btn_onclick="window.location.reload()" cta_url="/" cta_text="Back to Home" %}
+        </div>
         {% endfor %}
     </div>
 </div>
