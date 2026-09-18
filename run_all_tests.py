@@ -270,6 +270,19 @@ TEST_DESCRIPTIONS = {
     'test_404_handler': 'Verifies custom 404 handler for non-existent routes',
     'test_kids_mode_homepage_content_filtering': 'Verifies homepage content curation for active Kids profile',
     'test_recommendations_with_empty_history': 'Verifies fallback recommendation behavior for users with zero watch history',
+    'test_home_view_offline_empty_state': 'Verifies cinematic offline empty state billboard renders when catalog is empty or offline',
+    'test_offline_vendor_assets_and_critical_css': 'Verifies offline vendor assets exist locally and critical inline CSS safeguards against FOUC',
+    'test_network_status_indicator_present': 'Verifies ambient floating network status HUD indicator is rendered in base template',
+    'test_unstreamed_5_star_rating_attribution': 'Verifies unstreamed 5-star rated title attributes as "Because You Loved" (never "Watched")',
+    'test_unstreamed_4_star_rating_attribution': 'Verifies unstreamed 4-star rated title attributes as "Because You Liked"',
+    'test_streamed_title_attribution': 'Verifies streamed title on Filvora attributes as "Because You Watched"',
+    'test_multi_seed_contextual_rails_diversity': 'Verifies multiple distinct contextual rails for users with multiple favorites',
+    'test_personalized_recommendations_exclusions': 'Verifies already rated or watched titles are excluded from Recommended For You',
+    'test_profile_isolation_in_recommendations': 'Verifies Profile 1 ratings and recommendations do not leak into Profile 2',
+    'test_dedicated_recommendations_ratings_and_history_partitioning': 'Verifies dedicated recommendations partitioning between ratings, history, and top picks',
+    'test_recommendations_view_authenticated': 'Verifies /recommendations/ hub loads successfully for authenticated user profile',
+    'test_recommendations_view_anonymous': 'Enforces login redirect on /recommendations/ for guest users',
+    'test_recommendations_view_type_filters': 'Verifies /recommendations/ type filtering (?type=movie and ?type=tv)',
 
     # --------------------------------------------------------------------------
     # CATEGORY 7: TMDB API Client, Caching & Resilience (apps.tmdb)
