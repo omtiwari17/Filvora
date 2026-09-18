@@ -145,20 +145,25 @@ class HomeView(TemplateView):
                 
         context['continue_watching'] = continue_watching
 
-        # Personalized recommendations & Explainable "Because You Watched"
+        # Personalized recommendations & Dynamic Contextual Rails
         if not client.is_offline():
             context['recommended_for_you'] = engine.get_personalized_recommendations(self.request.user, profile=profile)
-            because_data = engine.get_because_you_watched(self.request.user, profile=profile)
-            if because_data:
-                context['because_title'] = because_data['title']
-                context['because_items'] = because_data['items']
+            because_rails = engine.get_contextual_rails(self.request.user, profile=profile, max_rails=2)
+            context['because_rails'] = because_rails
+            if because_rails:
+                context['because_title'] = because_rails[0]['title']
+                context['because_items'] = because_rails[0]['items']
+                context['because_label'] = because_rails[0].get('reason_prefix', 'Because You Liked')
             else:
                 context['because_title'] = None
                 context['because_items'] = []
+                context['because_label'] = None
         else:
             context['recommended_for_you'] = []
+            context['because_rails'] = []
             context['because_title'] = None
             context['because_items'] = []
+            context['because_label'] = None
             
         return context
 
@@ -218,5 +223,44 @@ def csrf_failure(request, reason=""):
     }
     response = render(request, '403_csrf.html', context, status=403)
     return _attach_csrf(response)
+
+
+class RecommendationsView(TemplateView):
+    """
+    Dedicated personalized recommendations hub presenting movie and series recommendations
+    curated from the active profile's ratings, watch history, and affinity genres.
+    """
+    template_name = 'core/recommendations.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        client = TMDBClient()
+        engine = RecommendationEngine()
+
+        media_filter = self.request.GET.get('type', 'all')
+        if media_filter not in ['all', 'movie', 'tv']:
+            media_filter = 'all'
+        context['media_filter'] = media_filter
+
+        profile = None
+        user_saved_ids = set()
+        if self.request.user.is_authenticated:
+            from apps.accounts.utils import get_active_profile
+            profile = get_active_profile(self.request)
+            user_saved_ids = set(LibraryItem.objects.filter(user=self.request.user, profile=profile).values_list('tmdb_id', flat=True))
+
+        context['active_profile'] = profile
+        context['user_saved_ids'] = user_saved_ids
+        context['is_offline'] = client.is_offline()
+
+        rec_data = engine.get_dedicated_recommendations(
+            user=self.request.user,
+            profile=profile,
+            media_filter=media_filter
+        )
+
+        context.update(rec_data)
+        return context
+
 
 
