@@ -2,6 +2,7 @@ import json
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 from .models import WatchProgress, UserRating
 from apps.accounts.utils import get_active_profile
 
@@ -38,6 +39,16 @@ def save_progress(request):
 
         profile = get_active_profile(request)
 
+        defaults = {
+            'position_seconds': position_seconds,
+            'duration_seconds': duration_seconds,
+            'completed': completed,
+        }
+        if completed:
+            defaults['completed_at'] = timezone.now()
+        else:
+            defaults['completed_at'] = None
+
         progress, _ = WatchProgress.objects.update_or_create(
             user=request.user,
             profile=profile,
@@ -45,11 +56,7 @@ def save_progress(request):
             media_type=media_type,
             season=season,
             episode=episode,
-            defaults={
-                'position_seconds': position_seconds,
-                'duration_seconds': duration_seconds,
-                'completed': completed,
-            }
+            defaults=defaults
         )
 
         return JsonResponse({
@@ -119,6 +126,11 @@ def history_view(request):
         data['duration_formatted'] = format_time_str(p.duration_seconds)
         data['progress_percentage'] = p.progress_percentage
         data['completed'] = p.completed
+        data['created_at'] = p.created_at
+        data['completed_at'] = p.completed_at
+        data['is_multi_day'] = p.is_multi_day
+        data['watch_date_display'] = p.watch_date_display
+        data['watch_date_tooltip'] = p.watch_date_tooltip
         data['updated_at'] = p.updated_at
         data['rating_score'] = user_ratings.get((p.tmdb_id, p.media_type), 0)
 
@@ -238,12 +250,15 @@ def toggle_watched(request):
                 progress.delete()
             else:
                 progress.completed = False
+                progress.completed_at = None
                 progress.save()
             is_watched = False
         else:
             # Mark as watched
+            now = timezone.now()
             if progress:
                 progress.completed = True
+                progress.completed_at = now
                 if progress.duration_seconds <= 0:
                     progress.duration_seconds = 7200.0
                 progress.position_seconds = progress.duration_seconds
@@ -256,7 +271,9 @@ def toggle_watched(request):
                     media_type=media_type,
                     position_seconds=7200.0,
                     duration_seconds=7200.0,
-                    completed=True
+                    completed=True,
+                    completed_at=now,
+                    created_at=now
                 )
             is_watched = True
 
@@ -444,11 +461,13 @@ def toggle_collection_watched(request):
                     p.delete()
                 else:
                     p.completed = False
+                    p.completed_at = None
                     p.save()
             is_all_watched = False
             watched_count = 0
         else:
             # Mark all as completed
+            now = timezone.now()
             for mid in movie_ids:
                 WatchProgress.objects.update_or_create(
                     user=request.user,
@@ -457,6 +476,7 @@ def toggle_collection_watched(request):
                     media_type='movie',
                     defaults={
                         'completed': True,
+                        'completed_at': now,
                         'position_seconds': 7200.0,
                         'duration_seconds': 7200.0,
                     }
