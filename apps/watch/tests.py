@@ -379,6 +379,135 @@ class UserRatingTestCase(TestCase):
         self.assertIn('Start Streaming', html)
         self.assertNotIn('None Aficionado', html)
 
+    def test_toggle_watched_mark_and_unmark_movie(self):
+        """Verifies 1-click toggle_watched marks movie as watched and second click unmarks it."""
+        self.client.login(username='rateuser', password='password123')
+        # 1. Mark as watched
+        res1 = self.client.post('/progress/mark-watched/', {
+            'tmdb_id': 550,
+            'media_type': 'movie',
+            'variant': 'card'
+        })
+        self.assertEqual(res1.status_code, 200)
+        self.assertTrue(WatchProgress.objects.filter(user=self.user, tmdb_id=550, media_type='movie', completed=True).exists())
+
+        # 2. Unmark as watched
+        res2 = self.client.post('/progress/mark-watched/', {
+            'tmdb_id': 550,
+            'media_type': 'movie',
+            'variant': 'card'
+        })
+        self.assertEqual(res2.status_code, 200)
+        self.assertFalse(WatchProgress.objects.filter(user=self.user, tmdb_id=550, media_type='movie', completed=True).exists())
+
+    def test_toggle_watched_tv_series(self):
+        """Verifies 1-click toggle_watched marks a TV series as watched."""
+        self.client.login(username='rateuser', password='password123')
+        res = self.client.post('/progress/mark-watched/', {
+            'tmdb_id': 1399,
+            'media_type': 'tv',
+            'variant': 'card'
+        })
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(WatchProgress.objects.filter(user=self.user, tmdb_id=1399, media_type='tv', completed=True).exists())
+
+    def test_toggle_watched_htmx_card_variant(self):
+        """Verifies HTMX card variant returns card_watch_button with correct tooltips and classes."""
+        self.client.login(username='rateuser', password='password123')
+        res = self.client.post(
+            '/progress/mark-watched/',
+            {'tmdb_id': 550, 'media_type': 'movie', 'variant': 'card'},
+            HTTP_HX_REQUEST='true'
+        )
+        self.assertEqual(res.status_code, 200)
+        content = res.content.decode('utf-8')
+        self.assertIn('card-watch-btn-movie-550', content)
+        self.assertIn('Watched (Click to unmark)', content)
+        self.assertIn('bg-emerald-600', content)
+
+    def test_toggle_watched_htmx_detail_variant(self):
+        """Verifies HTMX detail variant returns detail_watch_button with text badge."""
+        self.client.login(username='rateuser', password='password123')
+        res = self.client.post(
+            '/progress/mark-watched/',
+            {'tmdb_id': 550, 'media_type': 'movie', 'variant': 'detail'},
+            HTTP_HX_REQUEST='true'
+        )
+        self.assertEqual(res.status_code, 200)
+        content = res.content.decode('utf-8')
+        self.assertIn('detail-watch-btn-550', content)
+        self.assertIn('Watched', content)
+        self.assertIn('bg-emerald-600', content)
+
+    def test_rate_content_card_variant_htmx(self):
+        """Verifies rating content with variant='card' returns card_rating_button with score badge."""
+        self.client.login(username='rateuser', password='password123')
+        res = self.client.post(
+            '/progress/rate/',
+            {'tmdb_id': 550, 'media_type': 'movie', 'score': 5, 'variant': 'card'},
+            HTTP_HX_REQUEST='true'
+        )
+        self.assertEqual(res.status_code, 200)
+        content = res.content.decode('utf-8')
+        self.assertIn('card-rate-movie-550', content)
+        self.assertIn('Your rating: 5/5', content)
+        self.assertIn('text-yellow-400', content)
+
+    def test_remove_rating_card_variant_htmx(self):
+        """Verifies removing rating with variant='card' returns unrated card_rating_button."""
+        self.client.login(username='rateuser', password='password123')
+        UserRating.objects.create(user=self.user, tmdb_id=550, media_type='movie', score=4)
+        res = self.client.post(
+            '/progress/rate/remove/',
+            {'tmdb_id': 550, 'media_type': 'movie', 'variant': 'card'},
+            HTTP_HX_REQUEST='true'
+        )
+        self.assertEqual(res.status_code, 200)
+        content = res.content.decode('utf-8')
+        self.assertIn('card-rate-movie-550', content)
+        self.assertIn('Rate with stars', content)
+        self.assertFalse(UserRating.objects.filter(user=self.user, tmdb_id=550).exists())
+
+    def test_multi_profile_watch_context_processor(self):
+        """Verifies user_watch_context strictly segregates watched IDs and ratings across profiles."""
+        from apps.accounts.models import UserProfile
+        from apps.watch.context_processors import user_watch_context
+        from django.test.client import RequestFactory
+
+        p1 = UserProfile.objects.create(user=self.user, name="Profile 1")
+        p2 = UserProfile.objects.create(user=self.user, name="Profile 2")
+
+        # Set p1 data
+        WatchProgress.objects.create(user=self.user, profile=p1, tmdb_id=100, media_type='movie', completed=True)
+        UserRating.objects.create(user=self.user, profile=p1, tmdb_id=100, media_type='movie', score=5)
+
+        # Set p2 data
+        WatchProgress.objects.create(user=self.user, profile=p2, tmdb_id=200, media_type='tv', completed=True)
+        UserRating.objects.create(user=self.user, profile=p2, tmdb_id=200, media_type='tv', score=3)
+
+        factory = RequestFactory()
+
+        # Request for p1
+        req1 = factory.get('/')
+        req1.user = self.user
+        req1.session = {'active_profile_id': p1.id}
+        ctx1 = user_watch_context(req1)
+        self.assertIn(100, ctx1['user_watched_movie_ids'])
+        self.assertNotIn(200, ctx1['user_watched_ids'])
+        self.assertEqual(ctx1['user_movie_ratings'].get(100), 5)
+        self.assertIsNone(ctx1['user_tv_ratings'].get(200))
+
+        # Request for p2
+        req2 = factory.get('/')
+        req2.user = self.user
+        req2.session = {'active_profile_id': p2.id}
+        ctx2 = user_watch_context(req2)
+        self.assertIn(200, ctx2['user_watched_tv_ids'])
+        self.assertNotIn(100, ctx2['user_watched_ids'])
+        self.assertEqual(ctx2['user_tv_ratings'].get(200), 3)
+        self.assertIsNone(ctx2['user_movie_ratings'].get(100))
+
+
 
 
 

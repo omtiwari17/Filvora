@@ -682,3 +682,61 @@ function initNetworkMonitor() {
     }
 }
 
+// --- In-Card Quick Rating Popover & Star Hover Engine ---
+function toggleCardRate(wrapperId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    const popover = wrapper.querySelector('.quick-rate-popover');
+    if (!popover) return;
+
+    const isHidden = popover.classList.contains('hidden');
+
+    // Dismiss any other open quick rating popovers first
+    document.querySelectorAll('.quick-rate-popover:not(.hidden)').forEach(p => {
+        if (p !== popover) p.classList.add('hidden');
+    });
+
+    if (isHidden) {
+        popover.classList.remove('hidden');
+    } else {
+        popover.classList.add('hidden');
+    }
+}
+
+function previewCardStars(starBtn, score) {
+    const popover = starBtn.closest('.quick-rate-popover');
+    if (!popover) return;
+    const starBtns = popover.querySelectorAll('.star-opt');
+    starBtns.forEach((btn, idx) => {
+        if (idx < score) {
+            btn.classList.add('text-yellow-400');
+            btn.classList.remove('text-gray-500');
+        } else {
+            btn.classList.remove('text-yellow-400');
+            btn.classList.add('text-gray-500');
+        }
+    });
+}
+
+function resetCardStars(popover) {
+    if (!popover) return;
+    const currentScore = parseInt(popover.getAttribute('data-score') || '0', 10);
+    const starBtns = popover.querySelectorAll('.star-opt');
+    starBtns.forEach((btn, idx) => {
+        if (idx < currentScore) {
+            btn.classList.add('text-yellow-400');
+            btn.classList.remove('text-gray-500');
+        } else {
+            btn.classList.remove('text-yellow-400');
+            btn.classList.add('text-gray-500');
+        }
+    });
+}
+
+// Global outside click / tap listener to close quick rating popovers
+document.addEventListener('pointerdown', (e) => {
+    if (!e.target.closest('.quick-rate-wrapper')) {
+        document.querySelectorAll('.quick-rate-popover:not(.hidden)').forEach(p => p.classList.add('hidden'));
+    }
+}, true);
+

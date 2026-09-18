@@ -1,4 +1,4 @@
-{% load static %}
+{% load static watch_tags %}
 <div class="flex-none w-36 sm:w-44 md:w-48 transform transition-all duration-300 hover:scale-105 hover:z-30 cursor-pointer snap-start group/card flex flex-col">
     <div class="aspect-[2/3] rounded-2xl overflow-hidden shadow-xl bg-gray-900 ring-1 ring-gray-800 relative group-hover/card:ring-2 group-hover/card:ring-brand-500/80 group-hover/card:shadow-2xl group-hover/card:shadow-brand-500/20 transition-all duration-300">
         {% if series.poster_path %}
@@ -12,17 +12,32 @@
         </div>
         {% endif %}
         <!-- Mobile Permanent Badges (Fades out when hover overlay activates) -->
-        <div class="absolute top-2 left-2 z-10 sm:hidden group-hover/card:opacity-0 transition-opacity duration-200">
+        <div class="absolute top-2 left-2 z-10 sm:hidden group-hover/card:opacity-0 transition-opacity duration-200 flex items-center gap-1">
             <span class="flex items-center gap-0.5 bg-black/75 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-black text-yellow-400 border border-yellow-500/30 shadow">
                 <svg class="w-2.5 h-2.5 fill-yellow-400" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                 </svg>
                 {{ series.vote_average|floatformat:1 }}
             </span>
+            {% if series.id in user_watched_tv_ids or series.id in user_watched_ids %}
+            <span class="flex items-center bg-emerald-950/90 text-emerald-400 border border-emerald-500/40 px-1 py-0.5 rounded text-[8px] font-black shadow" title="Watched">
+                <svg class="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </span>
+            {% endif %}
         </div>
+
+        <!-- Subtle Top-Right Watched Indicator (Always visible on desktop if watched) -->
+        {% if series.id in user_watched_tv_ids or series.id in user_watched_ids %}
+        <div class="hidden sm:block absolute top-2.5 right-2.5 z-10 group-hover/card:opacity-0 transition-opacity duration-200">
+            <span class="flex items-center gap-1 bg-black/80 backdrop-blur-md text-emerald-400 border border-emerald-500/40 px-1.5 py-0.5 rounded-full text-[9px] font-bold shadow-lg" title="Watched">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span>Seen</span>
+            </span>
+        </div>
+        {% endif %}
         
         <!-- Hover Overlay with Actions -->
-        <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-black/30 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3.5">
+        <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-black/30 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-2.5 sm:p-3">
             <!-- Top Badges Row -->
             <div class="flex items-center justify-between gap-1 z-20">
                 <span class="flex items-center gap-1 bg-black/80 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-black text-yellow-400 border border-yellow-500/30 shadow">
@@ -39,7 +54,7 @@
             <!-- Center Action: Direct Play Button (Episode 1) -->
             <div class="flex items-center justify-center z-20 my-auto">
                 <a href="/watch/tv/{{ series.id }}/1/1/" 
-                   class="w-12 h-12 rounded-full bg-brand-500 hover:bg-red-600 text-white flex items-center justify-center shadow-2xl shadow-brand-500/50 hover:scale-110 active:scale-95 transition-transform"
+                   class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-brand-500 hover:bg-red-600 text-white flex items-center justify-center shadow-2xl shadow-brand-500/50 hover:scale-110 active:scale-95 transition-transform"
                    title="Play S1:E1">
                     <svg class="w-5 h-5 fill-white translate-x-0.5" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z"/>
@@ -47,17 +62,17 @@
                 </a>
             </div>
 
-            <!-- Bottom Action Row -->
+            <!-- Bottom Action Row: 4 Dedicated In-Card Actions -->
             <div class="flex items-center justify-between gap-1 z-20 pt-1 border-t border-gray-800/80">
-                <!-- My List Toggle -->
+                <!-- 1. My List Toggle -->
                 {% if series.id in user_saved_ids %}
                 <button hx-post="/library/toggle/" 
                         hx-vals='{"tmdb_id": "{{ series.id }}", "media_type": "tv", "variant": "card"}' 
                         hx-swap="outerHTML"
                         onclick="event.preventDefault(); event.stopPropagation();"
                         title="Saved in My List"
-                        class="w-8 h-8 rounded-full bg-brand-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-brand-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0">
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                     </svg>
                 </button>
@@ -67,19 +82,31 @@
                         hx-swap="outerHTML"
                         onclick="event.preventDefault(); event.stopPropagation();"
                         title="Add to My List"
-                        class="w-8 h-8 rounded-full bg-gray-900/90 hover:bg-gray-800 text-white border border-gray-700 flex items-center justify-center shadow-lg transition-transform hover:scale-110">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-900/90 hover:bg-gray-800 text-white border border-gray-700 flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0">
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
                     </svg>
                 </button>
                 {% endif %}
 
-                <!-- Info Details Link -->
+                <!-- 2. Mark as Watched Toggle -->
+                {% if series.id in user_watched_tv_ids or series.id in user_watched_ids %}
+                {% include 'components/card_watch_button.html' with tmdb_id=series.id media_type='tv' is_watched=True %}
+                {% else %}
+                {% include 'components/card_watch_button.html' with tmdb_id=series.id media_type='tv' is_watched=False %}
+                {% endif %}
+
+                <!-- 3. Quick Star Rating -->
+                {% with current_rating=user_tv_ratings|get_item:series.id %}
+                {% include 'components/card_rating_button.html' with tmdb_id=series.id media_type='tv' current_rating=current_rating %}
+                {% endwith %}
+
+                <!-- 4. Info Details Link -->
                 <a href="/series/{{ series.id }}/" 
                    onclick="event.stopPropagation();"
                    title="View Series Details"
-                   class="w-8 h-8 rounded-full bg-black/70 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/80 flex items-center justify-center shadow-lg transition-transform hover:scale-110">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/70 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/80 flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0">
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </a>

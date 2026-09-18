@@ -205,6 +205,82 @@ def clear_history(request):
 
 @csrf_exempt
 @login_required
+def toggle_watched(request):
+    """
+    HTMX / JSON endpoint: toggle watched/completed status for a title (movie or series)
+    for the active profile.
+    """
+    if request.method != 'POST':
+        return HttpResponseBadRequest("POST required")
+
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
+        tmdb_id = int(data.get('tmdb_id'))
+        media_type = data.get('media_type', 'movie')
+        variant = data.get('variant', 'card')
+        profile = get_active_profile(request)
+
+        # Check existing progress
+        progress = WatchProgress.objects.filter(
+            user=request.user,
+            profile=profile,
+            tmdb_id=tmdb_id,
+            media_type=media_type,
+        ).first()
+
+        if progress and progress.completed:
+            # Unmark as watched: if it was only marked as watched (position >= duration), delete record
+            if progress.position_seconds >= progress.duration_seconds or progress.duration_seconds == 7200.0:
+                progress.delete()
+            else:
+                progress.completed = False
+                progress.save()
+            is_watched = False
+        else:
+            # Mark as watched
+            if progress:
+                progress.completed = True
+                if progress.duration_seconds <= 0:
+                    progress.duration_seconds = 7200.0
+                progress.position_seconds = progress.duration_seconds
+                progress.save()
+            else:
+                WatchProgress.objects.create(
+                    user=request.user,
+                    profile=profile,
+                    tmdb_id=tmdb_id,
+                    media_type=media_type,
+                    position_seconds=7200.0,
+                    duration_seconds=7200.0,
+                    completed=True
+                )
+            is_watched = True
+
+        if request.headers.get('HX-Request'):
+            from django.template.loader import render_to_string
+            from django.http import HttpResponse
+            if variant == 'detail':
+                template_name = 'components/detail_watch_button.html'
+            else:
+                template_name = 'components/card_watch_button.html'
+            html = render_to_string(template_name, {
+                'tmdb_id': tmdb_id,
+                'media_type': media_type,
+                'is_watched': is_watched,
+            })
+            return HttpResponse(html)
+
+        return JsonResponse({'status': 'ok', 'is_watched': is_watched})
+    except (ValueError, TypeError, KeyError) as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+@login_required
 def rate_content(request):
     """HTMX endpoint: create or update a user rating (1-5 stars) for active profile."""
     if request.method != 'POST':
@@ -219,6 +295,7 @@ def rate_content(request):
         tmdb_id = int(data.get('tmdb_id'))
         media_type = data.get('media_type', 'movie')
         score = int(data.get('score', 0))
+        variant = data.get('variant')
 
         if score < 1 or score > 5:
             return JsonResponse({'status': 'error', 'message': 'Score must be 1-5'}, status=400)
@@ -236,13 +313,20 @@ def rate_content(request):
         # Return HTMX partial: re-render the star widget with the new score
         if request.headers.get('HX-Request'):
             from django.template.loader import render_to_string
-            html = render_to_string('components/rating_stars.html', {
-                'rating_score': score,
-                'tmdb_id': tmdb_id,
-                'media_type': media_type,
-                'star_range': [1, 2, 3, 4, 5],
-            })
             from django.http import HttpResponse
+            if variant == 'card':
+                html = render_to_string('components/card_rating_button.html', {
+                    'tmdb_id': tmdb_id,
+                    'media_type': media_type,
+                    'current_rating': score,
+                })
+            else:
+                html = render_to_string('components/rating_stars.html', {
+                    'rating_score': score,
+                    'tmdb_id': tmdb_id,
+                    'media_type': media_type,
+                    'star_range': [1, 2, 3, 4, 5],
+                })
             return HttpResponse(html)
 
         return JsonResponse({
@@ -269,6 +353,7 @@ def remove_rating(request):
 
         tmdb_id = int(data.get('tmdb_id'))
         media_type = data.get('media_type', 'movie')
+        variant = data.get('variant')
         profile = get_active_profile(request)
 
         UserRating.objects.filter(
@@ -280,13 +365,20 @@ def remove_rating(request):
 
         if request.headers.get('HX-Request'):
             from django.template.loader import render_to_string
-            html = render_to_string('components/rating_stars.html', {
-                'rating_score': 0,
-                'tmdb_id': tmdb_id,
-                'media_type': media_type,
-                'star_range': [1, 2, 3, 4, 5],
-            })
             from django.http import HttpResponse
+            if variant == 'card':
+                html = render_to_string('components/card_rating_button.html', {
+                    'tmdb_id': tmdb_id,
+                    'media_type': media_type,
+                    'current_rating': 0,
+                })
+            else:
+                html = render_to_string('components/rating_stars.html', {
+                    'rating_score': 0,
+                    'tmdb_id': tmdb_id,
+                    'media_type': media_type,
+                    'star_range': [1, 2, 3, 4, 5],
+                })
             return HttpResponse(html)
 
         return JsonResponse({'status': 'ok', 'message': 'Rating removed'})

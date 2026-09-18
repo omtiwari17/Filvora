@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from apps.tmdb.client import TMDBClient
 from apps.library.models import LibraryItem
-from apps.watch.models import UserRating
+from apps.watch.models import UserRating, WatchProgress
 
 def get_pagination_context(page, total_pages=500):
     try:
@@ -113,6 +113,7 @@ def movie_detail(request, tmdb_id):
 
     # Get user's existing rating for this movie
     user_rating = 0
+    is_watched = False
     if request.user.is_authenticated:
         from apps.accounts.utils import get_active_profile
         profile = get_active_profile(request)
@@ -121,6 +122,9 @@ def movie_detail(request, tmdb_id):
         ).first()
         if rating_obj:
             user_rating = rating_obj.score
+        is_watched = WatchProgress.objects.filter(
+            user=request.user, profile=profile, tmdb_id=tmdb_id, media_type='movie', completed=True
+        ).exists()
 
     # Fetch official franchise saga collection if movie belongs to a collection
     collection = None
@@ -158,6 +162,7 @@ def movie_detail(request, tmdb_id):
         'recommendations': recommendations,
         'collection': collection,
         'user_rating': user_rating,
+        'is_watched': is_watched,
         'trailer_key': movie.get('trailer_key'),
         'star_range': [1, 2, 3, 4, 5],
     })
@@ -402,12 +407,16 @@ def series_detail(request, tmdb_id):
 
     # Get user's existing rating for this series
     user_rating = 0
+    is_watched = False
     if request.user.is_authenticated:
         rating_obj = UserRating.objects.filter(
             user=request.user, profile=profile, tmdb_id=tmdb_id, media_type='tv'
         ).first()
         if rating_obj:
             user_rating = rating_obj.score
+        is_watched = WatchProgress.objects.filter(
+            user=request.user, profile=profile, tmdb_id=tmdb_id, media_type='tv', completed=True
+        ).exists()
 
     recommendations = []
     if 'recommendations' in series and 'results' in series['recommendations']:
@@ -426,6 +435,7 @@ def series_detail(request, tmdb_id):
         'initial_season_decimal': initial_season_decimal,
         'recommendations': recommendations,
         'user_rating': user_rating,
+        'is_watched': is_watched,
         'trailer_key': series.get('trailer_key'),
         'star_range': [1, 2, 3, 4, 5],
     })

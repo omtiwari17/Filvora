@@ -162,6 +162,11 @@
                         <span>Add to My List</span>
                         {% endif %}
                     </button>
+
+                    <!-- Mark as Watched Toggle -->
+                    {% if user.is_authenticated %}
+                    {% include 'components/detail_watch_button.html' with tmdb_id=series.id media_type='tv' is_watched=is_watched %}
+                    {% endif %}
                 </div>
 
                 <!-- User Rating -->

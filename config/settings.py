@@ -107,6 +107,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.accounts.context_processors.active_profile_context',
+                'apps.watch.context_processors.user_watch_context',
             ],
         },
     },
