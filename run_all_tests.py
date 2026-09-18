@@ -283,6 +283,8 @@ TEST_DESCRIPTIONS = {
     'test_recommendations_view_authenticated': 'Verifies /recommendations/ hub loads successfully for authenticated user profile',
     'test_recommendations_view_anonymous': 'Enforces login redirect on /recommendations/ for guest users',
     'test_recommendations_view_type_filters': 'Verifies /recommendations/ type filtering (?type=movie and ?type=tv)',
+    'test_franchise_sequels_seed_deduplication': 'Verifies franchise and sequel seed deduplication prevents duplicate recommendation rails',
+    'test_unwatched_sequel_prioritized_in_collection_recommendations': 'Verifies unwatched franchise sequels are prioritized in contextual recommendations',
 
     # --------------------------------------------------------------------------
     # CATEGORY 7: TMDB API Client, Caching & Resilience (apps.tmdb)
