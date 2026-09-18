@@ -48,27 +48,48 @@ class WatchProgress(models.Model):
         return 0.0
 
     @property
+    def effective_end_dt(self):
+        """Returns the terminal timestamp of the watch session (completed_at or updated_at)."""
+        if self.completed:
+            return self.completed_at or self.updated_at
+        return self.updated_at
+
+    @property
+    def effective_start_dt(self):
+        """Returns the start timestamp, guaranteed not to exceed the terminal timestamp."""
+        start = self.created_at or self.updated_at
+        end = self.effective_end_dt
+        if start and end and start > end:
+            return end
+        return start or end
+
+    @property
     def is_multi_day(self):
         """Returns True if the watch session spanned across different calendar dates."""
-        start_d = (self.created_at or self.updated_at).date()
-        end_dt = self.completed_at if self.completed else self.updated_at
-        end_d = end_dt.date() if end_dt else start_d
-        return start_d != end_d
+        start_dt = self.effective_start_dt
+        end_dt = self.effective_end_dt
+        if not start_dt or not end_dt:
+            return False
+        return start_dt.date() != end_dt.date()
 
     @property
     def watch_date_display(self):
         """
         Human-friendly watch date representation:
         - If single day: 'Sep 18, 2026'
-        - If multi-day: 'Sep 15 – 18, 2026' (or cross-month / cross-year formatted)
+        - If multi-day: 'Sep 15 – 18, 2026' (chronologically ordered from earlier to later)
         """
-        start_dt = self.created_at or self.updated_at
-        end_dt = (self.completed_at if self.completed else None) or self.updated_at
-        if not start_dt:
+        start_dt = self.effective_start_dt
+        end_dt = self.effective_end_dt
+        if not start_dt and not end_dt:
             return ""
 
-        start_d = start_dt.date()
-        end_d = end_dt.date() if end_dt else start_d
+        start_d = (start_dt or end_dt).date()
+        end_d = (end_dt or start_dt).date()
+
+        # Enforce chronological ordering
+        if start_d > end_d:
+            start_d, end_d = end_d, start_d
 
         if start_d == end_d:
             return end_d.strftime("%b %d, %Y")
@@ -81,17 +102,26 @@ class WatchProgress(models.Model):
 
     @property
     def watch_date_tooltip(self):
-        start_dt = self.created_at or self.updated_at
-        end_dt = (self.completed_at if self.completed else None) or self.updated_at
+        start_dt = self.effective_start_dt
+        end_dt = self.effective_end_dt
+        if not start_dt and not end_dt:
+            return ""
+
+        start_d = (start_dt or end_dt).date()
+        end_d = (end_dt or start_dt).date()
+        if start_d > end_d:
+            start_dt, end_dt = end_dt, start_dt
+            start_d, end_d = end_d, start_d
+
         start_str = start_dt.strftime("%b %d, %Y")
-        end_str = end_dt.strftime("%b %d, %Y") if end_dt else start_str
+        end_str = end_dt.strftime("%b %d, %Y")
 
         if self.completed:
-            if start_dt.date() == end_dt.date():
+            if start_d == end_d:
                 return f"Completed on {end_str}"
             return f"Started {start_str} • Completed {end_str}"
         else:
-            if start_dt.date() == end_dt.date():
+            if start_d == end_d:
                 return f"Started on {start_str}"
             return f"Started {start_str} • Last played {end_str}"
 

@@ -727,6 +727,51 @@ class UserRatingTestCase(TestCase):
         # Check rendered calendar pill
         self.assertContains(res, 'viewBox="0 0 24 24"')
 
+    def test_watch_date_legacy_and_chronological_clamping(self):
+        """Test that if created_at > updated_at or completed_at is None, properties clamp cleanly."""
+        from django.utils import timezone
+        import datetime
+
+        d_past = timezone.make_aware(datetime.datetime(2026, 9, 15, 16, 25))
+        d_future_err = timezone.make_aware(datetime.datetime(2026, 9, 18, 17, 5))
+
+        # Erroneous future created_at with completed=True and completed_at=None
+        p = WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=109,
+            media_type='movie',
+            completed=True,
+            created_at=d_future_err
+        )
+        WatchProgress.objects.filter(id=p.id).update(updated_at=d_past)
+        p.refresh_from_db()
+
+        # Effective start dt should clamp to effective end dt (d_past)
+        self.assertEqual(p.effective_end_dt.date(), d_past.date())
+        self.assertEqual(p.effective_start_dt.date(), d_past.date())
+        self.assertFalse(p.is_multi_day)
+        self.assertEqual(p.watch_date_display, "Sep 15, 2026")
+        self.assertEqual(p.watch_date_tooltip, "Completed on Sep 15, 2026")
+
+    def test_watch_date_single_sitting_supergirl_scenario(self):
+        """Test single-sitting scenario where a movie is watched and completed on the same date."""
+        from django.utils import timezone
+        import datetime
+
+        d_watch = timezone.make_aware(datetime.datetime(2026, 9, 15, 20, 0))
+        p = WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=1081003,  # Supergirl
+            media_type='movie',
+            completed=True,
+            created_at=d_watch,
+            completed_at=d_watch + datetime.timedelta(hours=2)
+        )
+        self.assertFalse(p.is_multi_day)
+        self.assertEqual(p.watch_date_display, "Sep 15, 2026")
+        self.assertEqual(p.watch_date_tooltip, "Completed on Sep 15, 2026")
+
+
 
 
 

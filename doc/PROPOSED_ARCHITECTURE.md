@@ -332,3 +332,18 @@ In `templates/watch/history.html`, each media card renders a calendar badge pill
 ```
 Grouped history rails (*Today, Yesterday, This Week, Earlier*) remain organized by `updated_at` (most recent user activity).
 
+### 9.5 Historical Timestamp Alignment & Migration Backfill
+When migration `0005` introduced `created_at` with `default=timezone.now`, SQLite initialized pre-existing rows with today's migration execution timestamp, causing records watched days earlier to appear as though they began today (`created_at > updated_at`). Furthermore, pre-existing completed records had `completed_at = None`.
+
+Migration `0006_align_watchprogress_historical_timestamps.py` safely aligns all historical data:
+1. When `created_at > updated_at`, aligns `created_at = updated_at`.
+2. When `completed == True` and `completed_at is None`, sets `completed_at = updated_at`.
+3. When `completed == True` and `completed_at < created_at`, clamps `created_at = completed_at`.
+
+### 9.6 Effective Timestamp Properties & Chronological Clamping
+To provide absolute defense-in-depth against data anomalies:
+- `effective_end_dt`: Evaluates `self.completed_at or self.updated_at` for completed content, or `self.updated_at` for in-progress titles.
+- `effective_start_dt`: Clamps `self.created_at or self.updated_at` so it cannot exceed `effective_end_dt`.
+- `watch_date_display` & `watch_date_tooltip`: Include explicit chronological sort guards (`if start_d > end_d: start_d, end_d = end_d, start_d`), completely preventing inverted or backwards date displays (e.g. `Sep 18 – 15, 2026`). Single-sitting completions strictly output the exact single date (e.g. `Sep 15, 2026`).
+
+
