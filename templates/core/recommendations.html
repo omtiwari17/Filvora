@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+
+{% block title %}Recommendations For You — Filvora{% endblock %}
+
+{% block content %}
+<div class="pt-24 px-4 sm:px-8 md:px-12 pb-24 min-h-screen">
+    <!-- Header with Profile Taste Summary -->
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-gray-900/90 via-gray-900/60 to-gray-950 border border-gray-800/80 p-6 sm:p-8 mb-8 backdrop-blur-xl shadow-2xl">
+        <div class="absolute -right-16 -top-16 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-16 -bottom-16 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+                <div class="flex items-center gap-3 flex-wrap">
+                    <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-md flex items-center gap-2.5">
+                        <svg class="w-7 h-7 sm:w-8 sm:h-8 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                        </svg>
+                        <span>Personalized Recommendations</span>
+                    </h1>
+                    <span class="bg-brand-500/20 text-brand-400 border border-brand-500/30 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
+                        <span>For {{ active_profile.name|default:user.username }}</span>
+                    </span>
+                </div>
+                <p class="text-xs sm:text-sm text-gray-400 mt-2 max-w-2xl leading-relaxed">
+                    Custom-curated entertainment blended across your stream history, 4–5 star ratings, and evolving genre affinity.
+                </p>
+
+                <!-- Signal Taste Tags -->
+                <div class="flex items-center gap-2 sm:gap-3 flex-wrap mt-4">
+                    <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gray-800/80 border border-gray-700/60 text-xs font-medium text-gray-300">
+                        <svg class="w-3.5 h-3.5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                        <span>{{ stats.total_rated }} Rated</span>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gray-800/80 border border-gray-700/60 text-xs font-medium text-gray-300">
+                        <svg class="w-3.5 h-3.5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{{ stats.total_streamed }} Streamed</span>
+                    </div>
+
+                    {% if stats.top_genres %}
+                    <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs font-medium text-purple-300">
+                        <svg class="w-3.5 h-3.5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                        </svg>
+                        <span>Top Genres: {{ stats.top_genres|join:", " }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Media Type Filter Switcher -->
+            <div class="flex items-center gap-1.5 bg-gray-950/90 p-1.5 rounded-2xl border border-gray-800 backdrop-blur-xl shadow-lg shrink-0 self-start md:self-auto">
+                <a href="/recommendations/?type=all" 
+                   class="px-4 py-2 rounded-xl text-xs font-bold transition {% if media_filter == 'all' %}bg-brand-500 text-white shadow-md{% else %}text-gray-400 hover:text-white{% endif %}">
+                    All Content
+                </a>
+                <a href="/recommendations/?type=movie" 
+                   class="px-4 py-2 rounded-xl text-xs font-bold transition {% if media_filter == 'movie' %}bg-brand-500 text-white shadow-md{% else %}text-gray-400 hover:text-white{% endif %}">
+                    Movies
+                </a>
+                <a href="/recommendations/?type=tv" 
+                   class="px-4 py-2 rounded-xl text-xs font-bold transition {% if media_filter == 'tv' %}bg-brand-500 text-white shadow-md{% else %}text-gray-400 hover:text-white{% endif %}">
+                    TV Series
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if not has_signals and not top_picks %}
+        <!-- Zero Signals Empty State -->
+        <div class="my-16">
+            {% include 'components/empty_state.html' with icon="star" title="Train Your Recommendations" message="Rate movies you've watched or start streaming titles to train your personalized recommendations." cta_url="/movies/" cta_text="Browse Movies to Rate" %}
+        </div>
+    {% else %}
+
+        <!-- ==================== 1. TOP PICKS FOR YOU GRID ==================== -->
+        {% if top_picks %}
+        <section class="mb-14">
+            <div class="flex items-center justify-between mb-5 px-1">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-xl sm:text-2xl font-black text-white drop-shadow-md">Top Picks For You</h2>
+                    <span class="text-[10px] sm:text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded-full font-bold">
+                        High Affinity Blend
+                    </span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-5">
+                {% for item in top_picks %}
+                    {% if item.media_type == 'tv' %}
+                        {% include 'components/series_card.html' with series=item user_saved_ids=user_saved_ids %}
+                    {% else %}
+                        {% include 'components/movie_card.html' with movie=item user_saved_ids=user_saved_ids %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- ==================== 2. BASED ON YOUR RATINGS RAILS ==================== -->
+        {% if ratings_rails %}
+        <div class="mb-14">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <h2 class="text-xl sm:text-2xl font-black text-white drop-shadow-md flex items-center gap-2">
+                    <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    <span>Based on Your Highest-Rated Titles</span>
+                </h2>
+            </div>
+            <p class="text-xs text-gray-400 mb-6 px-1">Recommendations tailored specifically from movies and shows you gave 4–5 stars.</p>
+
+            {% for rail in ratings_rails %}
+            <div class="relative group/rail rail-container mb-8">
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        <span>{{ rail.reason_prefix }} <span class="text-brand-500">{{ rail.title }}</span></span>
+                        <span class="text-[10px] bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 px-2 py-0.5 rounded-full font-bold">
+                            {{ rail.score }} ★
+                        </span>
+                    </h3>
+                </div>
+
+                <button type="button" class="rail-prev-btn absolute left-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 hidden md:flex items-center justify-start pl-1 cursor-pointer rounded-l-2xl focus:outline-none" aria-label="Scroll left">
+                    <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </div>
+                </button>
+
+                <div class="rail-track flex gap-4 sm:gap-5 overflow-x-auto py-6 px-2 -my-3 scrollbar-hide snap-x scroll-smooth">
+                    {% for item in rail.items %}
+                        {% if item.media_type == 'tv' %}
+                            {% include 'components/series_card.html' with series=item user_saved_ids=user_saved_ids %}
+                        {% else %}
+                            {% include 'components/movie_card.html' with movie=item user_saved_ids=user_saved_ids %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <button type="button" class="rail-next-btn absolute right-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-l from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 hidden md:flex items-center justify-end pr-1 cursor-pointer rounded-r-2xl focus:outline-none" aria-label="Scroll right">
+                    <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- ==================== 3. BASED ON WHAT YOU'VE STREAMED RAILS ==================== -->
+        {% if history_rails %}
+        <div class="mb-14">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <h2 class="text-xl sm:text-2xl font-black text-white drop-shadow-md flex items-center gap-2">
+                    <svg class="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Based on What You've Streamed</span>
+                </h2>
+            </div>
+            <p class="text-xs text-gray-400 mb-6 px-1">Discoveries derived directly from your playback history and completed series.</p>
+
+            {% for rail in history_rails %}
+            <div class="relative group/rail rail-container mb-8">
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        <span>{{ rail.reason_prefix }} <span class="text-brand-500">{{ rail.title }}</span></span>
+                        <span class="text-[10px] bg-brand-500/20 text-brand-400 border border-brand-500/30 px-2 py-0.5 rounded-full font-bold">
+                            Streamed
+                        </span>
+                    </h3>
+                </div>
+
+                <button type="button" class="rail-prev-btn absolute left-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 hidden md:flex items-center justify-start pl-1 cursor-pointer rounded-l-2xl focus:outline-none" aria-label="Scroll left">
+                    <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </div>
+                </button>
+
+                <div class="rail-track flex gap-4 sm:gap-5 overflow-x-auto py-6 px-2 -my-3 scrollbar-hide snap-x scroll-smooth">
+                    {% for item in rail.items %}
+                        {% if item.media_type == 'tv' %}
+                            {% include 'components/series_card.html' with series=item user_saved_ids=user_saved_ids %}
+                        {% else %}
+                            {% include 'components/movie_card.html' with movie=item user_saved_ids=user_saved_ids %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <button type="button" class="rail-next-btn absolute right-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-l from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 hidden md:flex items-center justify-end pr-1 cursor-pointer rounded-r-2xl focus:outline-none" aria-label="Scroll right">
+                    <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- ==================== 4. GENRE UNIVERSES ==================== -->
+        {% if genre_rails %}
+        <div class="mb-14">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <h2 class="text-xl sm:text-2xl font-black text-white drop-shadow-md flex items-center gap-2">
+                    <svg class="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                    </svg>
+                    <span>Your Top Genre Universes</span>
+                </h2>
+            </div>
+            <p class="text-xs text-gray-400 mb-6 px-1">Highly-rated picks from your most-watched storytelling genres.</p>
+
+            {% for rail in genre_rails %}
+            <div class="relative group/rail rail-container mb-8">
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        <span>Top Picks in <span class="text-purple-400">{{ rail.genre_name }}</span></span>
+                    </h3>
+                    <a href="/discover/?genre={{ rail.genre_id }}" class="text-xs text-brand-500 hover:text-red-400 font-bold transition flex items-center gap-1 group/link">
+                        <span>Explore Genre</span>
+                        <span class="transform group-hover/link:translate-x-1 transition-transform">&rarr;</span>
+                    </a>
+                </div>
+
+                <button type="button" class="rail-prev-btn absolute left-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 hidden md:flex items-center justify-start pl-1 cursor-pointer rounded-l-2xl focus:outline-none" aria-label="Scroll left">
+                    <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </div>
+                </button>
+
+                <div class="rail-track flex gap-4 sm:gap-5 overflow-x-auto py-6 px-2 -my-3 scrollbar-hide snap-x scroll-smooth">
+                    {% for item in rail.items %}
+                        {% if item.media_type == 'tv' %}
+                            {% include 'components/series_card.html' with series=item user_saved_ids=user_saved_ids %}
+                        {% else %}
+                            {% include 'components/movie_card.html' with movie=item user_saved_ids=user_saved_ids %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <button type="button" class="rail-next-btn absolute right-0 top-0 bottom-12 z-40 w-12 bg-gradient-to-l from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 hidden md:flex items-center justify-end pr-1 cursor-pointer rounded-r-2xl focus:outline-none" aria-label="Scroll right">
+                    <div class="p-2.5 bg-gray-900/90 backdrop-blur-md rounded-full border border-gray-700 shadow-2xl hover:scale-110 hover:bg-brand-500 hover:border-brand-500 transition">
+                        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    {% endif %}
+</div>
+{% endblock %}
