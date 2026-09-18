@@ -274,16 +274,56 @@
 
 ---
 
-### 2.6 ⏸️ Decommissioned / Dropped Features (Standby Architecture)
+### 2.6 🧠 Multi-Signal Recommendations, Dedicated Hub & Franchise Awareness Engine (`apps/core/recommendations.py`, `apps/core/views.py`)
 
-#### 2.6.1 Offline Download Pipeline (`apps/downloads/`) — ON HOLD / DROPPED
+#### 2.6.1 Accurate Phrasing & Attribution Engine
+- **The Core Problem**: Previously, rating an unstreamed title 5 stars (e.g. *Project Hail Mary*) falsely stamped the recommendation rail with `"Because You Watched Project Hail Mary"`.
+- **The Multi-Signal Attribution Resolution**:
+  - `RecommendationEngine.get_seed_attribution(user, profile, tmdb_id, media_type)` inspects live signals across `WatchProgress` vs `UserRating` vs `LibraryItem`:
+    - 5-Star Unstreamed: Attributed as **`Because You Loved <Title>`**.
+    - 4-Star Unstreamed: Attributed as **`Because You Liked <Title>`**.
+    - 3-Star Unstreamed: Attributed as **`Because You Rated <Title>`**.
+    - Streamed Content: Attributed as **`Because You Watched <Title>`**.
+    - Watchlist Items: Attributed as **`Because It's in Your Watchlist`**.
+  - Completely eliminates inaccurate watch assumptions for rated content.
+
+#### 2.6.2 Franchise & Sequel Awareness Engine (Seed Deduplication & Sequel Prioritization)
+- **The Core Problem**: When a user rates or streams multiple movies belonging to the same franchise/collection (such as *Spider-Man: Across the Spider-Verse* and *Spider-Man: Into the Spider-Verse*), both were selected as candidate seeds. This produced duplicate franchise rails right next to each other on the user's screen, with Rail 1 consuming all Spider-Man movies and Rail 2 showing spillover comic-book titles, crowding out other distinct user favorites.
+- **The Solution**:
+  - **Franchise Identifier Extraction (`_get_franchise_identifiers`)**:
+    - Queries official TMDB `belongs_to_collection['id']` (e.g. `coll_573436` for Spider-Man Spider-Verse Collection, `coll_726871` for Dune, `coll_263` for The Dark Knight).
+    - Extracts normalized franchise root keys from titles (e.g. `root_spider-man`, `root_dune`, `root_star wars`).
+  - **Franchise Seed Deduplication**:
+    - When building contextual rails (`get_contextual_rails` and `get_dedicated_recommendations`), the engine tracks `seen_franchise_identifiers`.
+    - Once one installment of a franchise is accepted as a seed rail, any other sequel/prequel in that collection is automatically skipped as a seed.
+    - The next rail is allocated to a completely different user favorite from another genre or universe (e.g. *Interstellar* or *Game of Thrones*).
+  - **Direct Sequel & Prequel Prioritization (`_get_collection_parts_recs`)**:
+    - For users who have only seen/rated one part of a franchise, unstreamed sequels/prequels from that collection are fetched and prepended at the very head of the recommendation candidate pool.
+    - If the user already rated or completed the sequels, they are filtered out via `exclude_keys`.
+
+#### 2.6.3 Dedicated Recommendations Portal (`/recommendations/`)
+- Full-page discovery portal partitioned into distinct contextual sections:
+  1. **Top Picks For You**: Blended affinity across top genres and seeds with duplicate/history exclusion.
+  2. **Based on Your Highest-Rated Titles**: Contextual rails derived from 4- and 5-star ratings with *"Because You Loved"* and *"Because You Liked"* attributions.
+  3. **Based on What You've Streamed**: Contextual rails derived from streamed watch history with *"Because You Watched"* attribution.
+  4. **Your Top Genre Universes**: Curated rails for user's top affinity genres.
+  5. **Taste Profile Overview**: Glassmorphic stats header displaying total rated, total streamed, and top genres.
+  6. **Interactive Media Type Filters**: Seamlessly filters by `All Content` (`/recommendations/`), `Movies` (`?type=movie`), and `TV Series` (`?type=tv`).
+  7. **Empty State**: Cinematic fallback guiding users to rate titles or start streaming.
+- Navigation integration: Top desktop navbar link (`Recommended`), user profile dropdown (`Recommended For You` with star badge), and discovery CTA in Watch History.
+
+---
+
+### 2.7 ⏸️ Decommissioned / Dropped Features (Standby Architecture)
+
+#### 2.7.1 Offline Download Pipeline (`apps/downloads/`) — ON HOLD / DROPPED
 - **Status**: **ON HOLD / DROPPED (Deactivated)**
 - **Architectural Rationale**: Filvora is fundamentally engineered and optimized as an instant high-bitrate multi-server online streaming platform with 6 circular failover providers (VidLink, VidFast, AutoEmbed, VidSrc, 2Embed, NontonGo). Offline downloading of fragmented iframe/HLS streaming sources is bandwidth-heavy, storage-prohibitive, and redundant given 100% cloud-stream reliability and instant multi-server failover.
 - **Codebase State**:
   - `apps.downloads` is **commented out** in `config/settings.py` (`INSTALLED_APPS`).
   - `/downloads/` routing is **commented out** in `config/urls.py` and `apps/downloads/urls.py`.
   - Views in `apps/downloads/views.py` and test cases in `apps/downloads/tests.py` are preserved commented out on hold for future architectural reference.
-  - The active automated test suite (`run_all_tests.py`, `Run Tests.bat`, `manage.py test`) excludes downloads and tests exclusively the 7 active production apps (122 tests, 100% passing).
+  - The active automated test suite (`run_all_tests.py`, `Run Tests.bat`, `manage.py test`) excludes downloads and tests exclusively the 7 active production apps (144 tests, 100% passing).
 
 ---
 
