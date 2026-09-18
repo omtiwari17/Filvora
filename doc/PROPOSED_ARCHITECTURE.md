@@ -286,3 +286,49 @@ Every movie card in the Official Franchise Saga rail is equipped with:
 - `test_rate_collection_batch` (`apps.watch`): verifies assigning 5 stars across franchise parts.
 - `test_remove_collection_rating_batch` (`apps.watch`): verifies batch rating removal.
 - `test_toggle_collection_library_batch` (`apps.library`): verifies batch watchlist toggle and profile isolation.
+
+---
+
+## 9. Watch Date & Multi-Day Session Resolution Engine
+
+### 9.1 Problem Statement & Design Motivation
+When titles are streamed or marked as watched across multiple calendar days (for example, starting a long film on Friday night and finishing it Sunday afternoon, or pacing an episode over multiple days), displaying only a single date or `updated_at` causes ambiguity and discards the user's viewing journey context.
+
+### 9.2 Timestamp Model Schema
+`WatchProgress` tracks two dedicated timestamps:
+- `created_at`: The exact datetime the session was initiated (defaulting to `timezone.now`).
+- `completed_at`: The datetime the user marked the title as watched or crossed the $\ge 90\%$ playback threshold. Cleared to `None` if uncompleted or reset.
+
+```mermaid
+flowchart LR
+    S[Start Watching] -->|created_at = now| IP[In-Progress Session]
+    IP -->|Stream across days| MD[Multi-Day Session]
+    MD -->|Progress >= 90% or Mark Watched| CW[Completed Session: completed_at = now]
+    CW -->|Unmark Watched or rewind| IP
+```
+
+### 9.3 Date Resolution Algorithm
+The `@property watch_date_display` and `@property watch_date_tooltip` on `WatchProgress` dynamically compute the user-facing format:
+
+1. **Completed Content (`completed=True`)**:
+   - **Single-day**: Displays completion date: `Sep 18, 2026` (Tooltip: `Completed on Sep 18, 2026`).
+   - **Multi-day (Same Month)**: Displays span: `Sep 15 – 18, 2026` (Tooltip: `Started Sep 15, 2026 • Completed Sep 18, 2026`).
+   - **Multi-day (Cross Month)**: Displays span: `Aug 28 – Sep 02, 2026`.
+   - **Multi-day (Cross Year)**: Displays span: `Dec 28, 2025 – Jan 02, 2026`.
+
+2. **In-Progress Content (`completed=False`)**:
+   - **Single-day**: Displays start date: `Sep 18, 2026` (Tooltip: `Started on Sep 18, 2026`).
+   - **Multi-day**: Displays span from start to most recent play: `Sep 10 – 14, 2026` (Tooltip: `Started Sep 10, 2026 • Last played Sep 14, 2026`).
+
+### 9.4 Card UI Integration
+In `templates/watch/history.html`, each media card renders a calendar badge pill:
+```html
+<span class="inline-flex items-center gap-1 text-[10px] font-medium text-gray-400 bg-gray-950/80 px-2 py-0.5 rounded border border-gray-800/80 shadow-sm" title="{{ item.watch_date_tooltip }}">
+    <svg class="w-2.5 h-2.5 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+    <span>{{ item.watch_date_display }}</span>
+</span>
+```
+Grouped history rails (*Today, Yesterday, This Week, Earlier*) remain organized by `updated_at` (most recent user activity).
+

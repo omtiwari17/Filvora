@@ -68,7 +68,7 @@ def save_progress(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 
-from datetime import datetime, timezone, timedelta
+from datetime import timedelta
 from django.shortcuts import render, redirect
 from apps.tmdb.client import TMDBClient
 
@@ -87,7 +87,7 @@ def history_view(request):
     profile = get_active_profile(request)
     items = WatchProgress.objects.filter(user=request.user, profile=profile).order_by('-updated_at')
     
-    now = datetime.now(timezone.utc)
+    now = timezone.now()
     today = now.date()
     yesterday = today - timedelta(days=1)
     seven_days_ago = today - timedelta(days=7)

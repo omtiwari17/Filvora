@@ -585,6 +585,149 @@ class UserRatingTestCase(TestCase):
         ratings_count = UserRating.objects.filter(user=self.user, profile=profile, tmdb_id__in=movie_ids).count()
         self.assertEqual(ratings_count, 0)
 
+    def test_watch_date_single_day_display(self):
+        """Test single-day watch date display formatting for completed and in-progress titles."""
+        from django.utils import timezone
+        import datetime
+        dt = timezone.make_aware(datetime.datetime(2026, 9, 18, 14, 30))
+        p = WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=101,
+            media_type='movie',
+            completed=True,
+            created_at=dt,
+            completed_at=dt + datetime.timedelta(hours=2)
+        )
+        self.assertFalse(p.is_multi_day)
+        self.assertEqual(p.watch_date_display, "Sep 18, 2026")
+        self.assertEqual(p.watch_date_tooltip, "Completed on Sep 18, 2026")
+
+    def test_watch_date_multi_day_display(self):
+        """Test multi-day date span formatting across same-month, cross-month, and cross-year."""
+        from django.utils import timezone
+        import datetime
+
+        # Same month span
+        d1 = timezone.make_aware(datetime.datetime(2026, 9, 15, 10, 0))
+        d2 = timezone.make_aware(datetime.datetime(2026, 9, 18, 20, 0))
+        p_same_month = WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=102,
+            media_type='movie',
+            completed=True,
+            created_at=d1,
+            completed_at=d2
+        )
+        self.assertTrue(p_same_month.is_multi_day)
+        self.assertEqual(p_same_month.watch_date_display, "Sep 15 – 18, 2026")
+        self.assertEqual(p_same_month.watch_date_tooltip, "Started Sep 15, 2026 • Completed Sep 18, 2026")
+
+        # Cross month span
+        d3 = timezone.make_aware(datetime.datetime(2026, 8, 28, 10, 0))
+        d4 = timezone.make_aware(datetime.datetime(2026, 9, 2, 12, 0))
+        p_cross_month = WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=103,
+            media_type='movie',
+            completed=True,
+            created_at=d3,
+            completed_at=d4
+        )
+        self.assertTrue(p_cross_month.is_multi_day)
+        self.assertEqual(p_cross_month.watch_date_display, "Aug 28 – Sep 02, 2026")
+
+        # Cross year span
+        d5 = timezone.make_aware(datetime.datetime(2025, 12, 28, 10, 0))
+        d6 = timezone.make_aware(datetime.datetime(2026, 1, 2, 12, 0))
+        p_cross_year = WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=104,
+            media_type='movie',
+            completed=True,
+            created_at=d5,
+            completed_at=d6
+        )
+        self.assertTrue(p_cross_year.is_multi_day)
+        self.assertEqual(p_cross_year.watch_date_display, "Dec 28, 2025 – Jan 02, 2026")
+
+    def test_watch_date_in_progress_multi_day(self):
+        """Test in-progress multi-day span formatting."""
+        from django.utils import timezone
+        import datetime
+        d1 = timezone.make_aware(datetime.datetime(2026, 9, 10, 10, 0))
+        d2 = timezone.make_aware(datetime.datetime(2026, 9, 14, 18, 0))
+        p = WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=105,
+            media_type='movie',
+            completed=False,
+            created_at=d1
+        )
+        WatchProgress.objects.filter(id=p.id).update(updated_at=d2)
+        p.refresh_from_db()
+        self.assertTrue(p.is_multi_day)
+        self.assertEqual(p.watch_date_display, "Sep 10 – 14, 2026")
+        self.assertEqual(p.watch_date_tooltip, "Started Sep 10, 2026 • Last played Sep 14, 2026")
+
+    def test_completed_at_timestamp_lifecycle(self):
+        """Test completed_at lifecycle in toggle_watched and save_progress."""
+        self.client.force_login(self.user)
+        # 1. Toggle watched -> sets completed_at
+        res = self.client.post('/progress/mark-watched/', data={'tmdb_id': 106, 'media_type': 'movie'}, HTTP_HX_REQUEST='true')
+        self.assertEqual(res.status_code, 200)
+        p = WatchProgress.objects.get(user=self.user, tmdb_id=106)
+        self.assertTrue(p.completed)
+        self.assertIsNotNone(p.completed_at)
+
+        # 2. Toggle watched again on full-watched record -> deletes record
+        res2 = self.client.post('/progress/mark-watched/', data={'tmdb_id': 106, 'media_type': 'movie'}, HTTP_HX_REQUEST='true')
+        self.assertEqual(res2.status_code, 200)
+        self.assertFalse(WatchProgress.objects.filter(user=self.user, tmdb_id=106).exists())
+
+        # 3. Test save_progress setting completed_at when completed, and clearing when in progress
+        payload_completed = {
+            'tmdb_id': 108,
+            'media_type': 'movie',
+            'position': 5800,
+            'duration': 6000
+        }
+        res3 = self.client.post('/progress/save/', data=json.dumps(payload_completed), content_type='application/json')
+        self.assertEqual(res3.status_code, 200)
+        p_saved = WatchProgress.objects.get(user=self.user, tmdb_id=108)
+        self.assertTrue(p_saved.completed)
+        self.assertIsNotNone(p_saved.completed_at)
+
+        # In-progress save (<90%) clears completed_at
+        payload_inprogress = {
+            'tmdb_id': 108,
+            'media_type': 'movie',
+            'position': 1200,
+            'duration': 6000
+        }
+        res4 = self.client.post('/progress/save/', data=json.dumps(payload_inprogress), content_type='application/json')
+        self.assertEqual(res4.status_code, 200)
+        p_saved.refresh_from_db()
+        self.assertFalse(p_saved.completed)
+        self.assertIsNone(p_saved.completed_at)
+
+    def test_history_view_watch_date_enrichment(self):
+        """Test that history view enriches cards with watch_date_display and tooltip."""
+        self.client.force_login(self.user)
+        p = WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=107,
+            media_type='movie',
+            completed=True,
+            position_seconds=5400,
+            duration_seconds=5400
+        )
+        res = self.client.get('/history/')
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, p.watch_date_display)
+        # Check rendered calendar pill
+        self.assertContains(res, 'viewBox="0 0 24 24"')
+
+
 
 
 
