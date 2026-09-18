@@ -319,16 +319,69 @@
 
 ---
 
-### 2.7 ⏸️ Decommissioned / Dropped Features (Standby Architecture)
+### 2.7 🎯 In-Card Quick Actions & Franchise Saga Batch Actions Architecture (`apps/watch/`, `apps/catalog/`, `apps/library/`)
 
-#### 2.7.1 Offline Download Pipeline (`apps/downloads/`) — ON HOLD / DROPPED
+#### 2.7.1 In-Card Quick Actions Engine (Mark as Watched & Star Rating Popover)
+- **The Core Problem**: Previously, users were required to click into movie/series detail pages to mark titles as watched or submit star ratings, creating high interaction friction during catalog browsing.
+- **The Solution**:
+  - Equips all movie and TV series cards across the catalog (Homepage billboard & rails, Movies browse, TV Series browse, Discover, Search, Recommendations, and History) with 4 dedicated in-card actions:
+    1. **`[+]` Watchlist Toggle**: In-place HTMX toggle adding/removing titles from active profile's My List.
+    2. **`[👁]` 1-Click Mark as Watched**: Instantly toggles completed status in `WatchProgress` for active profile, illuminating with an emerald indicator and tooltip confirmation.
+    3. **`[★]` Quick Star Rating**: Micro glassmorphic popover capsule (1–5 stars) featuring live hover illumination, in-place HTMX submission (`/progress/rate/`), and clear rating option (`[✕]`).
+    4. **`[ⓘ]` Info Details**: Direct anchor link to details view.
+  - **Universal Context Processor (`apps.watch.context_processors.user_watch_context`)**: Pre-fetches active profile's watched sets and ratings maps into global template context, avoiding N+1 queries.
+  - **Template Tag Filter (`apps.watch.templatetags.watch_tags.get_item`)**: Safe dictionary lookup filter for integer and string keys in Django templates.
+  - **Click Propagation Isolation**: Enforces strict `event.stopPropagation()` on all card action buttons to prevent unintentional parent poster clicks.
+
+#### 2.7.2 Franchise Saga & Complete Collection Batch Actions Engine
+- **The Core Problem**: When browsing franchise collections (e.g. *Dune Collection*, *The Dark Knight Trilogy*, *Spider-Man Spider-Verse*, *John Wick*, *Harry Potter*), users wanted the ability to mark the entire saga as watched, rate all movies in the franchise, or add the entire collection to their watchlist with 1 click.
+- **The Solution**:
+  - Equips the Official Franchise Saga rail header with 4 batch actions:
+    1. **Franchise Completion HUD**: Dynamic progress badge tracking `X of Y Watched (Z%)` that transitions to an emerald `✓ Saga Completed` state when all installments are watched.
+    2. **1-Click "Mark Saga as Watched" Toggle** (`/progress/collection/mark-watched/`): Completes or unmarks all movies in the saga simultaneously for active profile.
+    3. **1-Click "Rate Entire Saga" Popover Capsule** (`/progress/collection/rate/` & `/progress/collection/rate/remove/`): Micro popover capsule assigning 1–5 stars across all franchise chapters in one tap with live hover illumination, active score badge (`★ 5/5 Saga Rated`), and clear rating option.
+    4. **1-Click "Add Saga to My List" Toggle** (`/library/collection/toggle-all/`): Batch adds or removes all installments from active profile's `LibraryItem`.
+  - **Real-Time Client Synchronization**: Batch endpoints dispatch HTMX triggers (`sagaWatchedChanged`, `sagaRatingChanged`) that immediately illuminate narrative timeline ribbon segments emerald and toggle in-card `Seen` badges without full-page reloads.
+  - **Full In-Card Parity**: Every movie card in the saga rail retains permanent desktop & mobile `Seen` indicators, center direct Play, and the standard 4-button action row.
+
+---
+
+### 2.8 📅 Watch Date & Multi-Day Session Resolution Architecture (`apps/watch/models.py`, `apps/watch/views.py`, `templates/watch/history.html`)
+
+#### 2.8.1 The Multi-Day Watch Date Dilemma
+When a user starts watching a movie or TV series on one calendar day and finishes it on another (e.g. starting a 3-hour movie on Friday night and finishing Sunday afternoon), displaying only a single date or `updated_at` creates ambiguity and discards the user's viewing journey context.
+
+#### 2.8.2 Dual-Timestamp Lifecycle Schema
+- `WatchProgress` tracks two explicit timestamps:
+  - `created_at = models.DateTimeField(default=timezone.now)`: Records the exact datetime the viewing session began.
+  - `completed_at = models.DateTimeField(null=True, blank=True)`: Records the exact datetime the title crossed the $\ge 90\%$ threshold or was explicitly marked as watched via `toggle_watched`. Cleared to `None` if uncompleted or reset.
+- Migration `0005_watchprogress_completed_at_watchprogress_created_at.py` safely applied.
+
+#### 2.8.3 Dynamic Date Resolution Algorithm (`watch_date_display` & `watch_date_tooltip`)
+1. **For Completed Titles (`completed=True`)**:
+   - **Single-Day Session**: Displays exact completion date: **`Sep 18, 2026`** (Tooltip: `Completed on Sep 18, 2026`).
+   - **Multi-Day Session (Same Month)**: Displays start-to-finish span: **`Sep 15 – 18, 2026`** (Tooltip: `Started Sep 15, 2026 • Completed Sep 18, 2026`).
+   - **Multi-Day Session (Cross Month)**: Displays span: **`Aug 28 – Sep 02, 2026`**.
+   - **Multi-Day Session (Cross Year)**: Displays span: **`Dec 28, 2025 – Jan 02, 2026`**.
+2. **For In-Progress Titles (`completed=False`)**:
+   - **Single-Day Session**: Displays start date: **`Sep 18, 2026`** (Tooltip: `Started on Sep 18, 2026`).
+   - **Multi-Day Session**: Displays start-to-last-played span: **`Sep 10 – 14, 2026`** (Tooltip: `Started Sep 10, 2026 • Last played Sep 14, 2026`).
+3. **Timeline Grouping Preserved**: Grouped history rails (*Today, Yesterday, This Week, Earlier*) continue to be sorted and organized by `updated_at` (most recent user activity).
+4. **Card UI Integration**: In `templates/watch/history.html`, cards render a calendar SVG badge pill:
+   `<span class="inline-flex items-center gap-1 text-[10px] font-medium text-gray-400 bg-gray-950/80 px-2 py-0.5 rounded border border-gray-800/80 shadow-sm" title="{{ item.watch_date_tooltip }}">...</span>`
+
+---
+
+### 2.9 ⏸️ Decommissioned / Dropped Features (Standby Architecture)
+
+#### 2.9.1 Offline Download Pipeline (`apps/downloads/`) — ON HOLD / DROPPED
 - **Status**: **ON HOLD / DROPPED (Deactivated)**
 - **Architectural Rationale**: Filvora is fundamentally engineered and optimized as an instant high-bitrate multi-server online streaming platform with 6 circular failover providers (VidLink, VidFast, AutoEmbed, VidSrc, 2Embed, NontonGo). Offline downloading of fragmented iframe/HLS streaming sources is bandwidth-heavy, storage-prohibitive, and redundant given 100% cloud-stream reliability and instant multi-server failover.
 - **Codebase State**:
   - `apps.downloads` is **commented out** in `config/settings.py` (`INSTALLED_APPS`).
   - `/downloads/` routing is **commented out** in `config/urls.py` and `apps/downloads/urls.py`.
   - Views in `apps/downloads/views.py` and test cases in `apps/downloads/tests.py` are preserved commented out on hold for future architectural reference.
-  - The active automated test suite (`run_all_tests.py`, `Run Tests.bat`, `manage.py test`) excludes downloads and tests exclusively the 7 active production apps (144 tests, 100% passing).
+  - The active automated test suite (`run_all_tests.py`, `Run Tests.bat`, `manage.py test`) excludes downloads and tests exclusively the 7 active production apps (160 tests, 100% passing).
 
 ---
 
@@ -383,8 +436,10 @@ Filvora/
      - `AGENTS.md`: Version specifications and architecture state.
 2. **Database Privacy & `.env` Isolation**:
    - `db.sqlite3`, `backups/`, `media/`, and `.env` are strictly ignored in `.gitignore`.
-3. **Git Commit & Push**:
-   - Always stage, commit with clear semantic messages, and `git push origin main` after completing tasks.
+3. **Git Commit, Push & Grouping Discipline**:
+   - When completing multi-part tasks, group changes logically and commit in distinct functional groups (e.g. Model/Migration, View/API, Template UI, Tests/Documentation).
+   - If the user specifies "only commit no push", strictly avoid executing `git push` and keep commits local until explicitly instructed to push.
+   - Stage and commit with clear conventional semantic commit messages (`feat(...)`, `fix(...)`, `test(...)`, `refactor(...)`).
    - Do NOT commit the `FILVORA_PHASED_WORK_GUIDE` folder.
 4. **Play Icon SVGs & Strict Zero-Emoji Policy**:
    - Never use double-circle `play-circle` inside circular buttons. Always use solid geometric play triangle:
@@ -412,7 +467,7 @@ Filvora/
 # Run Development Server manually
 .\venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000
 
-# Run Automated Test Suite (122 tests across 7 active apps)
+# Run Automated Test Suite (160 tests across 7 active apps)
 .\venv\Scripts\python.exe run_all_tests.py
 
 # Or via Django test runner
