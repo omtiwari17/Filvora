@@ -218,4 +218,71 @@ Execute the full suite with:
 ```powershell
 .\venv\Scripts\python.exe run_all_tests.py
 ```
-Total test suite: **151 tests, 100% passing**.
+Total test suite: **155 tests, 100% passing**.
+
+---
+
+## 8. Franchise Saga & Complete Collection Batch Actions Engine
+
+### 8.1 Overview
+The Franchise Saga & Complete Collection Engine extends individual quick actions to entire cinematic universes (e.g. *Dune Collection*, *The Dark Knight Trilogy*, *Spider-Man Spider-Verse*, *John Wick Collection*, *Harry Potter*). Users can mark an entire franchise as watched, rate all installments with 1–5 stars simultaneously, or add the whole saga to their personal list with zero page navigations.
+
+```mermaid
+flowchart TD
+    subgraph SagaHeader [Franchise Saga Header Bar]
+        HUD[Franchise Completion HUD: X of Y Watched]
+        BMW[1-Click Mark Saga as Watched]
+        BMR[1-Click Rate Entire Saga Popover]
+        BML[1-Click Add Entire Saga to My List]
+    end
+
+    subgraph SagaRail [Chronological Film Rail]
+        C1[Chapter 01 Card + Actions]
+        C2[Chapter 02 Card + Actions]
+        CN[Chapter N Card + Actions]
+        TL[Mini Segmented Narrative Timeline Bar]
+    end
+
+    subgraph BatchEndpoints [Batch API Layer]
+        EP_W[POST /progress/collection/mark-watched/]
+        EP_R[POST /progress/collection/rate/]
+        EP_RR[POST /progress/collection/rate/remove/]
+        EP_L[POST /library/collection/toggle-all/]
+    end
+
+    BMW -->|HTMX POST collection_id, movie_ids| EP_W
+    BMR -->|HTMX POST score=1-5, movie_ids| EP_R
+    BMR -->|HTMX POST remove, movie_ids| EP_RR
+    BML -->|HTMX POST collection_id, movie_ids| EP_L
+
+    EP_W -->|HX-Trigger: sagaWatchedChanged| SagaRail
+    EP_R -->|HX-Trigger: sagaRatingChanged| SagaRail
+    TL -.->|Pills illuminate emerald on watch| SagaRail
+```
+
+### 8.2 Endpoints & Capabilities
+1. `POST /progress/collection/mark-watched/` (`toggle_collection_watched`):
+   - Toggles all movies in collection as completed (`WatchProgress`) for active profile.
+   - If already completely watched, unmarks all.
+   - Returns updated `templates/components/collection_actions_bar.html` with `HX-Trigger: {"sagaWatchedChanged": ...}`.
+2. `POST /progress/collection/rate/` (`rate_collection`):
+   - Assigns 1–5 star rating across all movies in franchise for active profile (`UserRating`).
+   - Returns updated collection bar with `HX-Trigger: {"sagaRatingChanged": ...}`.
+3. `POST /progress/collection/rate/remove/` (`remove_collection_rating`):
+   - Clears star ratings across all movies in the collection for active profile.
+4. `POST /library/collection/toggle-all/` (`toggle_collection_library`):
+   - Batch adds/removes all franchise installments in `LibraryItem` for active profile.
+   - Returns updated collection bar with `HX-Trigger: {"sagaLibraryChanged": ...}`.
+
+### 8.3 In-Card Parity in Saga Rails
+Every movie card in the Official Franchise Saga rail is equipped with:
+- Desktop & mobile permanent `Seen` emerald indicator when completed.
+- Center Play button.
+- 4 dedicated in-card actions: `[+]` Add to My List, `[👁]` Mark as Watched, `[★]` Quick Star Rating popover, and `[ⓘ]` Details.
+- Real-time client DOM synchronization (`sagaWatchedChanged`, `sagaRatingChanged`) updating cards and timeline ribbon without requiring page reloads.
+
+### 8.4 Automated Test Suite
+- `test_toggle_collection_watched_batch` (`apps.watch`): verifies batch marking and unmarking entire sagas.
+- `test_rate_collection_batch` (`apps.watch`): verifies assigning 5 stars across franchise parts.
+- `test_remove_collection_rating_batch` (`apps.watch`): verifies batch rating removal.
+- `test_toggle_collection_library_batch` (`apps.library`): verifies batch watchlist toggle and profile isolation.

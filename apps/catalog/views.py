@@ -134,8 +134,44 @@ def movie_detail(request, tmdb_id):
         if collection and 'parts' in collection:
             curr_id = int(tmdb_id)
             curr_order = None
+            part_ids = [p['id'] for p in collection['parts'] if p.get('id')]
+
+            # Query watched, saved, and rated for active profile
+            watched_part_ids = set()
+            saved_part_ids = set()
+            user_ratings_dict = {}
+            if request.user.is_authenticated and profile:
+                watched_part_ids = set(WatchProgress.objects.filter(
+                    user=request.user, profile=profile, tmdb_id__in=part_ids, media_type='movie', completed=True
+                ).values_list('tmdb_id', flat=True))
+                saved_part_ids = set(LibraryItem.objects.filter(
+                    user=request.user, profile=profile, tmdb_id__in=part_ids, media_type='movie'
+                ).values_list('tmdb_id', flat=True))
+                user_ratings_dict = dict(UserRating.objects.filter(
+                    user=request.user, profile=profile, tmdb_id__in=part_ids, media_type='movie'
+                ).values_list('tmdb_id', 'score'))
+
+            watched_count = len(watched_part_ids)
+            total_count = len(part_ids)
+            is_all_watched = (watched_count == total_count and total_count > 0)
+            is_all_saved = (len(saved_part_ids) == total_count and total_count > 0)
+            collection_ratings = [user_ratings_dict[pid] for pid in part_ids if pid in user_ratings_dict]
+            avg_score = int(round(sum(collection_ratings) / len(collection_ratings))) if collection_ratings else 0
+
+            collection['watched_count'] = watched_count
+            collection['total_count'] = total_count
+            collection['is_all_watched'] = is_all_watched
+            collection['is_all_saved'] = is_all_saved
+            collection['completion_percent'] = int((watched_count / total_count) * 100) if total_count > 0 else 0
+            collection['collection_score'] = avg_score
+            collection['movie_ids_str'] = ','.join(str(pid) for pid in part_ids)
+
             for part in collection['parts']:
-                if part.get('id') == curr_id:
+                pid = part.get('id')
+                part['is_watched'] = pid in watched_part_ids
+                part['in_library'] = pid in saved_part_ids
+                part['user_rating'] = user_ratings_dict.get(pid, 0)
+                if pid == curr_id:
                     part['is_current'] = True
                     curr_order = part.get('franchise_order', 1)
                 else:

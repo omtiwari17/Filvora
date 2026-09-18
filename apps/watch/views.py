@@ -386,6 +386,299 @@ def remove_rating(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 
+def _parse_movie_ids(data):
+    """Safely extracts a list of integer movie IDs from POST or JSON payloads."""
+    movie_ids_raw = data.get('movie_ids', '')
+    if isinstance(movie_ids_raw, list):
+        return [int(x) for x in movie_ids_raw if str(x).isdigit()]
+    if isinstance(movie_ids_raw, str):
+        if movie_ids_raw.startswith('[') and movie_ids_raw.endswith(']'):
+            try:
+                parsed = json.loads(movie_ids_raw)
+                return [int(x) for x in parsed if str(x).isdigit()]
+            except Exception:
+                pass
+        return [int(x.strip()) for x in movie_ids_raw.split(',') if x.strip().isdigit()]
+    return []
+
+
+@csrf_exempt
+@login_required
+def toggle_collection_watched(request):
+    """Batch toggle watched status for all movies in a franchise collection for active profile."""
+    if request.method != 'POST':
+        return HttpResponseBadRequest("POST required")
+
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
+        collection_id = int(data.get('collection_id', 0))
+        movie_ids = _parse_movie_ids(data)
+
+        profile = get_active_profile(request)
+        if not movie_ids and collection_id:
+            client = TMDBClient()
+            coll_data = client.get_collection(collection_id)
+            if coll_data and 'parts' in coll_data:
+                movie_ids = [p['id'] for p in coll_data['parts']]
+
+        if not movie_ids:
+            return JsonResponse({'status': 'error', 'message': 'No movie IDs provided'}, status=400)
+
+        existing = WatchProgress.objects.filter(
+            user=request.user,
+            profile=profile,
+            tmdb_id__in=movie_ids,
+            media_type='movie',
+            completed=True
+        )
+        existing_ids = set(existing.values_list('tmdb_id', flat=True))
+
+        # If all are already completed, unmark all
+        if len(existing_ids) >= len(movie_ids):
+            for p in existing:
+                if p.position_seconds >= p.duration_seconds or p.duration_seconds == 7200.0:
+                    p.delete()
+                else:
+                    p.completed = False
+                    p.save()
+            is_all_watched = False
+            watched_count = 0
+        else:
+            # Mark all as completed
+            for mid in movie_ids:
+                WatchProgress.objects.update_or_create(
+                    user=request.user,
+                    profile=profile,
+                    tmdb_id=mid,
+                    media_type='movie',
+                    defaults={
+                        'completed': True,
+                        'position_seconds': 7200.0,
+                        'duration_seconds': 7200.0,
+                    }
+                )
+            is_all_watched = True
+            watched_count = len(movie_ids)
+
+        if request.headers.get('HX-Request'):
+            from django.template.loader import render_to_string
+            from django.http import HttpResponse
+
+            total_count = len(movie_ids)
+            percent = int((watched_count / total_count) * 100) if total_count > 0 else 0
+
+            # Get user ratings for these parts
+            ratings = list(UserRating.objects.filter(
+                user=request.user, profile=profile, tmdb_id__in=movie_ids, media_type='movie'
+            ).values_list('score', flat=True))
+            avg_score = int(round(sum(ratings) / len(ratings))) if ratings else 0
+
+            from apps.library.models import LibraryItem
+            saved_count = LibraryItem.objects.filter(
+                user=request.user, profile=profile, tmdb_id__in=movie_ids, media_type='movie'
+            ).count()
+
+            html = render_to_string('components/collection_actions_bar.html', {
+                'collection': {
+                    'id': collection_id,
+                    'parts': [{'id': mid} for mid in movie_ids],
+                    'watched_count': watched_count,
+                    'total_count': total_count,
+                    'is_all_watched': is_all_watched,
+                    'completion_percent': percent,
+                    'is_all_saved': saved_count == total_count,
+                    'collection_score': avg_score,
+                    'movie_ids_str': ','.join(str(x) for x in movie_ids),
+                },
+                'movie_ids_str': ','.join(str(x) for x in movie_ids),
+                'user_watched_ids': set(movie_ids) if is_all_watched else set(),
+            }, request=request)
+            resp = HttpResponse(html)
+            resp['HX-Trigger'] = json.dumps({
+                'sagaWatchedChanged': {
+                    'collection_id': collection_id,
+                    'is_all_watched': is_all_watched,
+                    'movie_ids': movie_ids
+                }
+            })
+            return resp
+
+        return JsonResponse({
+            'status': 'ok',
+            'is_all_watched': is_all_watched,
+            'watched_count': watched_count,
+            'total_count': len(movie_ids)
+        })
+    except (ValueError, TypeError, KeyError) as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+@login_required
+def rate_collection(request):
+    """Batch rate all movies in a franchise collection for active profile."""
+    if request.method != 'POST':
+        return HttpResponseBadRequest("POST required")
+
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
+        collection_id = int(data.get('collection_id', 0))
+        movie_ids = _parse_movie_ids(data)
+        score = int(data.get('score', 0))
+
+        if score < 1 or score > 5:
+            return JsonResponse({'status': 'error', 'message': 'Score must be 1-5'}, status=400)
+
+        profile = get_active_profile(request)
+        if not movie_ids and collection_id:
+            client = TMDBClient()
+            coll_data = client.get_collection(collection_id)
+            if coll_data and 'parts' in coll_data:
+                movie_ids = [p['id'] for p in coll_data['parts']]
+
+        if not movie_ids:
+            return JsonResponse({'status': 'error', 'message': 'No movie IDs provided'}, status=400)
+
+        for mid in movie_ids:
+            UserRating.objects.update_or_create(
+                user=request.user,
+                profile=profile,
+                tmdb_id=mid,
+                media_type='movie',
+                defaults={'score': score}
+            )
+
+        if request.headers.get('HX-Request'):
+            from django.template.loader import render_to_string
+            from django.http import HttpResponse
+
+            watched_count = WatchProgress.objects.filter(
+                user=request.user, profile=profile, tmdb_id__in=movie_ids, media_type='movie', completed=True
+            ).count()
+            total_count = len(movie_ids)
+            percent = int((watched_count / total_count) * 100) if total_count > 0 else 0
+
+            from apps.library.models import LibraryItem
+            saved_count = LibraryItem.objects.filter(
+                user=request.user, profile=profile, tmdb_id__in=movie_ids, media_type='movie'
+            ).count()
+
+            html = render_to_string('components/collection_actions_bar.html', {
+                'collection': {
+                    'id': collection_id,
+                    'parts': [{'id': mid} for mid in movie_ids],
+                    'watched_count': watched_count,
+                    'total_count': total_count,
+                    'is_all_watched': watched_count == total_count,
+                    'completion_percent': percent,
+                    'is_all_saved': saved_count == total_count,
+                    'collection_score': score,
+                    'movie_ids_str': ','.join(str(x) for x in movie_ids),
+                },
+                'movie_ids_str': ','.join(str(x) for x in movie_ids),
+                'collection_score': score,
+            }, request=request)
+            resp = HttpResponse(html)
+            resp['HX-Trigger'] = json.dumps({
+                'sagaRatingChanged': {
+                    'collection_id': collection_id,
+                    'score': score,
+                    'movie_ids': movie_ids
+                }
+            })
+            return resp
+
+        return JsonResponse({'status': 'ok', 'score': score, 'total_rated': len(movie_ids)})
+    except (ValueError, TypeError, KeyError) as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+@login_required
+def remove_collection_rating(request):
+    """Remove rating from all movies in a franchise collection for active profile."""
+    if request.method != 'POST':
+        return HttpResponseBadRequest("POST required")
+
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
+        collection_id = int(data.get('collection_id', 0))
+        movie_ids = _parse_movie_ids(data)
+        profile = get_active_profile(request)
+
+        if not movie_ids and collection_id:
+            client = TMDBClient()
+            coll_data = client.get_collection(collection_id)
+            if coll_data and 'parts' in coll_data:
+                movie_ids = [p['id'] for p in coll_data['parts']]
+
+        if not movie_ids:
+            return JsonResponse({'status': 'error', 'message': 'No movie IDs provided'}, status=400)
+
+        UserRating.objects.filter(
+            user=request.user,
+            profile=profile,
+            tmdb_id__in=movie_ids,
+            media_type='movie'
+        ).delete()
+
+        if request.headers.get('HX-Request'):
+            from django.template.loader import render_to_string
+            from django.http import HttpResponse
+
+            watched_count = WatchProgress.objects.filter(
+                user=request.user, profile=profile, tmdb_id__in=movie_ids, media_type='movie', completed=True
+            ).count()
+            total_count = len(movie_ids)
+            percent = int((watched_count / total_count) * 100) if total_count > 0 else 0
+
+            from apps.library.models import LibraryItem
+            saved_count = LibraryItem.objects.filter(
+                user=request.user, profile=profile, tmdb_id__in=movie_ids, media_type='movie'
+            ).count()
+
+            html = render_to_string('components/collection_actions_bar.html', {
+                'collection': {
+                    'id': collection_id,
+                    'parts': [{'id': mid} for mid in movie_ids],
+                    'watched_count': watched_count,
+                    'total_count': total_count,
+                    'is_all_watched': watched_count == total_count,
+                    'completion_percent': percent,
+                    'is_all_saved': saved_count == total_count,
+                    'collection_score': 0,
+                    'movie_ids_str': ','.join(str(x) for x in movie_ids),
+                },
+                'movie_ids_str': ','.join(str(x) for x in movie_ids),
+                'collection_score': 0,
+            }, request=request)
+            resp = HttpResponse(html)
+            resp['HX-Trigger'] = json.dumps({
+                'sagaRatingChanged': {
+                    'collection_id': collection_id,
+                    'score': 0,
+                    'movie_ids': movie_ids
+                }
+            })
+            return resp
+
+        return JsonResponse({'status': 'ok', 'message': 'Collection ratings removed'})
+    except (ValueError, TypeError, KeyError) as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
 
 @login_required
 def analytics_view(request):

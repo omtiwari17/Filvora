@@ -740,3 +740,55 @@ document.addEventListener('pointerdown', (e) => {
     }
 }, true);
 
+// --- Franchise Saga Collection Live Sync Engine ---
+document.body.addEventListener('sagaWatchedChanged', (e) => {
+    const data = e.detail;
+    if (!data || !data.movie_ids) return;
+    const isWatched = !!data.is_all_watched;
+    data.movie_ids.forEach(id => {
+        // 1. Mobile seen badge
+        const mobBadge = document.querySelector(`.saga-seen-mob-${id}`);
+        if (mobBadge) {
+            if (isWatched) mobBadge.classList.remove('hidden');
+            else mobBadge.classList.add('hidden');
+        }
+        // 2. Desktop seen badge
+        const deskBadge = document.querySelector(`.saga-seen-desk-${id}`);
+        if (deskBadge) {
+            if (isWatched) deskBadge.classList.remove('sm:hidden');
+            else deskBadge.classList.add('sm:hidden');
+        }
+        // 3. Narrative timeline segment
+        const seg = document.querySelector(`.saga-timeline-${id}`);
+        if (seg) {
+            const isCurrent = seg.getAttribute('data-is-current') === 'true';
+            if (isWatched) {
+                seg.classList.remove('bg-gray-600', 'bg-gray-800', 'bg-brand-500');
+                seg.classList.add('bg-emerald-500', 'shadow-sm', 'shadow-emerald-500/50');
+            } else {
+                seg.classList.remove('bg-emerald-500', 'shadow-sm', 'shadow-emerald-500/50');
+                if (isCurrent) {
+                    seg.classList.add('bg-brand-500', 'shadow-sm', 'shadow-brand-500/50');
+                } else {
+                    seg.classList.add('bg-gray-800');
+                }
+            }
+        }
+    });
+});
+
+document.body.addEventListener('sagaRatingChanged', (e) => {
+    const data = e.detail;
+    if (!data || !data.movie_ids) return;
+    const score = parseInt(data.score || 0, 10);
+    data.movie_ids.forEach(id => {
+        const rateContainer = document.getElementById(`card-rate-movie-${id}`);
+        if (rateContainer) {
+            const popover = rateContainer.querySelector('.quick-rate-popover');
+            if (popover) {
+                popover.setAttribute('data-score', score);
+                resetCardStars(popover);
+            }
+        }
+    });
+});

@@ -507,6 +507,84 @@ class UserRatingTestCase(TestCase):
         self.assertEqual(ctx2['user_tv_ratings'].get(200), 3)
         self.assertIsNone(ctx2['user_movie_ratings'].get(100))
 
+    def test_toggle_collection_watched_batch(self):
+        """Test batch marking an entire franchise saga as watched and unmarking it."""
+        from apps.accounts.models import UserProfile
+        self.client.force_login(self.user)
+        profile = UserProfile.objects.create(user=self.user, name="Saga Fan")
+        session = self.client.session
+        session['active_profile_id'] = profile.id
+        session.save()
+
+        movie_ids = [438631, 693134]  # Dune Part 1 & Dune Part 2
+        payload = {
+            'collection_id': 726871,
+            'movie_ids': '438631,693134',
+        }
+
+        # 1. First toggle -> marks all as completed
+        res = self.client.post('/progress/collection/mark-watched/', data=payload, HTTP_HX_REQUEST='true')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('sagaWatchedChanged', res.headers.get('HX-Trigger', ''))
+
+        for mid in movie_ids:
+            p = WatchProgress.objects.get(user=self.user, profile=profile, tmdb_id=mid, media_type='movie')
+            self.assertTrue(p.completed)
+
+        # 2. Second toggle -> unmarks all
+        res2 = self.client.post('/progress/collection/mark-watched/', data=payload, HTTP_HX_REQUEST='true')
+        self.assertEqual(res2.status_code, 200)
+        for mid in movie_ids:
+            p_exists = WatchProgress.objects.filter(user=self.user, profile=profile, tmdb_id=mid, media_type='movie', completed=True).exists()
+            self.assertFalse(p_exists)
+
+    def test_rate_collection_batch(self):
+        """Test batch rating all movies in a franchise collection (1-5 stars)."""
+        from apps.accounts.models import UserProfile
+        self.client.force_login(self.user)
+        profile = UserProfile.objects.create(user=self.user, name="Saga Critic")
+        session = self.client.session
+        session['active_profile_id'] = profile.id
+        session.save()
+
+        movie_ids = [438631, 693134]
+        payload = {
+            'collection_id': 726871,
+            'movie_ids': '438631,693134',
+            'score': 5,
+        }
+
+        res = self.client.post('/progress/collection/rate/', data=payload, HTTP_HX_REQUEST='true')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('sagaRatingChanged', res.headers.get('HX-Trigger', ''))
+
+        for mid in movie_ids:
+            rating = UserRating.objects.get(user=self.user, profile=profile, tmdb_id=mid, media_type='movie')
+            self.assertEqual(rating.score, 5)
+
+    def test_remove_collection_rating_batch(self):
+        """Test clearing batch ratings for all movies in a franchise collection."""
+        from apps.accounts.models import UserProfile
+        self.client.force_login(self.user)
+        profile = UserProfile.objects.create(user=self.user, name="Saga Neutral")
+        session = self.client.session
+        session['active_profile_id'] = profile.id
+        session.save()
+
+        movie_ids = [438631, 693134]
+        for mid in movie_ids:
+            UserRating.objects.create(user=self.user, profile=profile, tmdb_id=mid, media_type='movie', score=4)
+
+        payload = {
+            'collection_id': 726871,
+            'movie_ids': '438631,693134',
+        }
+        res = self.client.post('/progress/collection/rate/remove/', data=payload, HTTP_HX_REQUEST='true')
+        self.assertEqual(res.status_code, 200)
+
+        ratings_count = UserRating.objects.filter(user=self.user, profile=profile, tmdb_id__in=movie_ids).count()
+        self.assertEqual(ratings_count, 0)
+
 
 
 

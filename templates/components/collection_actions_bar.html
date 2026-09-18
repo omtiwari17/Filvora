@@ -1,0 +1,123 @@
+<div id="collection-actions-bar-{{ collection.id }}" class="flex flex-wrap items-center gap-2.5 sm:gap-3 my-3 z-20">
+    <!-- 1. Franchise Completion HUD / Progress Pill -->
+    <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gray-950/80 border border-gray-800 text-xs shadow-inner backdrop-blur-md">
+        {% if collection.is_all_watched %}
+        <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+        <span class="font-bold text-emerald-400">Saga Completed</span>
+        <span class="text-gray-500 font-medium">({{ collection.total_count }}/{{ collection.total_count }})</span>
+        {% else %}
+        <span class="w-2 h-2 rounded-full {% if collection.watched_count > 0 %}bg-yellow-400 animate-pulse{% else %}bg-gray-600{% endif %}"></span>
+        <span class="font-bold text-gray-300">{{ collection.watched_count|default:0 }} of {{ collection.total_count }} Watched</span>
+        <span class="text-gray-500 font-medium">({{ collection.completion_percent|default:0 }}%)</span>
+        {% endif %}
+    </div>
+
+    <!-- 2. 1-Click "Mark Saga as Watched" Toggle Button -->
+    <button type="button"
+            hx-post="/progress/collection/mark-watched/"
+            hx-vals='{"collection_id": "{{ collection.id }}", "movie_ids": "{{ collection.movie_ids_str }}"}'
+            hx-target="#collection-actions-bar-{{ collection.id }}"
+            hx-swap="outerHTML"
+            onclick="event.stopPropagation();"
+            title="{% if collection.is_all_watched %}Unmark entire saga as watched{% else %}Mark all {{ collection.total_count }} movies in saga as watched{% endif %}"
+            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 {% if collection.is_all_watched %}bg-emerald-600/25 hover:bg-emerald-600/35 text-emerald-300 border border-emerald-500/50 shadow-emerald-500/20{% else %}bg-gray-900/90 hover:bg-emerald-950/40 hover:border-emerald-500/60 text-gray-300 hover:text-emerald-300 border border-gray-700/80 shadow-black/40{% endif %}">
+        {% if collection.is_all_watched %}
+        <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>Saga Watched</span>
+        {% else %}
+        <svg class="w-4 h-4 shrink-0 fill-current text-gray-400 group-hover:text-emerald-300" viewBox="0 0 24 24">
+            <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+        </svg>
+        <span>Mark Saga Watched</span>
+        {% endif %}
+    </button>
+
+    <!-- 3. 1-Click "Rate Entire Saga" Star Rating Popover -->
+    <div id="collection-rate-{{ collection.id }}" class="relative quick-rate-wrapper shrink-0" onclick="event.stopPropagation();">
+        {% if collection.collection_score and collection.collection_score > 0 %}
+        <!-- Rated Saga Trigger Button -->
+        <button type="button"
+                onclick="event.preventDefault(); event.stopPropagation(); toggleCardRate('collection-rate-{{ collection.id }}');"
+                title="Saga rating: {{ collection.collection_score }}/5 (Click to change)"
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/60 shadow-yellow-500/10 ring-1 ring-yellow-400/30">
+            <svg class="w-3.5 h-3.5 fill-current text-yellow-400 shrink-0" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+            </svg>
+            <span>{{ collection.collection_score }}/5</span>
+            <span class="hidden sm:inline text-yellow-300/80">Saga Rated</span>
+        </button>
+        {% else %}
+        <!-- Unrated Saga Trigger Button -->
+        <button type="button"
+                onclick="event.preventDefault(); event.stopPropagation(); toggleCardRate('collection-rate-{{ collection.id }}');"
+                title="Rate entire saga (1-5 stars)"
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 bg-gray-900/90 hover:bg-yellow-950/40 hover:border-yellow-500/60 text-gray-300 hover:text-yellow-400 border border-gray-700/80 shadow-black/40">
+            <svg class="w-3.5 h-3.5 fill-current text-gray-400 hover:text-yellow-400 shrink-0" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+            </svg>
+            <span>Rate Saga</span>
+        </button>
+        {% endif %}
+
+        <!-- Micro Star Popover Capsule -->
+        <div class="quick-rate-popover hidden absolute top-10 left-0 z-50 bg-gray-950/95 backdrop-blur-xl border border-gray-700/90 rounded-xl p-1.5 shadow-2xl flex items-center gap-1 ring-1 ring-white/10"
+             data-score="{{ collection.collection_score|default:0 }}"
+             onmouseleave="resetCardStars(this);"
+             onclick="event.stopPropagation();">
+            {% for star in "12345" %}
+            <button type="button"
+                    hx-post="/progress/collection/rate/"
+                    hx-vals='{"collection_id": "{{ collection.id }}", "movie_ids": "{{ collection.movie_ids_str }}", "score": "{{ star }}"}'
+                    hx-target="#collection-actions-bar-{{ collection.id }}"
+                    hx-swap="outerHTML"
+                    onclick="event.stopPropagation();"
+                    onmouseenter="previewCardStars(this, {{ star }});"
+                    title="Rate entire saga {{ star }} star{% if star != '1' %}s{% endif %}"
+                    class="star-opt p-1.5 transition-colors duration-150 transform hover:scale-125 active:scale-95 {% if collection.collection_score >= star|add:'0' %}text-yellow-400{% else %}text-gray-500 hover:text-yellow-400{% endif %}">
+                <svg class="w-4 h-4 fill-current drop-shadow-sm" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                </svg>
+            </button>
+            {% endfor %}
+            {% if collection.collection_score and collection.collection_score > 0 %}
+            <div class="h-4 w-px bg-gray-700 mx-0.5"></div>
+            <button type="button"
+                    hx-post="/progress/collection/rate/remove/"
+                    hx-vals='{"collection_id": "{{ collection.id }}", "movie_ids": "{{ collection.movie_ids_str }}"}'
+                    hx-target="#collection-actions-bar-{{ collection.id }}"
+                    hx-swap="outerHTML"
+                    onclick="event.stopPropagation();"
+                    title="Remove saga ratings"
+                    class="p-1.5 text-gray-500 hover:text-red-400 transition-colors transform hover:scale-110">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 4. 1-Click "Add Saga to My List" Toggle Button -->
+    <button type="button"
+            hx-post="/library/collection/toggle-all/"
+            hx-vals='{"collection_id": "{{ collection.id }}", "movie_ids": "{{ collection.movie_ids_str }}"}'
+            hx-target="#collection-actions-bar-{{ collection.id }}"
+            hx-swap="outerHTML"
+            onclick="event.stopPropagation();"
+            title="{% if collection.is_all_saved %}Remove all {{ collection.total_count }} movies from My List{% else %}Add all {{ collection.total_count }} movies to My List{% endif %}"
+            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 {% if collection.is_all_saved %}bg-brand-500/20 hover:bg-brand-500/30 text-brand-300 border border-brand-500/50 shadow-brand-500/20{% else %}bg-gray-900/90 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/80 shadow-black/40{% endif %}">
+        {% if collection.is_all_saved %}
+        <svg class="w-3.5 h-3.5 text-brand-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>In My List</span>
+        {% else %}
+        <svg class="w-3.5 h-3.5 shrink-0 fill-none text-gray-400 hover:text-white" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>Add Saga to List</span>
+        {% endif %}
+    </button>
+</div>

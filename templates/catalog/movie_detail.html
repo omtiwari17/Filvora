@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static watch_tags %}
 
 {% block title %}{{ movie.display_title }} - Filvora{% endblock %}
 
@@ -300,6 +301,9 @@
                         </div>
                         <h2 class="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-md">{{ collection.name }}</h2>
                         <p class="text-xs sm:text-sm text-gray-400 mt-1.5 max-w-3xl leading-relaxed line-clamp-2">{{ collection.overview|default:"Follow the complete cinematic universe and experience every chapter from beginning to end." }}</p>
+
+                        <!-- Saga Batch Actions Bar (1-Click Watched, Rate All & List) -->
+                        {% include 'components/collection_actions_bar.html' %}
                     </div>
 
                     <!-- Saga Segmented Progress Ribbon -->
@@ -312,8 +316,9 @@
                         <!-- Mini Segmented Narrative Timeline Bar -->
                         <div class="flex items-center gap-1.5">
                             {% for p in collection.parts %}
-                            <div class="h-1.5 rounded-full transition-all duration-300 {% if p.is_current %}w-8 bg-brand-500 shadow-sm shadow-brand-500/50{% elif p.franchise_order < collection.current_chapter_num %}w-4 bg-gray-600{% else %}w-4 bg-gray-800{% endif %}"
-                                 title="Chapter {{ p.franchise_order }}: {{ p.title }}"></div>
+                            <div class="h-1.5 rounded-full transition-all duration-300 saga-timeline-segment saga-timeline-{{ p.id }} {% if p.id in user_watched_movie_ids or p.id in user_watched_ids or p.is_watched %}w-4 bg-emerald-500 shadow-sm shadow-emerald-500/50{% elif p.is_current %}w-8 bg-brand-500 shadow-sm shadow-brand-500/50{% elif p.franchise_order < collection.current_chapter_num %}w-4 bg-gray-600{% else %}w-4 bg-gray-800{% endif %}"
+                                 data-is-current="{% if p.is_current %}true{% else %}false{% endif %}"
+                                 title="Chapter {{ p.franchise_order }}: {{ p.title }}{% if p.id in user_watched_movie_ids or p.id in user_watched_ids or p.is_watched %} (Watched){% endif %}"></div>
                             {% endfor %}
                         </div>
                     </div>
@@ -339,8 +344,23 @@
                             <div class="w-full h-full flex items-center justify-center p-3 text-center text-gray-500 text-xs bg-gray-950 font-semibold">{{ part.title }}</div>
                             {% endif %}
 
+                            <!-- Mobile Permanent Badges -->
+                            <div class="absolute top-2 left-2 z-10 sm:hidden group-hover/saga:opacity-0 transition-opacity duration-200 flex items-center gap-1">
+                                <span class="saga-seen-mob-{{ part.id }} flex items-center bg-emerald-950/90 text-emerald-400 border border-emerald-500/40 px-1 py-0.5 rounded text-[8px] font-black shadow {% if not part.is_watched and part.id not in user_watched_movie_ids and part.id not in user_watched_ids %}hidden{% endif %}" title="Watched">
+                                    <svg class="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                                </span>
+                            </div>
+
+                            <!-- Desktop Permanent Seen Indicator (Top-Right) -->
+                            <div class="saga-seen-desk-{{ part.id }} hidden sm:block absolute top-2.5 right-2.5 z-10 group-hover/saga:opacity-0 transition-opacity duration-200 {% if not part.is_watched and part.id not in user_watched_movie_ids and part.id not in user_watched_ids %}sm:hidden{% endif %}">
+                                <span class="flex items-center gap-1 bg-black/80 backdrop-blur-md text-emerald-400 border border-emerald-500/40 px-1.5 py-0.5 rounded-full text-[9px] font-bold shadow-lg" title="Watched">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                    <span>Seen</span>
+                                </span>
+                            </div>
+
                             <!-- Top Narrative Timeline Ribbon Badges -->
-                            <div class="absolute top-3 inset-x-3 flex items-center justify-between z-10 pointer-events-none">
+                            <div class="absolute top-3 left-3 flex items-center gap-1.5 z-10 pointer-events-none group-hover/saga:opacity-0 transition-opacity duration-200">
                                 <!-- Minimalist Chapter Number -->
                                 <span class="px-2 py-0.5 rounded-md bg-black/85 backdrop-blur-md border border-white/20 text-white font-mono text-[11px] font-black tracking-wider shadow">
                                     {% if part.franchise_order < 10 %}0{% endif %}{{ part.franchise_order }}
@@ -364,7 +384,7 @@
                             </div>
 
                             <!-- Bottom Score / Age Rating -->
-                            <div class="absolute bottom-3 left-3 flex items-center gap-1.5 z-10 pointer-events-none">
+                            <div class="absolute bottom-3 left-3 flex items-center gap-1.5 z-10 pointer-events-none group-hover/saga:opacity-0 transition-opacity duration-200">
                                 {% if part.vote_average %}
                                 <span class="flex items-center gap-1 bg-black/85 backdrop-blur-md border border-yellow-500/40 text-yellow-400 text-[10px] font-bold px-2 py-0.5 rounded-md shadow">
                                     <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20">
@@ -380,22 +400,77 @@
                                 {% endif %}
                             </div>
 
-                            <!-- Interactive Hover Overlay (Play & Details) -->
-                            <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/80 to-transparent opacity-0 group-hover/saga:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 z-20">
-                                <h4 class="text-xs sm:text-sm font-bold text-white line-clamp-2 drop-shadow mb-3">{{ part.title }}</h4>
-                                <div class="flex items-center gap-2">
+                            <!-- Interactive Hover Overlay (Play, Chapter Info & In-Card Actions) -->
+                            <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/70 to-black/40 opacity-0 group-hover/saga:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3 z-20">
+                                <!-- Top Chapter Info -->
+                                <div class="flex items-center justify-between gap-1 z-20">
+                                    <span class="px-2 py-0.5 rounded bg-black/80 backdrop-blur-md text-white font-mono text-[10px] font-black border border-white/20">
+                                        Chapter {{ part.franchise_order }}
+                                    </span>
+                                    {% if part.age_rating %}
+                                    <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-black/80 backdrop-blur-md text-gray-300 border border-gray-700">
+                                        {{ part.age_rating }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Center Direct Play Button -->
+                                <div class="flex items-center justify-center z-20 my-auto">
                                     <a href="/watch/movie/{{ part.id }}/" 
-                                       class="flex-1 bg-brand-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-xl text-xs transition shadow-lg shadow-brand-500/25 flex items-center justify-center gap-1.5">
-                                        <svg class="w-3.5 h-3.5 fill-white translate-x-0.5" viewBox="0 0 24 24">
+                                       class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-brand-500 hover:bg-red-600 text-white flex items-center justify-center shadow-2xl shadow-brand-500/50 hover:scale-110 active:scale-95 transition-transform"
+                                       title="Play Chapter {{ part.franchise_order }}">
+                                        <svg class="w-5 h-5 fill-white translate-x-0.5" viewBox="0 0 24 24">
                                             <path d="M8 5v14l11-7z"/>
                                         </svg>
-                                        <span>Play</span>
                                     </a>
+                                </div>
+
+                                <!-- Bottom 4 In-Card Actions -->
+                                <div class="flex items-center justify-between gap-1 z-20 pt-1 border-t border-gray-800/80">
+                                    <!-- 1. My List Toggle -->
+                                    {% if part.id in user_saved_ids or part.in_library %}
+                                    <button hx-post="/library/toggle/" 
+                                            hx-vals='{"tmdb_id": "{{ part.id }}", "media_type": "movie", "variant": "card"}' 
+                                            hx-swap="outerHTML"
+                                            onclick="event.preventDefault(); event.stopPropagation();"
+                                            title="Saved in My List"
+                                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-brand-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0">
+                                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </button>
+                                    {% else %}
+                                    <button hx-post="/library/toggle/" 
+                                            hx-vals='{"tmdb_id": "{{ part.id }}", "media_type": "movie", "variant": "card"}' 
+                                            hx-swap="outerHTML"
+                                            onclick="event.preventDefault(); event.stopPropagation();"
+                                            title="Add to My List"
+                                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-900/90 hover:bg-gray-800 text-white border border-gray-700 flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0">
+                                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                    </button>
+                                    {% endif %}
+
+                                    <!-- 2. Mark as Watched Toggle -->
+                                    {% if part.id in user_watched_movie_ids or part.id in user_watched_ids or part.is_watched %}
+                                    {% include 'components/card_watch_button.html' with tmdb_id=part.id media_type='movie' is_watched=True %}
+                                    {% else %}
+                                    {% include 'components/card_watch_button.html' with tmdb_id=part.id media_type='movie' is_watched=False %}
+                                    {% endif %}
+
+                                    <!-- 3. Quick Star Rating -->
+                                    {% with current_rating=user_movie_ratings|get_item:part.id|default:part.user_rating %}
+                                    {% include 'components/card_rating_button.html' with tmdb_id=part.id media_type='movie' current_rating=current_rating %}
+                                    {% endwith %}
+
+                                    <!-- 4. Info Details Link -->
                                     <a href="/movies/{{ part.id }}/" 
-                                       class="p-2 bg-gray-900/90 hover:bg-gray-800 text-gray-300 hover:text-white rounded-xl text-xs font-semibold border border-gray-700/80 transition"
-                                       title="View Details">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                       onclick="event.stopPropagation();"
+                                       title="View Details"
+                                       class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/70 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/80 flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0">
+                                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                     </a>
                                 </div>

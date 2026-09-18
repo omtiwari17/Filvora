@@ -219,4 +219,37 @@ class LibraryTestCase(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertTrue(CustomCollection.objects.filter(id=col.id).exists())
 
+    def test_toggle_collection_library_batch(self):
+        """Test batch adding an entire saga to My List and toggling to remove."""
+        from apps.accounts.models import UserProfile
+        profile = UserProfile.objects.create(user=self.user, name="Saga Collector")
+        session = self.client.session
+        session['active_profile_id'] = profile.id
+        session.save()
+        self.client.login(username='libuser', password='password123')
+
+        movie_ids = [438631, 693134]
+        payload = {
+            'collection_id': 726871,
+            'movie_ids': '438631,693134',
+        }
+
+        # 1. First toggle -> Adds all parts to My List
+        res = self.client.post('/library/collection/toggle-all/', data=payload, HTTP_HX_REQUEST='true')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('sagaLibraryChanged', res.headers.get('HX-Trigger', ''))
+
+        for mid in movie_ids:
+            self.assertTrue(
+                LibraryItem.objects.filter(user=self.user, profile=profile, tmdb_id=mid, media_type='movie').exists()
+            )
+
+        # 2. Second toggle -> Removes all parts from My List
+        res2 = self.client.post('/library/collection/toggle-all/', data=payload, HTTP_HX_REQUEST='true')
+        self.assertEqual(res2.status_code, 200)
+        for mid in movie_ids:
+            self.assertFalse(
+                LibraryItem.objects.filter(user=self.user, profile=profile, tmdb_id=mid, media_type='movie').exists()
+            )
+
 
