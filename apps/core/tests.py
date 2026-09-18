@@ -381,6 +381,55 @@ class CoreViewsTestCase(TestCase):
         self.assertGreaterEqual(len(data['history_rails']), 1)
         self.assertEqual(data['history_rails'][0]['reason_prefix'], "Because You Watched")
 
+    def test_franchise_sequels_seed_deduplication(self):
+        """Verifies that rating two sequels in the same franchise (e.g. Across the Spider-Verse and Into the Spider-Verse)
+        does not produce two duplicate franchise rails, but deduplicates to 1 franchise rail and picks a diverse second seed."""
+        from apps.core.recommendations import RecommendationEngine
+        from apps.watch.models import UserRating
+        from apps.accounts.models import UserProfile
+
+        engine = RecommendationEngine()
+        profile = UserProfile.objects.create(user=self.user, name='SpiderFan')
+
+        # User rates 3 movies 5-star:
+        # 1. Spider-Man: Across the Spider-Verse (part of Spider-Verse collection 573436)
+        # 2. Spider-Man: Into the Spider-Verse (part of Spider-Verse collection 573436)
+        # 3. Interstellar (standalone movie, no collection)
+        UserRating.objects.create(user=self.user, profile=profile, tmdb_id=569094, media_type='movie', score=5)
+        UserRating.objects.create(user=self.user, profile=profile, tmdb_id=324857, media_type='movie', score=5)
+        UserRating.objects.create(user=self.user, profile=profile, tmdb_id=157336, media_type='movie', score=5)
+
+        rails = engine.get_contextual_rails(self.user, profile=profile, max_rails=2)
+        self.assertEqual(len(rails), 2)
+
+        # Verify that we do not have two Spider-Verse rails
+        titles = [r['title'] for r in rails]
+        spider_verse_rails = [t for t in titles if 'Spider' in t]
+        self.assertEqual(len(spider_verse_rails), 1, "Expected only 1 Spider-Man franchise rail, but got multiple!")
+
+        # Verify the second rail is Interstellar (diverse favorite)
+        self.assertIn('Interstellar', titles)
+
+    def test_unwatched_sequel_prioritized_in_collection_recommendations(self):
+        """Verifies that if a user rated/watched a movie in a collection, unstreamed sequels in that collection are prioritized."""
+        from apps.core.recommendations import RecommendationEngine
+        from apps.watch.models import UserRating
+        from apps.accounts.models import UserProfile
+
+        engine = RecommendationEngine()
+        profile = UserProfile.objects.create(user=self.user, name='Collector')
+
+        # User rated Into the Spider-Verse (324857) only
+        UserRating.objects.create(user=self.user, profile=profile, tmdb_id=324857, media_type='movie', score=5)
+
+        rails = engine.get_contextual_rails(self.user, profile=profile, max_rails=1)
+        self.assertEqual(len(rails), 1)
+        rail = rails[0]
+
+        # The sequel (Across the Spider-Verse, id 569094) should be among the top items
+        item_ids = [item.get('id') for item in rail['items']]
+        self.assertIn(569094, item_ids, "Expected sequel (Across the Spider-Verse) to be recommended for Into the Spider-Verse!")
+
 
 
 

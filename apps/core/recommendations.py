@@ -1,3 +1,4 @@
+import re
 from collections import Counter
 from django.db.models import Q
 from apps.tmdb.client import TMDBClient
@@ -122,10 +123,71 @@ class RecommendationEngine:
 
         return "Because You Liked"
 
+    def _get_franchise_identifiers(self, tmdb_id, media_type, details=None):
+        """
+        Extracts collection ID and normalized franchise title prefixes.
+        Used to prevent duplicate rails for sequels/prequels in the same franchise.
+        """
+        keys = set()
+        if media_type != 'movie':
+            keys.add(f"tv_{tmdb_id}")
+            return keys
+
+        if not details:
+            try:
+                details = self.client.get_movie_details(tmdb_id) or {}
+            except Exception:
+                details = {}
+
+        # 1. Check official TMDB Collection
+        coll = details.get('belongs_to_collection')
+        if coll and isinstance(coll, dict) and coll.get('id'):
+            keys.add(f"coll_{coll.get('id')}")
+
+        # 2. Check title prefix (e.g., 'Spider-Man: Across the Spider-Verse' -> 'root_spider-man')
+        title = (details.get('title') or '').strip()
+        if title:
+            # Strip subtitles following ':', '-', 'Part', 'Chapter', etc.
+            raw_prefix = title.split(':')[0].split(' - ')[0].strip().lower()
+            raw_prefix = re.sub(r'[\d\W]+$', '', raw_prefix).strip()
+            if len(raw_prefix) >= 4 and raw_prefix not in {'the', 'a', 'an', 'movie'}:
+                keys.add(f"root_{raw_prefix}")
+
+        if not keys:
+            keys.add(f"item_{tmdb_id}")
+
+        return keys
+
+    def _get_collection_parts_recs(self, details, tid, exclude_keys, global_seen_ids):
+        """
+        If a movie belongs to an official TMDB collection, fetches and returns
+        any unstreamed, unrated sequels/prequels to prioritize at the head of recommendations.
+        """
+        parts_recs = []
+        coll = details.get('belongs_to_collection')
+        if coll and isinstance(coll, dict) and coll.get('id'):
+            try:
+                coll_data = self.client.get_collection(coll.get('id'))
+                if coll_data and 'parts' in coll_data:
+                    for part in coll_data['parts']:
+                        part_id = part.get('id')
+                        if not part_id or part_id == tid:
+                            continue
+                        if ('movie', part_id) in exclude_keys:
+                            continue
+                        if part_id in global_seen_ids:
+                            continue
+                        part_copy = dict(part)
+                        part_copy['media_type'] = 'movie'
+                        parts_recs.append(part_copy)
+            except Exception:
+                pass
+        return parts_recs
+
     def get_contextual_rails(self, user, profile=None, max_rails=2):
         """
         Returns multiple distinct contextual recommendation rails based on user's top rated/watched titles.
-        Ensures diverse seed titles, accurate attribution prefixes ('Loved' vs 'Watched'),
+        Ensures diverse seed titles, franchise sequel deduplication, accurate attribution prefixes ('Loved' vs 'Watched'),
         and eliminates duplicates across rails.
         """
         if not user or not user.is_authenticated:
@@ -155,7 +217,7 @@ class RecommendationEngine:
         seen_seeds = set()
 
         # Priority A: 4-5 star ratings
-        for r in rating_qs.filter(score__gte=4).order_by('-updated_at')[:8]:
+        for r in rating_qs.filter(score__gte=4).order_by('-updated_at')[:12]:
             key = (r.media_type, r.tmdb_id)
             if key not in seen_seeds:
                 seen_seeds.add(key)
@@ -165,7 +227,7 @@ class RecommendationEngine:
                 })
 
         # Priority B: Streamed watch history
-        for p in progress_qs.filter(Q(completed=True) | Q(position_seconds__gt=30)).order_by('-updated_at')[:8]:
+        for p in progress_qs.filter(Q(completed=True) | Q(position_seconds__gt=30)).order_by('-updated_at')[:12]:
             key = (p.media_type, p.tmdb_id)
             if key not in seen_seeds:
                 seen_seeds.add(key)
@@ -179,7 +241,7 @@ class RecommendationEngine:
             lib_qs = LibraryItem.objects.filter(user=user)
             if profile:
                 lib_qs = lib_qs.filter(profile=profile)
-            for lib in lib_qs.order_by('-added_at')[:4]:
+            for lib in lib_qs.order_by('-added_at')[:6]:
                 key = (lib.media_type, lib.tmdb_id)
                 if key not in seen_seeds:
                     seen_seeds.add(key)
@@ -193,6 +255,7 @@ class RecommendationEngine:
 
         rails = []
         global_recommended_ids = set()
+        seen_franchise_identifiers = set()
 
         for seed in candidate_seeds:
             mtype = seed['media_type']
@@ -205,6 +268,16 @@ class RecommendationEngine:
                 details = self.client.get_tv_details(tid)
                 title = details.get('name', f"Series {tid}")
 
+            # Deduplicate seeds belonging to the same franchise / sequel collection
+            seed_franchise_keys = self._get_franchise_identifiers(tid, mtype, details=details)
+            if seed_franchise_keys & seen_franchise_identifiers:
+                continue
+
+            # Prioritize unstreamed/unrated sequels/prequels from the same collection
+            collection_parts = []
+            if mtype == 'movie':
+                collection_parts = self._get_collection_parts_recs(details, tid, exclude_keys, global_recommended_ids)
+
             recs = details.get('recommendations', {}).get('results', [])
             if not recs:
                 genres = details.get('genres', [])
@@ -212,9 +285,11 @@ class RecommendationEngine:
                     gid = genres[0].get('id') if isinstance(genres[0], dict) else genres[0]
                     recs = self.client.discover_content(media_type=mtype, genre_id=gid, min_rating=7.0)
 
+            candidate_pool = collection_parts + recs
+
             # Filter out seed itself, already rated/watched items, and duplicates across rails
             filtered_recs = []
-            for item in recs:
+            for item in candidate_pool:
                 item_id = item.get('id') or item.get('tmdb_id')
                 item_mtype = item.get('media_type', mtype)
                 if not item_id:
@@ -232,6 +307,7 @@ class RecommendationEngine:
                     break
 
             if filtered_recs:
+                seen_franchise_identifiers.update(seed_franchise_keys)
                 reason_prefix = self.get_seed_attribution(user, profile, tid, mtype)
                 rails.append({
                     'title': title,
@@ -403,8 +479,9 @@ class RecommendationEngine:
 
         # 2. Ratings-driven Contextual Rails (4-5 stars)
         ratings_rails = []
-        rated_seeds = list(rating_qs.filter(score__gte=4).order_by('-updated_at')[:8])
+        rated_seeds = list(rating_qs.filter(score__gte=4).order_by('-updated_at')[:12])
         rated_seed_keys = set()
+        seen_ratings_franchise_keys = set()
 
         for r in rated_seeds:
             key = (r.media_type, r.tmdb_id)
@@ -419,6 +496,15 @@ class RecommendationEngine:
                 details = self.client.get_tv_details(r.tmdb_id)
                 title = details.get('name', f"Series {r.tmdb_id}")
 
+            # Franchise & sequel seed deduplication
+            franchise_keys = self._get_franchise_identifiers(r.tmdb_id, r.media_type, details=details)
+            if franchise_keys & seen_ratings_franchise_keys:
+                continue
+
+            collection_parts = []
+            if r.media_type == 'movie':
+                collection_parts = self._get_collection_parts_recs(details, r.tmdb_id, exclude_keys, global_seen_ids)
+
             recs = details.get('recommendations', {}).get('results', [])
             if not recs:
                 genres = details.get('genres', [])
@@ -426,8 +512,9 @@ class RecommendationEngine:
                     gid = genres[0].get('id') if isinstance(genres[0], dict) else genres[0]
                     recs = self.client.discover_content(media_type=r.media_type, genre_id=gid, min_rating=7.0)
 
+            candidate_pool = collection_parts + recs
             filtered = []
-            for item in recs:
+            for item in candidate_pool:
                 item_id = item.get('id') or item.get('tmdb_id')
                 item_mtype = item.get('media_type', r.media_type)
                 if not item_id or item_id == r.tmdb_id:
@@ -443,6 +530,7 @@ class RecommendationEngine:
                     break
 
             if filtered:
+                seen_ratings_franchise_keys.update(franchise_keys)
                 reason_prefix = "Because You Loved" if r.score == 5 else "Because You Liked"
                 ratings_rails.append({
                     'title': title,
@@ -457,8 +545,9 @@ class RecommendationEngine:
 
         # 3. Streamed History-driven Contextual Rails
         history_rails = []
-        streamed_seeds = list(progress_qs.filter(Q(completed=True) | Q(position_seconds__gt=30)).order_by('-updated_at')[:8])
+        streamed_seeds = list(progress_qs.filter(Q(completed=True) | Q(position_seconds__gt=30)).order_by('-updated_at')[:12])
         streamed_seed_keys = set()
+        seen_history_franchise_keys = set(seen_ratings_franchise_keys)
 
         for p in streamed_seeds:
             key = (p.media_type, p.tmdb_id)
@@ -473,6 +562,14 @@ class RecommendationEngine:
                 details = self.client.get_tv_details(p.tmdb_id)
                 title = details.get('name', f"Series {p.tmdb_id}")
 
+            franchise_keys = self._get_franchise_identifiers(p.tmdb_id, p.media_type, details=details)
+            if franchise_keys & seen_history_franchise_keys:
+                continue
+
+            collection_parts = []
+            if p.media_type == 'movie':
+                collection_parts = self._get_collection_parts_recs(details, p.tmdb_id, exclude_keys, global_seen_ids)
+
             recs = details.get('recommendations', {}).get('results', [])
             if not recs:
                 genres = details.get('genres', [])
@@ -480,8 +577,9 @@ class RecommendationEngine:
                     gid = genres[0].get('id') if isinstance(genres[0], dict) else genres[0]
                     recs = self.client.discover_content(media_type=p.media_type, genre_id=gid, min_rating=7.0)
 
+            candidate_pool = collection_parts + recs
             filtered = []
-            for item in recs:
+            for item in candidate_pool:
                 item_id = item.get('id') or item.get('tmdb_id')
                 item_mtype = item.get('media_type', p.media_type)
                 if not item_id or item_id == p.tmdb_id:
@@ -497,6 +595,7 @@ class RecommendationEngine:
                     break
 
             if filtered:
+                seen_history_franchise_keys.update(franchise_keys)
                 history_rails.append({
                     'title': title,
                     'reason_prefix': "Because You Watched",
