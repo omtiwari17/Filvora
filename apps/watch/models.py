@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 from apps.accounts.models import UserProfile
 
 class WatchProgress(models.Model):
@@ -17,6 +18,8 @@ class WatchProgress(models.Model):
     position_seconds = models.FloatField(default=0.0)
     duration_seconds = models.FloatField(default=0.0)
     completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -43,6 +46,54 @@ class WatchProgress(models.Model):
             pct = (self.position_seconds / self.duration_seconds) * 100
             return min(100, max(0, round(pct, 1)))
         return 0.0
+
+    @property
+    def is_multi_day(self):
+        """Returns True if the watch session spanned across different calendar dates."""
+        start_d = (self.created_at or self.updated_at).date()
+        end_dt = self.completed_at if self.completed else self.updated_at
+        end_d = end_dt.date() if end_dt else start_d
+        return start_d != end_d
+
+    @property
+    def watch_date_display(self):
+        """
+        Human-friendly watch date representation:
+        - If single day: 'Sep 18, 2026'
+        - If multi-day: 'Sep 15 – 18, 2026' (or cross-month / cross-year formatted)
+        """
+        start_dt = self.created_at or self.updated_at
+        end_dt = (self.completed_at if self.completed else None) or self.updated_at
+        if not start_dt:
+            return ""
+
+        start_d = start_dt.date()
+        end_d = end_dt.date() if end_dt else start_d
+
+        if start_d == end_d:
+            return end_d.strftime("%b %d, %Y")
+
+        if start_d.year == end_d.year:
+            if start_d.month == end_d.month:
+                return f"{start_d.strftime('%b %d')} – {end_d.strftime('%d, %Y')}"
+            return f"{start_d.strftime('%b %d')} – {end_d.strftime('%b %d, %Y')}"
+        return f"{start_d.strftime('%b %d, %Y')} – {end_d.strftime('%b %d, %Y')}"
+
+    @property
+    def watch_date_tooltip(self):
+        start_dt = self.created_at or self.updated_at
+        end_dt = (self.completed_at if self.completed else None) or self.updated_at
+        start_str = start_dt.strftime("%b %d, %Y")
+        end_str = end_dt.strftime("%b %d, %Y") if end_dt else start_str
+
+        if self.completed:
+            if start_dt.date() == end_dt.date():
+                return f"Completed on {end_str}"
+            return f"Started {start_str} • Completed {end_str}"
+        else:
+            if start_dt.date() == end_dt.date():
+                return f"Started on {start_str}"
+            return f"Started {start_str} • Last played {end_str}"
 
     def save(self, *args, **kwargs):
         if not self.profile_id and self.user_id:
