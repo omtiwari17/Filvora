@@ -342,3 +342,24 @@ class CatalogViewsTestCase(TestCase):
         self.assertNotIn('md:h-[80vh]', html_tv)
         self.assertNotIn('md:-mt-80', html_tv)
 
+    def test_rail_navigation_controls_and_boundary_isolation(self):
+        """Verifies horizontal rails include boundary-isolated next/prev buttons and navigateToCard exclusions."""
+        res = self.client.get('/')
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+
+        # 1. Verify rail-prev-btn starts with is-hidden !hidden so it is hidden at scrollLeft = 0
+        self.assertIn('rail-prev-btn is-hidden !hidden', html)
+
+        # 2. Verify rail-next-btn exists on rails with proper accessibility label
+        self.assertIn('rail-next-btn', html)
+        self.assertIn('aria-label="Scroll right"', html)
+
+        # 3. Verify CSS rules for rail button visibility and pointer events are injected
+        self.assertIn('.rail-prev-btn, .rail-next-btn { pointer-events: auto !important; }', html)
+        self.assertIn('.rail-prev-btn.is-hidden, .rail-next-btn.is-hidden', html)
+
+        # 4. Verify navigateToCard explicitly guards against clicks from rail-next-btn and rail-prev-btn
+        self.assertIn('.rail-next-btn, .rail-prev-btn', html)
+
+

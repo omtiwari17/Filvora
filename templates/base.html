@@ -53,11 +53,13 @@
         .star-opt { flex-shrink: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; width: 1.75rem !important; height: 1.75rem !important; }
         .star-opt svg { flex-shrink: 0 !important; width: 1.25rem !important; height: 1.25rem !important; min-width: 1.25rem !important; min-height: 1.25rem !important; display: block !important; }
         .\!hidden { display: none !important; }
+        .rail-prev-btn, .rail-next-btn { pointer-events: auto !important; }
+        .rail-prev-btn.is-hidden, .rail-next-btn.is-hidden, .rail-prev-btn.\!hidden, .rail-next-btn.\!hidden { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
     </style>
     <script>
         window.navigateToCard = window.navigateToCard || function(event, url) {
             if (!url || !event) return;
-            if (event.target.closest('button, a, input, select, textarea, .quick-rate-popover, .quick-rate-wrapper')) return;
+            if (event.target.closest('button, a, input, select, textarea, .quick-rate-popover, .quick-rate-wrapper, .rail-next-btn, .rail-prev-btn, .rail-arrow, [class*="rail-btn"]')) return;
             var sel = window.getSelection();
             if (sel && sel.toString().length > 0) return;
             if (event.ctrlKey || event.metaKey || event.button === 1) {

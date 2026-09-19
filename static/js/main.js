@@ -259,23 +259,25 @@ function initHorizontalRails() {
         if (!track) return;
 
         const updateArrows = () => {
-            if (window.innerWidth < 768) return;
-            const tolerance = 10;
-            const maxScroll = track.scrollWidth - track.clientWidth;
+            const tolerance = 20;
+            const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+
+            const isAtStart = track.scrollLeft <= tolerance;
+            const isAtEnd = track.scrollLeft >= maxScroll - tolerance || maxScroll <= 0;
 
             if (prevBtn) {
-                if (track.scrollLeft <= tolerance) {
-                    prevBtn.classList.add('opacity-0', 'pointer-events-none');
+                if (isAtStart) {
+                    prevBtn.classList.add('is-hidden', '!hidden', 'opacity-0', 'pointer-events-none');
                 } else {
-                    prevBtn.classList.remove('opacity-0', 'pointer-events-none');
+                    prevBtn.classList.remove('is-hidden', '!hidden', 'opacity-0', 'pointer-events-none');
                 }
             }
 
             if (nextBtn) {
-                if (track.scrollLeft >= maxScroll - tolerance || maxScroll <= 0) {
-                    nextBtn.classList.add('opacity-0', 'pointer-events-none');
+                if (isAtEnd) {
+                    nextBtn.classList.add('is-hidden', '!hidden', 'opacity-0', 'pointer-events-none');
                 } else {
-                    nextBtn.classList.remove('opacity-0', 'pointer-events-none');
+                    nextBtn.classList.remove('is-hidden', '!hidden', 'opacity-0', 'pointer-events-none');
                 }
             }
         };
@@ -286,7 +288,14 @@ function initHorizontalRails() {
             prevBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (track.scrollLeft <= 20) {
+                    updateArrows();
+                    return;
+                }
                 track.scrollBy({ left: -getScrollStep(), behavior: 'smooth' });
+                setTimeout(updateArrows, 100);
+                setTimeout(updateArrows, 300);
+                setTimeout(updateArrows, 600);
             });
         }
 
@@ -294,7 +303,15 @@ function initHorizontalRails() {
             nextBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+                if (track.scrollLeft >= maxScroll - 20) {
+                    updateArrows();
+                    return;
+                }
                 track.scrollBy({ left: getScrollStep(), behavior: 'smooth' });
+                setTimeout(updateArrows, 100);
+                setTimeout(updateArrows, 300);
+                setTimeout(updateArrows, 600);
             });
         }
 
@@ -302,6 +319,7 @@ function initHorizontalRails() {
         window.addEventListener('resize', updateArrows, { passive: true });
 
         updateArrows();
+        setTimeout(updateArrows, 100);
         setTimeout(updateArrows, 300);
         setTimeout(updateArrows, 1000);
 
@@ -865,8 +883,8 @@ document.body.addEventListener('sagaRatingChanged', (e) => {
 // --- Universal Card Click-to-Details Navigation ---
 function navigateToCard(event, url) {
     if (!url || !event) return;
-    // Disregard clicks inside buttons, links, inputs, or rating popover elements
-    if (event.target.closest('button, a, input, select, textarea, .quick-rate-popover, .quick-rate-wrapper')) {
+    // Disregard clicks inside buttons, links, inputs, or rating popover elements or rail navigation buttons
+    if (event.target.closest('button, a, input, select, textarea, .quick-rate-popover, .quick-rate-wrapper, .rail-next-btn, .rail-prev-btn, .rail-arrow, [class*="rail-btn"]')) {
         return;
     }
     // Prevent navigation if the user was actively selecting text
