@@ -392,6 +392,9 @@ def series_detail(request, tmdb_id):
         else:
             part_eps = all_s_eps
 
+        if part_eps:
+            s['episode_count'] = len(part_eps)
+
         s_total_mins = sum(e.get('runtime') or avg_runtime for e in part_eps)
         if not s_total_mins and s.get('episode_count'):
             s_total_mins = s.get('episode_count', 0) * avg_runtime

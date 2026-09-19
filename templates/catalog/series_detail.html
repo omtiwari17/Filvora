@@ -210,7 +210,7 @@
                                 class="bg-gray-900 text-white text-xs sm:text-sm font-bold border border-gray-700/80 rounded-xl px-3 py-2 focus:outline-none focus:border-brand-500 shadow-md">
                             {% for s in seasons %}
                             <option value="{{ s.partition_id }}" {% if s.partition_id == current_season %}selected{% endif %}>
-                                {{ s.name }}{% if s.range_label %} ({{ s.range_label }}){% endif %}
+                                {{ s.name }}{% if s.range_label %} ({{ s.range_label }}){% elif s.episode_count %} ({{ s.episode_count }} Episode{{ s.episode_count|pluralize }}){% endif %}
                             </option>
                             {% endfor %}
                         </select>
@@ -219,8 +219,8 @@
                     <!-- Episode Number Direct Jump -->
                     <div class="relative flex items-center">
                         <input type="number" id="quick-ep-jump-input" placeholder="Jump to Ep #" min="1"
-                               class="w-28 sm:w-32 bg-gray-900 border border-gray-700/80 focus:border-brand-500 rounded-xl pl-3 pr-8 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                               onkeydown="if(event.key === 'Enter'){ event.preventDefault(); jumpToSpecificEpisode(); }">
+                                class="w-28 sm:w-32 bg-gray-900 border border-gray-700/80 focus:border-brand-500 rounded-xl pl-3 pr-8 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                                onkeydown="if(event.key === 'Enter'){ event.preventDefault(); jumpToSpecificEpisode(); }">
                         <button type="button" onclick="jumpToSpecificEpisode()" title="Jump to Episode"
                                 class="absolute right-1 px-2 py-1 bg-brand-500 hover:bg-red-600 text-white rounded-lg text-[10px] font-bold transition">
                             Go
@@ -231,27 +231,59 @@
                 {% endif %}
             </div>
 
-            <!-- Season selector tabs rail -->
+            <!-- Season selector tabs rail with Horizontal Scroll & Navigation Controls -->
             {% if seasons %}
-            <div class="mb-8 flex items-center gap-2.5 overflow-x-auto scrollbar-hide py-1 -my-1 max-w-full touch-pan-x">
-                {% for s in seasons %}
-                <button id="season-tab-btn-{{ s.partition_id }}"
-                        hx-get="/series/{{ series.id }}/season/{{ s.partition_id }}/"
-                        hx-target="#episodes-container"
-                        hx-swap="innerHTML"
-                        data-partition-id="{{ s.partition_id }}"
-                        data-start-ep="{{ s.start_episode }}"
-                        data-end-ep="{{ s.end_episode }}"
-                        onclick="setActiveSeasonTab('{{ s.partition_id }}');"
-                        class="season-btn flex-none flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition border border-gray-700/80 shadow-md {% if s.partition_id == current_season %}bg-brand-500 text-white shadow-brand-500/25{% else %}bg-gray-900 text-gray-300 hover:text-white hover:bg-gray-800{% endif %}">
-                    <span>{{ s.name }}</span>
-                    {% if s.range_label %}
-                    <span class="text-[10px] sm:text-[11px] bg-black/40 text-gray-300 border border-white/15 px-2 py-0.5 rounded-full font-semibold">{{ s.range_label }}</span>
-                    {% elif s.total_hours_formatted %}
-                    <span class="text-[10px] sm:text-[11px] bg-black/40 text-gray-200 border border-white/15 px-2 py-0.5 rounded-full font-semibold">{{ s.total_hours_formatted }}</span>
-                    {% endif %}
+            <div class="relative group/seasons mb-8">
+                <!-- Left Navigation Arrow -->
+                <button type="button" 
+                        id="season-rail-prev-btn"
+                        onclick="scrollSeasonRail(-1)"
+                        class="absolute -left-2.5 sm:-left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 bg-gray-950/95 hover:bg-brand-500 text-white rounded-full border border-gray-700/80 hover:border-brand-500 shadow-xl flex items-center justify-center transition-all duration-200 opacity-0 pointer-events-none cursor-pointer backdrop-blur-md hover:scale-110 active:scale-95"
+                        aria-label="Previous seasons">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                    </svg>
                 </button>
-                {% endfor %}
+
+                <!-- Edge Fade Left -->
+                <div id="season-rail-fade-left" class="absolute left-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-r from-gray-950 to-transparent z-10 pointer-events-none opacity-0 transition-opacity duration-200"></div>
+
+                <!-- Scrollable Track -->
+                <div id="season-tabs-track"
+                     class="flex items-center gap-2.5 overflow-x-auto scrollbar-hide py-2 px-1 max-w-full touch-pan-x scroll-smooth select-none cursor-grab active:cursor-grabbing">
+                    {% for s in seasons %}
+                    <button id="season-tab-btn-{{ s.partition_id }}"
+                            hx-get="/series/{{ series.id }}/season/{{ s.partition_id }}/"
+                            hx-target="#episodes-container"
+                            hx-swap="innerHTML"
+                            data-partition-id="{{ s.partition_id }}"
+                            data-start-ep="{{ s.start_episode }}"
+                            data-end-ep="{{ s.end_episode }}"
+                            onclick="if(window.__seasonTrackDragging) return; setActiveSeasonTab('{{ s.partition_id }}');"
+                            class="season-btn flex-none flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition border border-gray-700/80 shadow-md cursor-pointer {% if s.partition_id == current_season %}bg-brand-500 text-white shadow-brand-500/25{% else %}bg-gray-900 text-gray-300 hover:text-white hover:bg-gray-800{% endif %}">
+                        <span>{{ s.name }}</span>
+                        {% if s.range_label %}
+                        <span class="text-[10px] sm:text-[11px] bg-black/40 text-gray-300 border border-white/15 px-2 py-0.5 rounded-full font-semibold">{{ s.range_label }}</span>
+                        {% elif s.episode_count %}
+                        <span class="text-[10px] sm:text-[11px] bg-black/40 text-gray-200 border border-white/15 px-2 py-0.5 rounded-full font-semibold">{{ s.episode_count }} Episode{{ s.episode_count|pluralize }}</span>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+
+                <!-- Edge Fade Right -->
+                <div id="season-rail-fade-right" class="absolute right-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-l from-gray-950 to-transparent z-10 pointer-events-none opacity-0 transition-opacity duration-200"></div>
+
+                <!-- Right Navigation Arrow -->
+                <button type="button" 
+                        id="season-rail-next-btn"
+                        onclick="scrollSeasonRail(1)"
+                        class="absolute -right-2.5 sm:-right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 bg-gray-950/95 hover:bg-brand-500 text-white rounded-full border border-gray-700/80 hover:border-brand-500 shadow-xl flex items-center justify-center transition-all duration-200 opacity-0 pointer-events-none cursor-pointer backdrop-blur-md hover:scale-110 active:scale-95"
+                        aria-label="Next seasons">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
             </div>
             {% endif %}
 
@@ -342,16 +374,130 @@
 
 {% block extra_js %}
 <script>
+function scrollSeasonRail(direction) {
+    const track = document.getElementById('season-tabs-track');
+    if (!track) return;
+    const step = Math.max(track.clientWidth * 0.65, 260);
+    track.scrollBy({ left: direction * step, behavior: 'smooth' });
+}
+
+function updateSeasonScrollArrows() {
+    const track = document.getElementById('season-tabs-track');
+    const prevBtn = document.getElementById('season-rail-prev-btn');
+    const nextBtn = document.getElementById('season-rail-next-btn');
+    const fadeLeft = document.getElementById('season-rail-fade-left');
+    const fadeRight = document.getElementById('season-rail-fade-right');
+    if (!track) return;
+
+    const tolerance = 6;
+    const maxScroll = track.scrollWidth - track.clientWidth;
+
+    if (maxScroll <= tolerance) {
+        if (prevBtn) prevBtn.classList.add('opacity-0', 'pointer-events-none');
+        if (nextBtn) nextBtn.classList.add('opacity-0', 'pointer-events-none');
+        if (fadeLeft) fadeLeft.classList.add('opacity-0');
+        if (fadeRight) fadeRight.classList.add('opacity-0');
+        return;
+    }
+
+    if (track.scrollLeft > tolerance) {
+        if (prevBtn) prevBtn.classList.remove('opacity-0', 'pointer-events-none');
+        if (fadeLeft) fadeLeft.classList.remove('opacity-0');
+    } else {
+        if (prevBtn) prevBtn.classList.add('opacity-0', 'pointer-events-none');
+        if (fadeLeft) fadeLeft.classList.add('opacity-0');
+    }
+
+    if (track.scrollLeft < maxScroll - tolerance) {
+        if (nextBtn) nextBtn.classList.remove('opacity-0', 'pointer-events-none');
+        if (fadeRight) fadeRight.classList.remove('opacity-0');
+    } else {
+        if (nextBtn) nextBtn.classList.add('opacity-0', 'pointer-events-none');
+        if (fadeRight) fadeRight.classList.add('opacity-0');
+    }
+}
+
+function initSeasonTrackScroll() {
+    const track = document.getElementById('season-tabs-track');
+    if (!track) return;
+
+    // 1. Mouse Wheel Horizontal Scroll Listener
+    track.addEventListener('wheel', (e) => {
+        if (track.scrollWidth > track.clientWidth) {
+            if (e.deltaY !== 0 && Math.abs(e.deltaY) >= Math.abs(e.deltaX)) {
+                e.preventDefault();
+                track.scrollLeft += e.deltaY;
+                updateSeasonScrollArrows();
+            }
+        }
+    }, { passive: false });
+
+    // 2. Mouse Drag-to-Scroll Listener
+    let isDown = false;
+    let startX = 0;
+    let scrollStart = 0;
+    let dragDistance = 0;
+    window.__seasonTrackDragging = false;
+
+    track.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        isDown = true;
+        window.__seasonTrackDragging = false;
+        dragDistance = 0;
+        startX = e.pageX - track.offsetLeft;
+        scrollStart = track.scrollLeft;
+    });
+
+    const stopDrag = () => {
+        if (!isDown) return;
+        isDown = false;
+        if (window.__seasonTrackDragging) {
+            setTimeout(() => {
+                window.__seasonTrackDragging = false;
+            }, 120);
+        }
+    };
+
+    track.addEventListener('mouseleave', stopDrag);
+    track.addEventListener('mouseup', stopDrag);
+
+    track.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        const x = e.pageX - track.offsetLeft;
+        const walk = (x - startX) * 1.5;
+        dragDistance = Math.abs(walk);
+        if (dragDistance > 6) {
+            window.__seasonTrackDragging = true;
+            e.preventDefault();
+            track.scrollLeft = scrollStart - walk;
+            updateSeasonScrollArrows();
+        }
+    });
+
+    track.addEventListener('scroll', updateSeasonScrollArrows, { passive: true });
+    window.addEventListener('resize', updateSeasonScrollArrows, { passive: true });
+
+    updateSeasonScrollArrows();
+    setTimeout(updateSeasonScrollArrows, 300);
+}
+
 function setActiveSeasonTab(partitionId) {
     document.querySelectorAll('.season-btn').forEach(b => {
         b.classList.remove('bg-brand-500', 'text-white', 'shadow-brand-500/25');
         b.classList.add('bg-gray-900', 'text-gray-300');
     });
     const activeBtn = document.getElementById('season-tab-btn-' + partitionId);
+    const track = document.getElementById('season-tabs-track');
     if (activeBtn) {
         activeBtn.classList.remove('bg-gray-900', 'text-gray-300');
         activeBtn.classList.add('bg-brand-500', 'text-white', 'shadow-brand-500/25');
-        activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        if (track) {
+            const trackRect = track.getBoundingClientRect();
+            const btnRect = activeBtn.getBoundingClientRect();
+            const offset = (btnRect.left - trackRect.left) - (trackRect.width / 2) + (btnRect.width / 2);
+            track.scrollBy({ left: offset, behavior: 'smooth' });
+            setTimeout(updateSeasonScrollArrows, 350);
+        }
     }
     const selectEl = document.getElementById('season-quick-select');
     if (selectEl) selectEl.value = partitionId;
@@ -406,5 +552,12 @@ function jumpToSpecificEpisode() {
         }, 100);
     }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    initSeasonTrackScroll();
+});
+document.body.addEventListener('htmx:afterSettle', () => {
+    updateSeasonScrollArrows();
+});
 </script>
 {% endblock %}
