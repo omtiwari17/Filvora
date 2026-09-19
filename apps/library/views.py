@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse, JsonResponse
-from .models import LibraryItem, CustomCollection, CustomCollectionItem, SceneBookmark
+from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
+from .models import LibraryItem, CustomCollection, CustomCollectionItem, SceneBookmark, FavoritePerson
 from apps.tmdb.client import TMDBClient
 from apps.accounts.utils import get_active_profile
 
@@ -12,6 +12,7 @@ def my_list(request):
     items = LibraryItem.objects.filter(user=request.user, profile=profile).order_by('-added_at')
     custom_collections = CustomCollection.objects.filter(user=request.user, profile=profile).prefetch_related('items')
     bookmarks = SceneBookmark.objects.filter(user=request.user, profile=profile).order_by('-created_at')
+    favorite_people = FavoritePerson.objects.filter(user=request.user, profile=profile).order_by('-added_at')
     client = TMDBClient()
     
     from apps.watch.models import UserRating
@@ -39,6 +40,7 @@ def my_list(request):
         'saved_items': saved_items,
         'custom_collections': custom_collections,
         'bookmarks': bookmarks,
+        'favorite_people': favorite_people,
         'star_range': [1, 2, 3, 4, 5],
     })
 
@@ -263,3 +265,101 @@ def toggle_collection_library(request):
         return JsonResponse({'status': 'ok', 'is_all_saved': is_all_saved})
     except (ValueError, TypeError, KeyError) as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+def toggle_favorite_person(request):
+    """Toggle an actor/director in or out of the active profile's favorites."""
+    if request.method != 'POST':
+        return HttpResponseBadRequest("POST required")
+
+    if not request.user.is_authenticated:
+        if request.headers.get('HX-Request'):
+            resp = HttpResponse("Please sign in", status=401)
+            resp['HX-Redirect'] = '/accounts/login/?next=' + request.META.get('HTTP_REFERER', '/')
+            return resp
+        return JsonResponse({'status': 'error', 'message': 'Authentication required'}, status=401)
+
+    try:
+        import json
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
+        person_id = int(data.get('person_id', 0))
+        name = str(data.get('name', '')).strip()
+        profile_path = str(data.get('profile_path', '')).strip()
+        known_for_department = str(data.get('known_for_department', '')).strip() or 'Acting'
+
+        if not person_id:
+            return JsonResponse({'status': 'error', 'message': 'person_id is required'}, status=400)
+
+        profile = get_active_profile(request)
+
+        # If name is missing, attempt to fetch from TMDB
+        if not name:
+            client = TMDBClient()
+            p_data = client.get_person(person_id)
+            if p_data:
+                name = p_data.get('name', f'Person {person_id}')
+                if not profile_path:
+                    profile_path = p_data.get('profile_path') or ''
+                if known_for_department == 'Acting' and p_data.get('known_for_department'):
+                    known_for_department = p_data.get('known_for_department')
+
+        fav = FavoritePerson.objects.filter(user=request.user, profile=profile, person_id=person_id).first()
+        if fav:
+            fav.delete()
+            is_favorite = False
+        else:
+            FavoritePerson.objects.create(
+                user=request.user,
+                profile=profile,
+                person_id=person_id,
+                name=name or f"Artist {person_id}",
+                profile_path=profile_path,
+                known_for_department=known_for_department
+            )
+            is_favorite = True
+
+        if request.headers.get('HX-Request'):
+            from django.template.loader import render_to_string
+            html = render_to_string('components/person_favorite_button.html', {
+                'person': {
+                    'id': person_id,
+                    'name': name,
+                    'profile_path': profile_path,
+                    'known_for_department': known_for_department
+                },
+                'is_favorite': is_favorite
+            }, request=request)
+            resp = HttpResponse(html)
+            resp['HX-Trigger'] = json.dumps({
+                'favoritePersonChanged': {
+                    'person_id': person_id,
+                    'is_favorite': is_favorite,
+                    'name': name
+                }
+            })
+            return resp
+
+        return JsonResponse({'status': 'ok', 'is_favorite': is_favorite, 'person_id': person_id})
+    except (ValueError, TypeError, KeyError) as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+def delete_favorite_person(request, person_id):
+    """Deletes a favorite person record scoped to the active profile."""
+    if request.method != 'POST':
+        return HttpResponseBadRequest("POST required")
+
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'Authentication required'}, status=401)
+
+    profile = get_active_profile(request)
+    FavoritePerson.objects.filter(user=request.user, profile=profile, person_id=person_id).delete()
+    if request.headers.get('HX-Request'):
+        return HttpResponse("")
+    return JsonResponse({'status': 'success', 'person_id': person_id})

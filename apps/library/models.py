@@ -139,3 +139,42 @@ class SceneBookmark(models.Model):
     def __str__(self):
         prof = f"[{self.profile.name}] " if self.profile else ""
         return f"{prof}{self.title} @ {self.formatted_timestamp} - {self.note[:30]}"
+
+
+class FavoritePerson(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorite_people')
+    profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='favorite_people', null=True, blank=True)
+    person_id = models.IntegerField()
+    name = models.CharField(max_length=255)
+    profile_path = models.CharField(max_length=255, blank=True, default='')
+    known_for_department = models.CharField(max_length=100, blank=True, default='Acting')
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        app_label = 'library'
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'profile', 'person_id'], name='unique_user_profile_favorite_person')
+        ]
+        indexes = [
+            models.Index(fields=['user', 'profile', '-added_at']),
+            models.Index(fields=['user', 'profile', 'person_id']),
+        ]
+        ordering = ['-added_at']
+
+    def save(self, *args, **kwargs):
+        if not self.profile_id and self.user_id:
+            first_p = UserProfile.objects.filter(user_id=self.user_id).first()
+            if not first_p:
+                first_p = UserProfile.objects.create(
+                    user_id=self.user_id,
+                    name=self.user.username.capitalize() if self.user else "User",
+                    avatar=f"https://ui-avatars.com/api/?name={self.user.username if self.user else 'User'}&background=111827&color=fff&bold=true",
+                    is_kids=False
+                )
+            self.profile = first_p
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        prof = f"[{self.profile.name}] " if self.profile else ""
+        return f"{prof}{self.name} ({self.known_for_department}) - ID:{self.person_id}"
+

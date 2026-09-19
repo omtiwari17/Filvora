@@ -11,4 +11,6 @@ urlpatterns = [
     path('collection/<int:collection_id>/delete/', views.delete_collection, name='delete_collection'),
     path('bookmark/add/', views.add_bookmark, name='add_bookmark'),
     path('bookmark/<int:bookmark_id>/delete/', views.delete_bookmark, name='delete_bookmark'),
+    path('person/toggle/', views.toggle_favorite_person, name='toggle_favorite_person'),
+    path('person/<int:person_id>/delete/', views.delete_favorite_person, name='delete_favorite_person'),
 ]

@@ -2,7 +2,7 @@ import re
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from apps.tmdb.client import TMDBClient
-from apps.library.models import LibraryItem
+from apps.library.models import LibraryItem, FavoritePerson
 from apps.watch.models import UserRating, WatchProgress
 
 def get_pagination_context(page, total_pages=500):
@@ -762,15 +762,18 @@ def person_detail(request, person_id):
     credits = sorted(all_credits, key=lambda x: (x.get('vote_count', 0), x.get('popularity', 0)), reverse=True)[:24]
 
     user_saved_ids = set()
+    is_favorite = False
     if request.user.is_authenticated:
         from apps.accounts.utils import get_active_profile
         profile = get_active_profile(request)
         user_saved_ids = set(LibraryItem.objects.filter(user=request.user, profile=profile).values_list('tmdb_id', flat=True))
+        is_favorite = FavoritePerson.objects.filter(user=request.user, profile=profile, person_id=person_id).exists()
 
     return render(request, 'catalog/person_detail.html', {
         'person': person,
         'credits': credits,
-        'user_saved_ids': user_saved_ids
+        'user_saved_ids': user_saved_ids,
+        'is_favorite': is_favorite,
     })
 
 
