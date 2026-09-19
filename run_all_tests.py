@@ -175,6 +175,7 @@ TEST_DESCRIPTIONS = {
     'test_discover_with_language_and_certification': 'Verifies /discover/ filtering by ISO language and certification',
     'test_kids_profile_discover_enforcement': 'Enforces strict certification.lte=PG content filtering for Kids profiles',
     'test_person_detail_view': 'Verifies /person/<id>/ cast/crew filmography showcase',
+    'test_person_detail_favorite_context': 'Verifies /person/<id>/ correctly evaluates and exposes is_favorite boolean',
     'test_trailer_api': 'Verifies /trailer/movie/<id>/ JSON trailer key extraction',
     'test_movie_detail_trailer_context': 'Verifies trailer preview payload is attached to movie detail context',
     'test_franchise_collection_context': 'Verifies official TMDB franchise/saga collection detection and timeline rail',
@@ -255,6 +256,10 @@ TEST_DESCRIPTIONS = {
     'test_add_bookmark_tv_episode': 'Verifies scene bookmark creation for specific TV season and episode',
     'test_delete_bookmark_htmx': 'Verifies HTMX inline deletion of scene bookmark',
     'test_delete_collection_cross_user_forbidden': 'Enforces security boundary preventing users from deleting others collections (404)',
+    'test_toggle_collection_library_batch': 'Verifies batch adding and removing an entire franchise saga in My List',
+    'test_favorite_person_toggle_add_and_remove': 'Verifies 1-click toggling of favorite actor/director in and out of library',
+    'test_favorite_person_delete_endpoint': 'Verifies deleting favorite actor via dedicated removal endpoint',
+    'test_favorite_person_multi_profile_isolation': 'Verifies favorite actors are strictly segregated between different user profiles',
 
     # --------------------------------------------------------------------------
     # CATEGORY 6: Core Engine, CSRF Healing & Recommendations (apps.core)

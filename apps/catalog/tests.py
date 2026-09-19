@@ -130,6 +130,24 @@ class CatalogViewsTestCase(TestCase):
         self.assertIn('person', response.context)
         self.assertIn('credits', response.context)
 
+    def test_person_detail_favorite_context(self):
+        """Verifies person detail view correctly evaluates and exposes is_favorite boolean."""
+        from django.contrib.auth.models import User
+        from apps.library.models import FavoritePerson
+        user = User.objects.create_user(username='personfan', password='password123')
+        self.client.login(username='personfan', password='password123')
+
+        # Initially not favorited
+        res1 = self.client.get('/person/10297/')
+        self.assertEqual(res1.status_code, 200)
+        self.assertFalse(res1.context['is_favorite'])
+
+        # Favorite the artist
+        FavoritePerson.objects.create(user=user, person_id=10297, name='Matthew McConaughey')
+        res2 = self.client.get('/person/10297/')
+        self.assertEqual(res2.status_code, 200)
+        self.assertTrue(res2.context['is_favorite'])
+
     def test_trailer_api(self):
         response = self.client.get('/trailer/movie/550/')
         self.assertEqual(response.status_code, 200)

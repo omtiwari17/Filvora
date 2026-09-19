@@ -252,4 +252,81 @@ class LibraryTestCase(TestCase):
                 LibraryItem.objects.filter(user=self.user, profile=profile, tmdb_id=mid, media_type='movie').exists()
             )
 
+    def test_favorite_person_toggle_add_and_remove(self):
+        """Verifies 1-click toggling of favorite actor/director in and out of library."""
+        from apps.library.models import FavoritePerson
+        self.client.login(username='libuser', password='password123')
+
+        payload = {
+            'person_id': '10297',
+            'name': 'Matthew McConaughey',
+            'profile_path': '/e9ZHRvdgpvBOHAcT68nN9e9YmUf.jpg',
+            'known_for_department': 'Acting'
+        }
+
+        # 1. First toggle -> Adds to Favorite Actors
+        res = self.client.post('/library/person/toggle/', data=payload, HTTP_HX_REQUEST='true')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('favoritePersonChanged', res.headers.get('HX-Trigger', ''))
+        self.assertIn('Favorited', res.content.decode('utf-8'))
+        self.assertTrue(
+            FavoritePerson.objects.filter(user=self.user, person_id=10297).exists()
+        )
+
+        # 2. Second toggle -> Removes from Favorite Actors
+        res2 = self.client.post('/library/person/toggle/', data=payload, HTTP_HX_REQUEST='true')
+        self.assertEqual(res2.status_code, 200)
+        self.assertIn('favoritePersonChanged', res2.headers.get('HX-Trigger', ''))
+        self.assertIn('Favorite Actor', res2.content.decode('utf-8'))
+        self.assertFalse(
+            FavoritePerson.objects.filter(user=self.user, person_id=10297).exists()
+        )
+
+    def test_favorite_person_delete_endpoint(self):
+        """Verifies deleting favorite actor via dedicated removal endpoint."""
+        from apps.library.models import FavoritePerson
+        self.client.login(username='libuser', password='password123')
+        FavoritePerson.objects.create(
+            user=self.user,
+            person_id=10297,
+            name='Matthew McConaughey',
+            known_for_department='Acting'
+        )
+        self.assertTrue(FavoritePerson.objects.filter(user=self.user, person_id=10297).exists())
+
+        res = self.client.post('/library/person/10297/delete/', HTTP_HX_REQUEST='true')
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(FavoritePerson.objects.filter(user=self.user, person_id=10297).exists())
+
+    def test_favorite_person_multi_profile_isolation(self):
+        """Verifies favorite actors are strictly segregated between different user profiles."""
+        from apps.accounts.models import UserProfile
+        from apps.library.models import FavoritePerson
+        p1 = UserProfile.objects.create(user=self.user, name='Film Buff')
+        p2 = UserProfile.objects.create(user=self.user, name='Kids Profile', is_kids=True)
+
+        self.client.login(username='libuser', password='password123')
+
+        # Add favorite under Profile 1
+        session = self.client.session
+        session['active_profile_id'] = p1.id
+        session.save()
+
+        self.client.post('/library/person/toggle/', {
+            'person_id': '10297',
+            'name': 'Matthew McConaughey',
+            'known_for_department': 'Acting'
+        })
+        self.assertTrue(FavoritePerson.objects.filter(user=self.user, profile=p1, person_id=10297).exists())
+
+        # Switch to Profile 2 and check library
+        session['active_profile_id'] = p2.id
+        session.save()
+
+        res = self.client.get('/library/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.context['favorite_people']), 0)
+        self.assertFalse(FavoritePerson.objects.filter(user=self.user, profile=p2, person_id=10297).exists())
+
+
 
