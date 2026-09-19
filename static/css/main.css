@@ -59,6 +59,10 @@ svg.w-16, svg.h-16 { width: 4rem; height: 4rem; }
     display: block !important;
 }
 
+.\!hidden {
+    display: none !important;
+}
+
 /* Mobile-first touch enhancements & safe-area insets */
 :root {
     --safe-area-inset-top: env(safe-area-inset-top, 0px);

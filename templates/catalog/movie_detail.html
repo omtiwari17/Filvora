@@ -346,13 +346,13 @@
 
                             <!-- Mobile Permanent Badges -->
                             <div class="absolute top-2 left-2 z-10 sm:hidden group-hover/saga:opacity-0 transition-opacity duration-200 flex items-center gap-1">
-                                <span class="saga-seen-mob-{{ part.id }} flex items-center bg-emerald-950/90 text-emerald-400 border border-emerald-500/40 px-1 py-0.5 rounded text-[8px] font-black shadow {% if not part.is_watched and part.id not in user_watched_movie_ids and part.id not in user_watched_ids %}hidden{% endif %}" title="Watched">
+                                <span class="saga-seen-mob-{{ part.id }} card-seen-mob-{{ part.id }} flex items-center bg-emerald-950/90 text-emerald-400 border border-emerald-500/40 px-1 py-0.5 rounded text-[8px] font-black shadow {% if not part.is_watched and part.id not in user_watched_movie_ids and part.id not in user_watched_ids %}hidden{% endif %}" title="Watched">
                                     <svg class="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
                                 </span>
                             </div>
 
                             <!-- Desktop Permanent Seen Indicator (Top-Right) -->
-                            <div class="saga-seen-desk-{{ part.id }} hidden sm:block absolute top-2.5 right-2.5 z-10 group-hover/saga:opacity-0 transition-opacity duration-200 {% if not part.is_watched and part.id not in user_watched_movie_ids and part.id not in user_watched_ids %}sm:hidden{% endif %}">
+                            <div class="saga-seen-desk-{{ part.id }} card-seen-desk-{{ part.id }} hidden sm:block absolute top-2.5 right-2.5 z-10 group-hover/saga:opacity-0 transition-opacity duration-200 {% if not part.is_watched and part.id not in user_watched_movie_ids and part.id not in user_watched_ids %}!hidden{% endif %}">
                                 <span class="flex items-center gap-1 bg-black/80 backdrop-blur-md text-emerald-400 border border-emerald-500/40 px-1.5 py-0.5 rounded-full text-[9px] font-bold shadow-lg" title="Watched">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                                     <span>Seen</span>

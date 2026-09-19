@@ -289,7 +289,15 @@ def toggle_watched(request):
                 'media_type': media_type,
                 'is_watched': is_watched,
             })
-            return HttpResponse(html)
+            resp = HttpResponse(html)
+            resp['HX-Trigger'] = json.dumps({
+                'watchChanged': {
+                    'tmdb_id': tmdb_id,
+                    'media_type': media_type,
+                    'is_watched': is_watched
+                }
+            })
+            return resp
 
         return JsonResponse({'status': 'ok', 'is_watched': is_watched})
     except (ValueError, TypeError, KeyError) as e:
@@ -344,7 +352,15 @@ def rate_content(request):
                     'media_type': media_type,
                     'star_range': [1, 2, 3, 4, 5],
                 })
-            return HttpResponse(html)
+            resp = HttpResponse(html)
+            resp['HX-Trigger'] = json.dumps({
+                'ratingChanged': {
+                    'tmdb_id': tmdb_id,
+                    'media_type': media_type,
+                    'score': score
+                }
+            })
+            return resp
 
         return JsonResponse({
             'status': 'ok',
@@ -396,7 +412,15 @@ def remove_rating(request):
                     'media_type': media_type,
                     'star_range': [1, 2, 3, 4, 5],
                 })
-            return HttpResponse(html)
+            resp = HttpResponse(html)
+            resp['HX-Trigger'] = json.dumps({
+                'ratingChanged': {
+                    'tmdb_id': tmdb_id,
+                    'media_type': media_type,
+                    'score': 0
+                }
+            })
+            return resp
 
         return JsonResponse({'status': 'ok', 'message': 'Rating removed'})
     except (ValueError, TypeError, KeyError) as e:

@@ -19,22 +19,18 @@
                 </svg>
                 {{ series.vote_average|floatformat:1 }}
             </span>
-            {% if series.id in user_watched_tv_ids or series.id in user_watched_ids %}
-            <span class="flex items-center bg-emerald-950/90 text-emerald-400 border border-emerald-500/40 px-1 py-0.5 rounded text-[8px] font-black shadow" title="Watched">
+            <span class="card-seen-mob-{{ series.id }} flex items-center bg-emerald-950/90 text-emerald-400 border border-emerald-500/40 px-1 py-0.5 rounded text-[8px] font-black shadow {% if series.id not in user_watched_tv_ids and series.id not in user_watched_ids %}hidden{% endif %}" title="Watched">
                 <svg class="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
             </span>
-            {% endif %}
         </div>
 
-        <!-- Subtle Top-Right Watched Indicator (Always visible on desktop if watched) -->
-        {% if series.id in user_watched_tv_ids or series.id in user_watched_ids %}
-        <div class="hidden sm:block absolute top-2.5 right-2.5 z-10 group-hover/card:opacity-0 transition-opacity duration-200">
+        <!-- Subtle Top-Right Watched Indicator (Always in DOM, toggled with !hidden) -->
+        <div class="card-seen-desk-{{ series.id }} hidden sm:block absolute top-2.5 right-2.5 z-10 group-hover/card:opacity-0 transition-opacity duration-200 {% if series.id not in user_watched_tv_ids and series.id not in user_watched_ids %}!hidden{% endif %}">
             <span class="flex items-center gap-1 bg-black/80 backdrop-blur-md text-emerald-400 border border-emerald-500/40 px-1.5 py-0.5 rounded-full text-[9px] font-bold shadow-lg" title="Watched">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                 <span>Seen</span>
             </span>
         </div>
-        {% endif %}
         
         <!-- Hover Overlay with Actions -->
         <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-black/30 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-2.5 sm:p-3">
