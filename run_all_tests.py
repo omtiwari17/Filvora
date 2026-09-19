@@ -189,6 +189,8 @@ TEST_DESCRIPTIONS = {
     'test_trailer_api_tv_series': 'Verifies /trailer/tv/<id>/ JSON trailer key extraction for TV series',
     'test_surprise_me_tv_type': 'Verifies /surprise-me/?type=tv randomizer redirects to TV series page',
     'test_movie_browse_sort_ratings': 'Verifies /movies/ sorting by vote_average.desc',
+    'test_genres_empty_state': 'Verifies offline empty state fallback is rendered when genres list is empty',
+    'test_series_detail_season_episode_count_badges': 'Verifies season tabs display episode counts and render horizontal scroll controls',
 
     # --------------------------------------------------------------------------
     # CATEGORY 3: Video Playback, Multi-Server & Failover (apps.playback)

@@ -281,7 +281,19 @@ class CatalogViewsTestCase(TestCase):
             self.assertIn('Genres Unavailable', html)
             self.assertIn('Check Connection & Retry', html)
 
+    def test_series_detail_season_episode_count_badges(self):
+        """Verifies that season tabs display episode counts and render horizontal scroll controls."""
+        response = self.client.get('/series/1399/')
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode('utf-8')
 
+        # Verify season tabs track and horizontal navigation controls are present
+        self.assertIn('id="season-tabs-track"', html)
+        self.assertIn('id="season-rail-prev-btn"', html)
+        self.assertIn('id="season-rail-next-btn"', html)
+        self.assertIn('id="season-rail-fade-left"', html)
+        self.assertIn('id="season-rail-fade-right"', html)
 
-
+        # Verify episode count text exists on buttons
+        self.assertTrue('Episode' in html or 'Episodes' in html)
 
