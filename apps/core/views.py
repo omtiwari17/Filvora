@@ -68,14 +68,10 @@ class HomeView(TemplateView):
             if library_items and not client.is_offline():
                 with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(library_items), 6)) as ex:
                     def _fetch_lib_item(item):
-                        if item.media_type == 'movie':
-                            d = dict(client.get_movie(item.tmdb_id))
-                            d['media_type'] = 'movie'
-                            return d
-                        else:
-                            d = dict(client.get_tv(item.tmdb_id))
-                            d['media_type'] = 'tv'
-                            return d
+                        summary = client.get_content_summary(item.tmdb_id, item.media_type)
+                        d = dict(summary) if summary else {}
+                        d['media_type'] = item.media_type
+                        return d
                     my_list_preview = [i for i in ex.map(_fetch_lib_item, library_items) if i and i.get('id')]
             elif library_items and client.is_offline():
                 for item in library_items:
@@ -108,40 +104,51 @@ class HomeView(TemplateView):
             ).order_by('-updated_at')
             
             seen = set()
+            unique_progress = []
             for p in progress_items:
                 key = (p.media_type, p.tmdb_id)
-                if key in seen:
-                    continue
-                seen.add(key)
-                
-                data = {}
-                if not client.is_offline():
-                    if p.media_type == 'movie':
-                        data = dict(client.get_movie(p.tmdb_id))
-                    else:
-                        data = dict(client.get_tv(p.tmdb_id))
-                
-                if p.media_type == 'movie':
-                    data['display_title'] = data.get('title', f"Movie {p.tmdb_id}")
-                    data['sub_label'] = "Movie"
-                    data['watch_url'] = f"/watch/movie/{p.tmdb_id}/"
-                else:
-                    s_num = p.season or 1
-                    ep_num = p.episode or 1
-                    series_name = data.get('name', f"Series {p.tmdb_id}")
-                    data['display_title'] = series_name
-                    data['sub_label'] = f"S{s_num}:E{ep_num}"
-                    data['watch_url'] = f"/watch/tv/{p.tmdb_id}/{s_num}/{ep_num}/"
-                
-                data['id'] = p.tmdb_id
-                data['tmdb_id'] = p.tmdb_id
-                data['media_type'] = p.media_type
-                data['progress_percentage'] = p.progress_percentage
-                data['position_seconds'] = p.position_seconds
-                continue_watching.append(data)
-                
-                if len(continue_watching) >= 10:
+                if key not in seen:
+                    seen.add(key)
+                    unique_progress.append(p)
+                if len(unique_progress) >= 10:
                     break
+
+            if unique_progress and not client.is_offline():
+                with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(unique_progress), 6)) as ex:
+                    def _fetch_cw_item(p):
+                        summary = client.get_content_summary(p.tmdb_id, p.media_type)
+                        data = dict(summary) if summary else {}
+                        if p.media_type == 'movie':
+                            data['display_title'] = data.get('title', f"Movie {p.tmdb_id}")
+                            data['sub_label'] = "Movie"
+                            data['watch_url'] = f"/watch/movie/{p.tmdb_id}/"
+                        else:
+                            s_num = p.season or 1
+                            ep_num = p.episode or 1
+                            series_name = data.get('name', f"Series {p.tmdb_id}")
+                            data['display_title'] = series_name
+                            data['sub_label'] = f"S{s_num}:E{ep_num}"
+                            data['watch_url'] = f"/watch/tv/{p.tmdb_id}/{s_num}/{ep_num}/"
+                        data['id'] = p.tmdb_id
+                        data['tmdb_id'] = p.tmdb_id
+                        data['media_type'] = p.media_type
+                        data['progress_percentage'] = p.progress_percentage
+                        data['position_seconds'] = p.position_seconds
+                        return data
+                    continue_watching = list(ex.map(_fetch_cw_item, unique_progress))
+            elif unique_progress and client.is_offline():
+                for p in unique_progress:
+                    continue_watching.append({
+                        'id': p.tmdb_id,
+                        'tmdb_id': p.tmdb_id,
+                        'display_title': f"{p.media_type.capitalize()} #{p.tmdb_id}",
+                        'sub_label': "Movie" if p.media_type == 'movie' else f"S{p.season or 1}:E{p.episode or 1}",
+                        'media_type': p.media_type,
+                        'watch_url': f"/watch/{p.media_type}/{p.tmdb_id}/" if p.media_type == 'movie' else f"/watch/tv/{p.tmdb_id}/{p.season or 1}/{p.episode or 1}/",
+                        'progress_percentage': p.progress_percentage,
+                        'position_seconds': p.position_seconds,
+                        'poster_path': None
+                    })
                 
         context['continue_watching'] = continue_watching
 

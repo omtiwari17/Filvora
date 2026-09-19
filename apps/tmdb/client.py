@@ -1,15 +1,17 @@
 import os
 import time
 import json
+import hashlib
 import subprocess
 import urllib.parse
 import requests
 from django.conf import settings
+from django.core.cache import cache
 
 class TMDBClient:
     BASE_URL = "https://api.themoviedb.org/3"
     _cache = {}
-    CACHE_TTL = 900  # 15 minutes in-memory cache
+    CACHE_TTL = 1800  # 30 minutes in-memory cache
     _session = None
     _offline_until = 0
 
@@ -41,12 +43,25 @@ class TMDBClient:
     def _fetch(self, endpoint, params=None):
         req_params = dict(params) if params else {}
         
-        # Check in-memory cache
-        cache_key = f"{endpoint}:{json.dumps(req_params, sort_keys=True)}"
+        param_str = json.dumps(req_params, sort_keys=True)
+        param_hash = hashlib.md5(param_str.encode()).hexdigest()
+        clean_ep = endpoint.strip('/').replace('/', '_')
+        cache_key = f"tmdb_{clean_ep}_{param_hash}"
+
+        # 1. Check ultra-fast L1 in-memory cache
         if cache_key in self._cache:
             cached_data, cached_time = self._cache[cache_key]
             if time.time() - cached_time < self.CACHE_TTL:
                 return cached_data
+
+        # 2. Check persistent L2 disk/file cache (survives process restarts)
+        try:
+            l2_data = cache.get(cache_key)
+            if l2_data is not None:
+                self._cache[cache_key] = (l2_data, time.time())
+                return l2_data
+        except Exception:
+            pass
 
         if not self.api_key:
             return {}
@@ -67,6 +82,10 @@ class TMDBClient:
             if r.status_code == 200:
                 data = r.json()
                 self._cache[cache_key] = (data, time.time())
+                try:
+                    cache.set(cache_key, data, timeout=1800)
+                except Exception:
+                    pass
                 TMDBClient._offline_until = 0
                 return data
         except requests.exceptions.ConnectionError as e:
@@ -92,6 +111,10 @@ class TMDBClient:
                     data = json.loads(res.stdout)
                     if not data.get('status_code'):  # Not an error response
                         self._cache[cache_key] = (data, time.time())
+                        try:
+                            cache.set(cache_key, data, timeout=1800)
+                        except Exception:
+                            pass
                         TMDBClient._offline_until = 0
                         return data
             except Exception:
@@ -355,12 +378,7 @@ class TMDBClient:
                 item['age_rating'] = self._RATING_CACHE[cache_key]
                 return item
 
-            # Query official certification from TMDB
-            real_rating = self.get_content_rating(item_id, media_type)
-            if real_rating:
-                item['age_rating'] = real_rating
-                return item
-
+        # Instant genre/adult heuristic for catalog lists & rails (prevents 180+ remote network calls per page)
         if media_type == 'movie':
             if item.get('adult'):
                 item['age_rating'] = '18+'
@@ -388,6 +406,44 @@ class TMDBClient:
             self._RATING_CACHE[f"{media_type}:{item_id}"] = item['age_rating']
 
         return item
+
+    def get_content_summary(self, tmdb_id, media_type='movie'):
+        """
+        Ultra-fast lightweight summary for Continue Watching, My List previews,
+        and recommendation seeds. Fetches the base record without heavy append_to_response cascades.
+        """
+        if not tmdb_id:
+            return {}
+        endpoint = f"/movie/{tmdb_id}" if media_type == 'movie' else f"/tv/{tmdb_id}"
+        data = self._fetch(endpoint)
+        if data and (data.get('title') or data.get('name') or data.get('poster_path')):
+            data_copy = dict(data)
+            data_copy['media_type'] = media_type
+            return self._attach_age_rating(data_copy, media_type)
+
+        # Fallback to mock data if offline or unavailable
+        if media_type == 'movie':
+            for m in self._get_mock_movies():
+                if m.get('id') == int(tmdb_id):
+                    m_copy = dict(m)
+                    m_copy['media_type'] = 'movie'
+                    return m_copy
+        else:
+            for s in self._get_mock_series():
+                if s.get('id') == int(tmdb_id):
+                    s_copy = dict(s)
+                    s_copy['media_type'] = 'tv'
+                    return s_copy
+
+        return {
+            'id': tmdb_id,
+            'tmdb_id': tmdb_id,
+            'title': f"{media_type.capitalize()} {tmdb_id}",
+            'name': f"{media_type.capitalize()} {tmdb_id}",
+            'media_type': media_type,
+            'poster_path': None,
+            'backdrop_path': None,
+        }
 
     def get_trending_movies(self):
         data = self._fetch("/trending/movie/day")

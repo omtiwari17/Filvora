@@ -19,8 +19,9 @@ db.sqlite3-wal
 db.sqlite3-shm
 backups/
 
-# Media & Temporary Downloads
+# Media & Temporary Downloads & Cache
 media/
+.cache/
 
 # VSCode / IDEs
 .vscode/

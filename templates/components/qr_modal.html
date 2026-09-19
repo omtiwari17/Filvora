@@ -1,4 +1,4 @@
-﻿<!-- Modal: QR Code Mobile / TV Pairing -->
+<!-- Modal: QR Code Mobile / TV Pairing -->
 {% if lan_access_url %}
 <div id="qr-pairing-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
     <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 max-w-xs w-full shadow-2xl space-y-5 text-center">
@@ -10,7 +10,12 @@
         </div>
         
         <div class="bg-white p-3.5 rounded-2xl inline-block shadow-inner mx-auto">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ lan_access_url }}" alt="Scan QR Code" class="w-44 h-44 rounded-lg">
+            <img id="qr-modal-img"
+                 data-src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ lan_access_url }}" 
+                 src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23ffffff'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%239ca3af'%3ELoading QR...%3C/text%3E%3C/svg%3E" 
+                 alt="Scan QR Code" 
+                 loading="lazy"
+                 class="w-44 h-44 rounded-lg">
         </div>
 
         <div>
@@ -25,4 +30,29 @@
         </div>
     </div>
 </div>
+
+<script>
+    function openQrModal() {
+        const modal = document.getElementById('qr-pairing-modal');
+        const img = document.getElementById('qr-modal-img');
+        if (img && img.dataset.src && img.src !== img.dataset.src) {
+            img.src = img.dataset.src;
+        }
+        if (modal) modal.classList.remove('hidden');
+    }
+    // Auto-load if classlist unhidden directly
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('qr-pairing-modal');
+        if (modal && 'MutationObserver' in window) {
+            new MutationObserver(() => {
+                if (!modal.classList.contains('hidden')) {
+                    const img = document.getElementById('qr-modal-img');
+                    if (img && img.dataset.src && img.src !== img.dataset.src) {
+                        img.src = img.dataset.src;
+                    }
+                }
+            }).observe(modal, { attributes: true, attributeFilter: ['class'] });
+        }
+    });
+</script>
 {% endif %}

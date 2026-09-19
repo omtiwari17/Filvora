@@ -1,6 +1,8 @@
 import re
+import concurrent.futures
 from collections import Counter
 from django.db.models import Q
+from django.core.cache import cache
 from apps.tmdb.client import TMDBClient
 from apps.watch.models import WatchProgress, UserRating
 from apps.library.models import LibraryItem
@@ -14,67 +16,70 @@ class RecommendationEngine:
         if not user or not user.is_authenticated:
             return []
 
+        cache_key = f"user_affinity_genres_{user.id}_{profile.id if profile else 'default'}"
+        try:
+            cached = cache.get(cache_key)
+            if cached is not None:
+                return cached
+        except Exception:
+            pass
+
         genre_counts = Counter()
+        items_to_fetch = []
         
-        # 1. Signals from Watch Progress
+        # 1. Signals from Watch Progress (up to 10 most recent)
         progress_qs = WatchProgress.objects.filter(user=user)
         if profile:
             progress_qs = progress_qs.filter(profile=profile)
-        progress_items = progress_qs.order_by('-updated_at')[:20]
-        for p in progress_items:
+        for p in progress_qs.order_by('-updated_at')[:10]:
             weight = 3 if p.completed else 1
-            if p.media_type == 'movie':
-                details = self.client.get_movie_details(p.tmdb_id)
-            else:
-                details = self.client.get_tv_details(p.tmdb_id)
+            items_to_fetch.append((p.media_type, p.tmdb_id, weight))
 
-            for g in details.get('genres', []):
-                gid = g.get('id') if isinstance(g, dict) else g
-                if gid:
-                    genre_counts[gid] += weight
-
-        # 2. Signals from Library
+        # 2. Signals from Library (up to 10 most recent)
         library_qs = LibraryItem.objects.filter(user=user)
         if profile:
             library_qs = library_qs.filter(profile=profile)
-        library_items = library_qs.order_by('-added_at')[:20]
-        for item in library_items:
-            if item.media_type == 'movie':
-                details = self.client.get_movie_details(item.tmdb_id)
-            else:
-                details = self.client.get_tv_details(item.tmdb_id)
+        for item in library_qs.order_by('-added_at')[:10]:
+            items_to_fetch.append((item.media_type, item.tmdb_id, 2))
 
-            for g in details.get('genres', []):
-                gid = g.get('id') if isinstance(g, dict) else g
-                if gid:
-                    genre_counts[gid] += 2
-
-        # 3. Signals from User Ratings (strongest personalization signal)
+        # 3. Signals from User Ratings (up to 10 most recent)
         rating_qs = UserRating.objects.filter(user=user)
         if profile:
             rating_qs = rating_qs.filter(profile=profile)
-        rated_items = rating_qs.order_by('-updated_at')[:20]
-        for r in rated_items:
-            if r.media_type == 'movie':
-                details = self.client.get_movie_details(r.tmdb_id)
-            else:
-                details = self.client.get_tv_details(r.tmdb_id)
-
-            # High ratings (4-5) = strong positive signal, low (1-2) = negative signal
+        for r in rating_qs.order_by('-updated_at')[:10]:
             if r.score >= 4:
                 weight = 5
             elif r.score == 3:
                 weight = 2
             else:
                 weight = -2
+            items_to_fetch.append((r.media_type, r.tmdb_id, weight))
 
-            for g in details.get('genres', []):
+        if not items_to_fetch:
+            return []
+
+        def _fetch_genres(entry):
+            mtype, tid, weight = entry
+            summary = self.client.get_content_summary(tid, mtype)
+            genres = summary.get('genres', [])
+            return genres, weight
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(items_to_fetch), 8)) as ex:
+            results = list(ex.map(_fetch_genres, items_to_fetch))
+
+        for genres, weight in results:
+            for g in genres:
                 gid = g.get('id') if isinstance(g, dict) else g
                 if gid:
                     genre_counts[gid] += weight
 
-        # Return top genres sorted by frequency
-        return [gid for gid, _ in genre_counts.most_common(3)]
+        top_genres = [gid for gid, _ in genre_counts.most_common(3)]
+        try:
+            cache.set(cache_key, top_genres, timeout=900)
+        except Exception:
+            pass
+
+        return top_genres
 
     def get_seed_attribution(self, user, profile, tmdb_id, media_type):
         """

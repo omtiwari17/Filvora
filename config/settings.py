@@ -129,6 +129,19 @@ if DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
         'init_command': 'PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;',
     }
 
+# Persistent File-Based Cache for TMDB API payloads and computed affinity profiles
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': BASE_DIR / '.cache' / 'django_cache',
+        'TIMEOUT': 1800,  # 30 minutes
+        'OPTIONS': {
+            'MAX_ENTRIES': 2500,
+            'CULL_FREQUENCY': 3,
+        }
+    }
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
