@@ -191,6 +191,7 @@ TEST_DESCRIPTIONS = {
     'test_movie_browse_sort_ratings': 'Verifies /movies/ sorting by vote_average.desc',
     'test_genres_empty_state': 'Verifies offline empty state fallback is rendered when genres list is empty',
     'test_series_detail_season_episode_count_badges': 'Verifies season tabs display episode counts and render horizontal scroll controls',
+    'test_card_click_to_details_navigation': 'Verifies movie and series cards feature universal click-to-details navigation with action isolation',
 
     # --------------------------------------------------------------------------
     # CATEGORY 3: Video Playback, Multi-Server & Failover (apps.playback)

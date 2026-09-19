@@ -297,3 +297,20 @@ class CatalogViewsTestCase(TestCase):
         # Verify episode count text exists on buttons
         self.assertTrue('Episode' in html or 'Episodes' in html)
 
+    def test_card_click_to_details_navigation(self):
+        """Verifies movie and TV series cards include navigateToCard click handler and data-card-url attributes."""
+        # Test movie browse cards
+        res_movie = self.client.get('/movies/')
+        self.assertEqual(res_movie.status_code, 200)
+        html_movie = res_movie.content.decode('utf-8')
+        self.assertIn('navigateToCard(event,', html_movie)
+        self.assertIn('data-card-url="/movies/', html_movie)
+        self.assertIn('event.stopPropagation();', html_movie)
+
+        # Test TV browse cards
+        res_tv = self.client.get('/series/')
+        self.assertEqual(res_tv.status_code, 200)
+        html_tv = res_tv.content.decode('utf-8')
+        self.assertIn('navigateToCard(event,', html_tv)
+        self.assertIn('data-card-url="/series/', html_tv)
+
