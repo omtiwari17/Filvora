@@ -62,6 +62,17 @@
             <span>Custom Collections</span>
             <span class="px-1.5 py-0.5 rounded-md bg-purple-500/20 text-purple-400 text-[10px] font-bold">{{ custom_collections|length }}</span>
         </button>
+
+        <button type="button" 
+                onclick="switchLibraryTab('actors')" 
+                id="tab-btn-actors" 
+                class="lib-tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-black flex items-center gap-2 bg-gray-900/90 text-gray-400 hover:text-white border border-gray-800 hover:border-gray-700 transition">
+            <svg class="w-4 h-4 text-rose-500 fill-current" viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+            <span>Favorite Actors</span>
+            <span id="actors-tab-badge" class="px-1.5 py-0.5 rounded-md bg-rose-500/20 text-rose-400 text-[10px] font-bold">{{ favorite_people|length }}</span>
+        </button>
     </div>
 
     <!-- TAB 1: Watchlist Panel -->
@@ -388,6 +399,89 @@
     </div>
 </div>
 
+    <!-- TAB 4: Favorite Actors Panel -->
+    <div id="panel-actors" class="hidden">
+        {% if favorite_people %}
+        <div id="favorite-actors-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-4 md:gap-6">
+            {% for fav in favorite_people %}
+            <div id="fav-actor-card-{{ fav.person_id }}" class="group relative bg-gray-900/70 border border-gray-800/80 hover:border-gray-700 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-brand-500/10 hover:-translate-y-1 flex flex-col">
+                <!-- Portrait Image Container with link -->
+                <a href="/person/{{ fav.person_id }}/" class="relative block w-full aspect-[2/3] overflow-hidden bg-gray-950">
+                    {% if fav.profile_path %}
+                    <img src="https://image.tmdb.org/t/p/w300{{ fav.profile_path }}" 
+                         alt="{{ fav.name }}" 
+                         loading="lazy"
+                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                    {% else %}
+                    <div class="w-full h-full flex flex-col items-center justify-center bg-gray-950 text-gray-600">
+                        <svg class="w-12 h-12 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <span class="text-[10px] uppercase font-bold tracking-wider text-gray-500">No Photo</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent opacity-80 group-hover:opacity-60 transition-opacity"></div>
+
+                    <!-- Department Pill Top Left -->
+                    <div class="absolute top-2 left-2">
+                        <span class="bg-gray-950/80 backdrop-blur-md text-brand-400 border border-brand-500/30 text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">
+                            {{ fav.known_for_department|default:"Acting" }}
+                        </span>
+                    </div>
+
+                    <!-- 1-Click In-Place Remove Button Top Right -->
+                    <button type="button" 
+                            onclick="event.preventDefault(); event.stopPropagation(); deleteFavoriteActorCard({{ fav.person_id }});" 
+                            title="Remove from Favorite Actors"
+                            class="absolute top-2 right-2 w-7 h-7 rounded-full bg-gray-950/80 hover:bg-rose-600/90 text-gray-400 hover:text-white border border-gray-700/80 hover:border-rose-500/80 flex items-center justify-center transition-all duration-200 backdrop-blur-md shadow-md opacity-80 group-hover:opacity-100 hover:scale-110 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </a>
+
+                <!-- Actor Info Card Footer -->
+                <div class="p-3 flex flex-col flex-grow justify-between gap-2">
+                    <div>
+                        <a href="/person/{{ fav.person_id }}/" class="text-sm font-black text-white hover:text-brand-400 transition-colors line-clamp-1">
+                            {{ fav.name }}
+                        </a>
+                        <p class="text-[11px] text-gray-400 mt-0.5">
+                            Added {{ fav.added_at|date:"M d, Y" }}
+                        </p>
+                    </div>
+
+                    <a href="/person/{{ fav.person_id }}/" class="w-full py-1.5 px-2.5 rounded-xl bg-gray-800/80 hover:bg-brand-500 text-gray-300 hover:text-white text-xs font-bold text-center transition flex items-center justify-center gap-1.5 border border-gray-700/60 hover:border-transparent">
+                        <span>Filmography</span>
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Empty State (Shown when empty or when last card deleted) -->
+        <div id="actors-empty-state" class="{% if favorite_people %}hidden {% endif %}text-center py-20 bg-gray-900/30 rounded-3xl border border-gray-800/60 p-8">
+            <div class="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center mx-auto mb-4 shadow-xl">
+                <svg class="w-8 h-8 fill-current" viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-black text-white mb-1.5">No Favorite Actors Yet</h3>
+            <p class="text-xs text-gray-400 max-w-sm mx-auto leading-relaxed mb-6">Explore movie and TV series detail pages to discover talented artists, actors, and directors to add to your personal favorites.</p>
+            <a href="/movies/" class="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-brand-500/25">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <span>Discover Artists & Movies</span>
+            </a>
+        </div>
+    </div>
+
 <!-- Modal: New Collection -->
 <div id="new-collection-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
     <div class="bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
@@ -524,6 +618,7 @@ function switchLibraryTab(tab) {
     document.getElementById('panel-watchlist')?.classList.add('hidden');
     document.getElementById('panel-bookmarks')?.classList.add('hidden');
     document.getElementById('panel-collections')?.classList.add('hidden');
+    document.getElementById('panel-actors')?.classList.add('hidden');
 
     const activePanel = document.getElementById(`panel-${tab}`);
     if (activePanel) {
@@ -559,9 +654,43 @@ async function deleteSceneBookmarkCard(id) {
     }
 }
 
+async function deleteFavoriteActorCard(id) {
+    if (!confirm('Remove this artist from your favorites?')) return;
+    const csrfToken = (typeof getCookie === 'function' ? getCookie('csrftoken') : null) || document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    try {
+        const resp = await fetch(`/library/person/${id}/delete/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        });
+        const data = await resp.json();
+        if (data.status === 'success') {
+            const el = document.getElementById(`fav-actor-card-${id}`);
+            if (el) {
+                el.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+                el.style.opacity = '0';
+                el.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    el.remove();
+                    const grid = document.getElementById('favorite-actors-grid');
+                    if (grid && grid.querySelectorAll('[id^="fav-actor-card-"]').length === 0) {
+                        document.getElementById('actors-empty-state')?.classList.remove('hidden');
+                    }
+                }, 250);
+            }
+            const badge = document.getElementById('actors-tab-badge');
+            if (badge) {
+                const count = Math.max(0, parseInt(badge.innerText || '1', 10) - 1);
+                badge.innerText = count;
+            }
+        }
+    } catch (e) {
+        console.error('Delete favorite actor error:', e);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const hash = window.location.hash.replace('#', '');
-    if (hash === 'bookmarks' || hash === 'collections' || hash === 'watchlist') {
+    if (hash === 'bookmarks' || hash === 'collections' || hash === 'watchlist' || hash === 'actors') {
         switchLibraryTab(hash);
     }
 });

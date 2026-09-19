@@ -24,6 +24,7 @@
                 <span class="bg-brand-500/20 text-brand-400 border border-brand-500/30 text-xs font-bold px-3 py-1 rounded-full">
                     {{ person.known_for_department|default:"Acting" }}
                 </span>
+                {% include 'components/person_favorite_button.html' with person=person is_favorite=is_favorite %}
             </div>
             
             {% if person.birthday %}
