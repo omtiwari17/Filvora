@@ -245,6 +245,22 @@ class PlaybackTestCase(TestCase):
         self.assertContains(response, 'lastIframeInteractionTime')
         self.assertContains(response, 'triggerAutoSwitch(reason = \'Server not responding\')')
 
+    def test_autoplay_countdown_and_fullscreen_overlay_resilience(self):
+        """Verifies that TV episode watch view includes the Up Next autoplay countdown modal, high z-index and active guard."""
+        self.client.login(username='playbackuser', password='password123')
+        response = self.client.get('/watch/tv/1399/1/2/?server=vidfast')
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(response.context['next_episode'])
+        content = response.content.decode('utf-8')
+        self.assertIn('id="autoplay-modal"', content)
+        self.assertIn('id="autoplay-countdown"', content)
+        self.assertIn('id="autoplay-progress-bar"', content)
+        self.assertIn('isAutoplayActive', content)
+        self.assertIn(':fullscreen #autoplay-modal', content)
+        self.assertIn('.is-fullscreen #autoplay-modal', content)
+        self.assertIn('embed-fullscreen-hotspot', content)
+
+
 
 
 

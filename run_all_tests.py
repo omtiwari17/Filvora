@@ -210,6 +210,7 @@ TEST_DESCRIPTIONS = {
     'test_all_providers_movie_and_tv_urls': 'Verifies valid movie and TV embed URL generation across all 6 streaming providers',
     'test_vidfast_embed_focus_and_fullscreen_attributes': 'Verifies VidFast embed iframe fullscreen permissions and focus preservation router',
     'test_watch_view_pause_failover_immunity': 'Enforces 100% failover immunity while paused, preventing server jumps on pause',
+    'test_autoplay_countdown_and_fullscreen_overlay_resilience': 'Verifies TV Up Next countdown overlay, high z-index and active guard',
 
     # --------------------------------------------------------------------------
     # CATEGORY 4: Watch History, Ratings & Progress Engine (apps.watch)

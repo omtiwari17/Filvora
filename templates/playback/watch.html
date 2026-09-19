@@ -98,13 +98,33 @@
             background: rgba(0, 0, 0, 0.001) !important;
         }
         .is-fullscreen #embed-fullscreen-hotspot,
-        :fullscreen #embed-fullscreen-hotspot {
+        :fullscreen #embed-fullscreen-hotspot,
+        :-webkit-full-screen #embed-fullscreen-hotspot,
+        :-moz-full-screen #embed-fullscreen-hotspot,
+        :-ms-fullscreen #embed-fullscreen-hotspot {
             z-index: 2147483645 !important;
             position: fixed !important;
             bottom: 0 !important;
             right: 0 !important;
-            width: 4.5rem !important;
-            height: 4.5rem !important;
+            width: 5.5rem !important;
+            height: 5rem !important;
+        }
+        /* Up Next Autoplay Countdown Modal Fullscreen & High-Z-Index Guarantee */
+        #autoplay-modal {
+            z-index: 2147483647 !important;
+        }
+        .is-fullscreen #autoplay-modal,
+        :fullscreen #autoplay-modal,
+        :-webkit-full-screen #autoplay-modal,
+        :-moz-full-screen #autoplay-modal,
+        :-ms-fullscreen #autoplay-modal {
+            z-index: 2147483647 !important;
+            position: fixed !important;
+            bottom: 2.5rem !important;
+            right: 1.5rem !important;
+        }
+        #autoplay-modal.hidden {
+            display: none !important;
         }
         /* Auto-hide cursor on idle/playback in cinema view */
         .hide-cursor,
@@ -648,7 +668,7 @@
 
     <!-- Autoplay Next Episode Countdown Overlay (Cinematic Up Next Hub) -->
     {% if next_episode %}
-    <div id="autoplay-modal" class="hidden fixed bottom-10 right-6 z-50 bg-gray-950/95 border border-brand-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-2xl max-w-sm w-[92%] sm:w-full transition-all duration-300 transform scale-100">
+    <div id="autoplay-modal" class="hidden fixed bottom-10 right-6 z-[2147483647] bg-gray-950/95 border border-brand-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-2xl max-w-sm w-[92%] sm:w-full transition-all duration-300 transform scale-100 select-none">
         <div class="flex items-center justify-between gap-2 mb-3">
             <div class="flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-brand-500 animate-ping"></span>
@@ -743,7 +763,7 @@
         <div id="embed-fullscreen-hotspot" 
              onclick="toggleFullscreen()" 
              title="Toggle Fullscreen (F)" 
-             class="fixed bottom-0 right-0 w-16 h-16 z-30 cursor-pointer pointer-events-auto"
+             class="fixed bottom-0 right-0 w-20 h-20 sm:w-24 sm:h-20 z-30 cursor-pointer pointer-events-auto"
              style="background: rgba(0, 0, 0, 0.001) !important;"></div>
         {% endif %}
     </div>
@@ -1978,12 +1998,19 @@
 
         let autoplayTimer = null;
         let autoplayCancelled = false;
+        let isAutoplayActive = false;
 
         function triggerAutoplayCountdown() {
-            if (autoplayCancelled) return;
+            if (autoplayCancelled || isAutoplayActive) return;
             const modal = document.getElementById('autoplay-modal');
             if (!modal) return;
+
+            isAutoplayActive = true;
             modal.classList.remove('hidden');
+
+            // Temporarily disable fullscreen hotspot pointer events so it cannot intercept clicks on modal buttons
+            const hotspot = document.getElementById('embed-fullscreen-hotspot');
+            if (hotspot) hotspot.style.pointerEvents = 'none';
 
             const totalDuration = 8;
             let countdown = totalDuration;
@@ -1991,19 +2018,24 @@
             const progressBar = document.getElementById('autoplay-progress-bar');
             const playNowLink = document.getElementById('autoplay-play-now');
 
-            if (progressBar) progressBar.style.width = '100%';
+            if (countdownEl) countdownEl.innerText = `Playing in ${countdown}s`;
+            if (progressBar) {
+                progressBar.style.transition = 'width 1s linear';
+                progressBar.style.width = '100%';
+            }
 
             if (autoplayTimer) clearInterval(autoplayTimer);
             autoplayTimer = setInterval(() => {
                 countdown--;
                 if (countdownEl) countdownEl.innerText = `Playing in ${countdown}s`;
                 if (progressBar) {
-                    const pct = (countdown / totalDuration) * 100;
+                    const pct = Math.max(0, (countdown / totalDuration) * 100);
                     progressBar.style.width = `${pct}%`;
                 }
 
                 if (countdown <= 0) {
                     clearInterval(autoplayTimer);
+                    autoplayTimer = null;
                     if (playNowLink && playNowLink.href) {
                         window.location.href = playNowLink.href;
                     }
@@ -2013,9 +2045,16 @@
 
         function cancelAutoplay() {
             autoplayCancelled = true;
-            if (autoplayTimer) clearInterval(autoplayTimer);
+            isAutoplayActive = false;
+            if (autoplayTimer) {
+                clearInterval(autoplayTimer);
+                autoplayTimer = null;
+            }
             const modal = document.getElementById('autoplay-modal');
             if (modal) modal.classList.add('hidden');
+
+            const hotspot = document.getElementById('embed-fullscreen-hotspot');
+            if (hotspot) hotspot.style.pointerEvents = 'auto';
         }
 
         function toggleFullscreen() {
@@ -2053,7 +2092,10 @@
                             docEl.msRequestFullscreen;
                 if (req) {
                     req.call(docEl).catch(err => {
-                        console.warn('Fullscreen request:', err);
+                        console.warn('Fullscreen request on wrapper:', err);
+                        if (document.documentElement && document.documentElement.requestFullscreen) {
+                            document.documentElement.requestFullscreen().catch(() => {});
+                        }
                     });
                 }
             } else {
@@ -2246,8 +2288,10 @@
                 const isFull = !!fsEl;
                 if (isFull) {
                     document.body.classList.add('is-fullscreen');
+                    document.documentElement.classList.add('is-fullscreen');
                 } else {
                     document.body.classList.remove('is-fullscreen');
+                    document.documentElement.classList.remove('is-fullscreen');
                 }
 
                 // Update fullscreen toggle button state
@@ -2415,11 +2459,22 @@
                     if (typeof pos === 'number' && pos >= 15) {
                         sendProgressBeacon(pos, dur);
 
-                        // Trigger Autoplay Up Next if within last 20 seconds or > 95% of episode
+                        // Trigger Autoplay Up Next if within last 25 seconds or > 95% of episode
                         if (dur && dur > 60 && (dur - pos <= 25 || pos / dur >= 0.95)) {
                             {% if next_episode %}
                             triggerAutoplayCountdown();
                             {% endif %}
+                        } else if (isAutoplayActive && dur && (dur - pos > 35 && pos / dur < 0.90)) {
+                            // User scrubbed backward away from the ending, dismiss modal and reset
+                            if (autoplayTimer) {
+                                clearInterval(autoplayTimer);
+                                autoplayTimer = null;
+                            }
+                            isAutoplayActive = false;
+                            const modal = document.getElementById('autoplay-modal');
+                            if (modal) modal.classList.add('hidden');
+                            const hotspot = document.getElementById('embed-fullscreen-hotspot');
+                            if (hotspot) hotspot.style.pointerEvents = 'auto';
                         }
                     }
 
