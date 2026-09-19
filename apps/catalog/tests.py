@@ -314,3 +314,31 @@ class CatalogViewsTestCase(TestCase):
         self.assertIn('navigateToCard(event,', html_tv)
         self.assertIn('data-card-url="/series/', html_tv)
 
+    def test_detail_hero_viewport_fit_and_framing(self):
+        """Verifies movie and series detail views render responsive, viewport-bounded hero framing without cutoffs."""
+        # Test movie detail hero
+        res_movie = self.client.get('/movies/299534/')
+        self.assertEqual(res_movie.status_code, 200)
+        html_movie = res_movie.content.decode('utf-8')
+        self.assertIn('max-h-[500px]', html_movie)
+        self.assertIn('min-h-[300px]', html_movie)
+        self.assertIn('object-top', html_movie)
+        self.assertIn('aspect-[2/3]', html_movie)
+        self.assertIn('w-44', html_movie)
+        self.assertIn('md:w-56', html_movie)
+        self.assertNotIn('md:h-[80vh]', html_movie)
+        self.assertNotIn('md:-mt-80', html_movie)
+
+        # Test TV series detail hero
+        res_tv = self.client.get('/series/1399/')
+        self.assertEqual(res_tv.status_code, 200)
+        html_tv = res_tv.content.decode('utf-8')
+        self.assertIn('max-h-[500px]', html_tv)
+        self.assertIn('min-h-[300px]', html_tv)
+        self.assertIn('object-top', html_tv)
+        self.assertIn('aspect-[2/3]', html_tv)
+        self.assertIn('w-44', html_tv)
+        self.assertIn('md:w-56', html_tv)
+        self.assertNotIn('md:h-[80vh]', html_tv)
+        self.assertNotIn('md:-mt-80', html_tv)
+
