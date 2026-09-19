@@ -54,6 +54,19 @@
         .star-opt svg { flex-shrink: 0 !important; width: 1.25rem !important; height: 1.25rem !important; min-width: 1.25rem !important; min-height: 1.25rem !important; display: block !important; }
         .\!hidden { display: none !important; }
     </style>
+    <script>
+        window.navigateToCard = window.navigateToCard || function(event, url) {
+            if (!url || !event) return;
+            if (event.target.closest('button, a, input, select, textarea, .quick-rate-popover, .quick-rate-wrapper')) return;
+            var sel = window.getSelection();
+            if (sel && sel.toString().length > 0) return;
+            if (event.ctrlKey || event.metaKey || event.button === 1) {
+                window.open(url, '_blank');
+            } else {
+                window.location.href = url;
+            }
+        };
+    </script>
 
     <!-- Custom CSS (Loaded Early for Fast Dark Mode & Layout Baseline) -->
     <link rel="stylesheet" href="{% static 'css/main.css' %}">

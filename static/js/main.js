@@ -861,3 +861,24 @@ document.body.addEventListener('sagaRatingChanged', (e) => {
         });
     });
 });
+
+// --- Universal Card Click-to-Details Navigation ---
+function navigateToCard(event, url) {
+    if (!url || !event) return;
+    // Disregard clicks inside buttons, links, inputs, or rating popover elements
+    if (event.target.closest('button, a, input, select, textarea, .quick-rate-popover, .quick-rate-wrapper')) {
+        return;
+    }
+    // Prevent navigation if the user was actively selecting text
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+        return;
+    }
+    // Middle click or modifier keys (Ctrl/Cmd) open details in new tab
+    if (event.ctrlKey || event.metaKey || event.button === 1) {
+        window.open(url, '_blank');
+    } else {
+        window.location.href = url;
+    }
+}
+window.navigateToCard = navigateToCard;

@@ -336,7 +336,9 @@
                 <!-- Chronological Film Rail -->
                 <div class="relative z-10 rail-track flex gap-4 sm:gap-6 overflow-x-auto py-4 px-2 -my-2 scrollbar-hide snap-x scroll-smooth">
                     {% for part in collection.parts %}
-                    <div class="flex-none w-44 sm:w-52 md:w-60 snap-start transform transition-all duration-300 hover:scale-105 group/saga">
+                    <div class="flex-none w-44 sm:w-52 md:w-60 snap-start transform transition-all duration-300 hover:scale-105 group/saga cursor-pointer"
+                         onclick="navigateToCard(event, '/movies/{{ part.id }}/');"
+                         data-card-url="/movies/{{ part.id }}/">
                         <div class="aspect-[2/3] block rounded-2xl overflow-hidden shadow-xl bg-gray-900 ring-1 {% if part.is_current %}ring-2 ring-brand-500 shadow-[0_0_35px_rgba(229,9,20,0.35)] ring-offset-2 ring-offset-gray-950{% else %}ring-gray-800/90 hover:ring-brand-500/60{% endif %} relative transition-all duration-300">
                             {% if part.poster_path %}
                             <img src="https://image.tmdb.org/t/p/w500{{ part.poster_path }}" alt="{{ part.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover/saga:scale-105">
@@ -417,6 +419,7 @@
                                 <!-- Center Direct Play Button -->
                                 <div class="flex items-center justify-center z-20 my-auto">
                                     <a href="/watch/movie/{{ part.id }}/" 
+                                       onclick="event.stopPropagation();"
                                        class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-brand-500 hover:bg-red-600 text-white flex items-center justify-center shadow-2xl shadow-brand-500/50 hover:scale-110 active:scale-95 transition-transform"
                                        title="Play Chapter {{ part.franchise_order }}">
                                         <svg class="w-5 h-5 fill-white translate-x-0.5" viewBox="0 0 24 24">
@@ -519,7 +522,9 @@
 
                 <div class="rail-track flex gap-4 overflow-x-auto py-6 px-2 -my-3 scrollbar-hide snap-x scroll-smooth">
                     {% for rec in recommendations %}
-                    <div class="flex-none w-36 sm:w-44 md:w-52 transform transition-all duration-300 hover:scale-105 md:hover:scale-110 hover:z-30 cursor-pointer snap-start group/card">
+                    <div class="flex-none w-36 sm:w-44 md:w-52 transform transition-all duration-300 hover:scale-105 md:hover:scale-110 hover:z-30 cursor-pointer snap-start group/card"
+                         onclick="navigateToCard(event, '/movies/{{ rec.id }}/');"
+                         data-card-url="/movies/{{ rec.id }}/">
                         <div class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative group-hover/card:ring-brand-500/60 group-hover/card:shadow-2xl transition-all duration-300">
                             {% if rec.poster_path %}
                             <img src="https://image.tmdb.org/t/p/w500{{ rec.poster_path }}" alt="{{ rec.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-105">
@@ -547,7 +552,9 @@
                                 </div>
 
                                 <!-- Center Play Button (Click to Play) -->
-                                <a href="/watch/movie/{{ rec.id }}/" class="flex-grow flex items-center justify-center my-auto group/centerplay" title="Play Movie">
+                                <a href="/watch/movie/{{ rec.id }}/" 
+                                   onclick="event.stopPropagation();"
+                                   class="flex-grow flex items-center justify-center my-auto group/centerplay" title="Play Movie">
                                     <div class="w-12 h-12 rounded-full bg-brand-500 text-white shadow-2xl shadow-brand-500/50 flex items-center justify-center transform group-hover/centerplay:scale-110 hover:bg-red-600 transition duration-200">
                                         <svg class="w-6 h-6 fill-white translate-x-0.5" viewBox="0 0 24 24">
                                             <path d="M8 5v14l11-7z"/>
@@ -560,7 +567,10 @@
                                     <!-- Action Buttons Row -->
                                     <div class="flex items-center gap-2">
                                         <!-- Play Button -->
-                                        <a href="/watch/movie/{{ rec.id }}/" title="Play Now" class="w-8 h-8 rounded-full bg-white hover:bg-gray-200 text-black flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 active:scale-95">
+                                        <a href="/watch/movie/{{ rec.id }}/" 
+                                           onclick="event.stopPropagation();"
+                                           title="Play Now" 
+                                           class="w-8 h-8 rounded-full bg-white hover:bg-gray-200 text-black flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 active:scale-95">
                                             <svg class="w-4 h-4 fill-black translate-x-0.5" viewBox="0 0 24 24">
                                                 <path d="M8 5v14l11-7z"/>
                                             </svg>

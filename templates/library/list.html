@@ -161,6 +161,8 @@
     <div id="watchlist-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 sm:gap-6">
         {% for item in saved_items %}
         <div class="watchlist-card flex flex-col group/card transform transition duration-300 hover:scale-105 md:hover:scale-110 hover:z-30 cursor-pointer" 
+             onclick="navigateToCard(event, '{% if item.media_type == 'tv' %}/series/{{ item.id }}/{% else %}/movies/{{ item.id }}/{% endif %}');"
+             data-card-url="{% if item.media_type == 'tv' %}/series/{{ item.id }}/{% else %}/movies/{{ item.id }}/{% endif %}"
              data-type="{{ item.media_type|default:'movie' }}"
              data-title="{{ item.display_title|lower }}"
              data-user-rating="{{ item.rating_score|default:0 }}"
@@ -213,7 +215,9 @@
                     </div>
 
                     <!-- Center Play Button -->
-                    <a href="{% if item.media_type == 'movie' %}/watch/movie/{{ item.id }}/{% else %}/watch/tv/{{ item.id }}/1/1/{% endif %}" class="flex-grow flex items-center justify-center my-auto group/centerplay" title="Play">
+                    <a href="{% if item.media_type == 'movie' %}/watch/movie/{{ item.id }}/{% else %}/watch/tv/{{ item.id }}/1/1/{% endif %}" 
+                       onclick="event.stopPropagation();"
+                       class="flex-grow flex items-center justify-center my-auto group/centerplay" title="Play">
                         <div class="w-12 h-12 rounded-full bg-brand-500 text-white shadow-2xl shadow-brand-500/50 flex items-center justify-center transform group-hover/centerplay:scale-110 hover:bg-red-600 transition duration-200">
                             <svg class="w-6 h-6 fill-white translate-x-0.5" viewBox="0 0 24 24">
                                 <path d="M8 5v14l11-7z"/>
@@ -224,7 +228,10 @@
                     <!-- Bottom Info -->
                     <div class="z-20 space-y-2">
                         <div class="flex items-center gap-2">
-                            <a href="{% if item.media_type == 'movie' %}/watch/movie/{{ item.id }}/{% else %}/watch/tv/{{ item.id }}/1/1/{% endif %}" title="Play Now" class="w-8 h-8 rounded-full bg-white hover:bg-gray-200 text-black flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 active:scale-95">
+                            <a href="{% if item.media_type == 'movie' %}/watch/movie/{{ item.id }}/{% else %}/watch/tv/{{ item.id }}/1/1/{% endif %}" 
+                               onclick="event.stopPropagation();"
+                               title="Play Now" 
+                               class="w-8 h-8 rounded-full bg-white hover:bg-gray-200 text-black flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 active:scale-95">
                                 <svg class="w-4 h-4 fill-black translate-x-0.5" viewBox="0 0 24 24">
                                     <path d="M8 5v14l11-7z"/>
                                 </svg>
