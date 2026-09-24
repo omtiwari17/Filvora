@@ -121,6 +121,9 @@ def history_view(request):
             data['watch_url'] = f"/watch/tv/{p.tmdb_id}/{s_num}/{ep_num}/"
 
         data['id'] = p.tmdb_id
+        data['progress_id'] = p.id
+        data['season'] = p.season
+        data['episode'] = p.episode
         data['media_type'] = p.media_type
         data['position_formatted'] = format_time_str(p.position_seconds)
         data['duration_formatted'] = format_time_str(p.duration_seconds)
@@ -191,19 +194,48 @@ def remove_progress(request):
         tmdb_id = int(data.get('tmdb_id'))
         media_type = data.get('media_type', 'movie')
         profile = get_active_profile(request)
+        progress_id = data.get('progress_id')
+        tmdb_id = data.get('tmdb_id')
+        media_type = data.get('media_type', 'movie')
+        season = data.get('season')
+        episode = data.get('episode')
 
-        WatchProgress.objects.filter(
-            user=request.user,
-            profile=profile,
-            tmdb_id=tmdb_id,
-            media_type=media_type
-        ).delete()
+        if progress_id:
+            try:
+                WatchProgress.objects.filter(
+                    user=request.user,
+                    profile=profile,
+                    id=int(progress_id)
+                ).delete()
+            except (ValueError, TypeError):
+                pass
+        elif tmdb_id:
+            filter_kwargs = {
+                'user': request.user,
+                'profile': profile,
+                'tmdb_id': int(tmdb_id),
+                'media_type': media_type,
+            }
+            if season is not None and str(season).strip() != '':
+                try:
+                    filter_kwargs['season'] = int(season)
+                except (ValueError, TypeError):
+                    pass
+            if episode is not None and str(episode).strip() != '':
+                try:
+                    filter_kwargs['episode'] = int(episode)
+                except (ValueError, TypeError):
+                    pass
+
+            WatchProgress.objects.filter(**filter_kwargs).delete()
 
         if request.headers.get('HX-Request'):
             from django.http import HttpResponse
-            return HttpResponse("", status=200)
+            response = HttpResponse("", status=200)
+            response['HX-Trigger'] = 'historyRemoved'
+            return response
 
-        return JsonResponse({'status': 'ok', 'message': 'Removed from continue watching'})
+        return JsonResponse({'status': 'ok', 'message': 'Removed from watch history'})
     except (ValueError, TypeError, KeyError) as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
@@ -212,7 +244,7 @@ def clear_history(request):
     if request.method == 'POST':
         profile = get_active_profile(request)
         WatchProgress.objects.filter(user=request.user, profile=profile).delete()
-    return redirect('/watch/history/')
+    return redirect('/history/')
 
 
 @csrf_exempt

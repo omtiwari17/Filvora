@@ -67,9 +67,61 @@ class WatchTestCase(TestCase):
         self.assertEqual(response.content.decode('utf-8'), '')
         self.assertFalse(WatchProgress.objects.filter(user=self.user, tmdb_id=157336).exists())
 
+    def test_remove_progress_specific_episode_by_progress_id(self):
+        """Verifies deleting a specific episode removes only that episode, preserving other episodes of same series."""
+        self.client.login(username='watchuser', password='password123')
+        ep4 = WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=94997,
+            media_type='tv',
+            season=3,
+            episode=4,
+            position_seconds=3600,
+            duration_seconds=3600,
+            completed=True
+        )
+        ep5 = WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=94997,
+            media_type='tv',
+            season=3,
+            episode=5,
+            position_seconds=3700,
+            duration_seconds=3700,
+            completed=True
+        )
+        response = self.client.post(
+            '/progress/remove/',
+            {'progress_id': ep5.id, 'tmdb_id': 94997, 'media_type': 'tv', 'season': 3, 'episode': 5},
+            HTTP_HX_REQUEST='true'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get('HX-Trigger'), 'historyRemoved')
+        # ep5 should be deleted, ep4 MUST still exist
+        self.assertFalse(WatchProgress.objects.filter(id=ep5.id).exists())
+        self.assertTrue(WatchProgress.objects.filter(id=ep4.id).exists())
+
+    def test_remove_progress_watch_remove_alias(self):
+        """Verifies legacy/alias POST /watch/remove/ works identically and returns 200."""
+        self.client.login(username='watchuser', password='password123')
+        prog = WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=299534,
+            media_type='movie',
+            position_seconds=500,
+            duration_seconds=7200
+        )
+        response = self.client.post(
+            '/watch/remove/',
+            {'progress_id': prog.id, 'tmdb_id': 299534, 'media_type': 'movie'},
+            HTTP_HX_REQUEST='true'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(WatchProgress.objects.filter(id=prog.id).exists())
+
     def test_history_view(self):
         self.client.login(username='watchuser', password='password123')
-        WatchProgress.objects.create(
+        prog = WatchProgress.objects.create(
             user=self.user,
             tmdb_id=157336,
             media_type='movie',
@@ -80,6 +132,9 @@ class WatchTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('grouped_history', response.context)
         self.assertEqual(response.context['total_items'], 1)
+        html = response.content.decode('utf-8')
+        self.assertIn('hx-post="/progress/remove/"', html)
+        self.assertIn(f'"progress_id": "{prog.id}"', html)
 
     def test_clear_history(self):
         self.client.login(username='watchuser', password='password123')
@@ -92,6 +147,22 @@ class WatchTestCase(TestCase):
         )
         response = self.client.post('/history/clear/')
         self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/history/')
+        self.assertEqual(WatchProgress.objects.filter(user=self.user).count(), 0)
+
+    def test_clear_history_watch_alias(self):
+        """Verifies POST /watch/history/clear/ clears history and redirects to /history/."""
+        self.client.login(username='watchuser', password='password123')
+        WatchProgress.objects.create(
+            user=self.user,
+            tmdb_id=157336,
+            media_type='movie',
+            position_seconds=1200,
+            duration_seconds=7200
+        )
+        response = self.client.post('/watch/history/clear/')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/history/')
         self.assertEqual(WatchProgress.objects.filter(user=self.user).count(), 0)
 
     def test_analytics_view(self):

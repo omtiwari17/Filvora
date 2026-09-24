@@ -30,7 +30,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>Streamed History ({{ total_items }})</span>
+                    <span id="tab-streamed-text">Streamed History ({{ total_items }})</span>
                 </button>
                 
                 <button id="tab-rated-btn" onclick="switchHistoryTab('rated')" 
@@ -44,7 +44,7 @@
 
             <!-- Clear Streamed History Button -->
             {% if total_items > 0 %}
-            <form id="clear-history-form" method="post" action="/watch/history/clear/" onsubmit="return confirm('Clear your entire watch history?');">
+            <form id="clear-history-form" method="post" action="/history/clear/" onsubmit="return confirm('Clear your entire watch history?');">
                 {% csrf_token %}
                 <button type="submit" class="px-3.5 py-2 bg-gray-900/80 hover:bg-red-600/80 border border-gray-700 hover:border-red-500 text-gray-300 hover:text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-lg">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -78,13 +78,12 @@
 
     <!-- ==================== TAB 1: STREAMED HISTORY ==================== -->
     <div id="section-streamed" class="tab-section">
-        {% if total_items > 0 %}
-        <div class="space-y-10">
+        <div id="streamed-history-container" class="space-y-10 {% if total_items == 0 %}hidden{% endif %}">
             {% for group_title, items in grouped_history.items %}
-            <div>
+            <div class="history-group-section">
                 <h2 class="text-lg sm:text-xl font-black text-white mb-4 pb-2 border-b border-gray-800/80 flex items-center gap-2">
                     <span>{{ group_title }}</span>
-                    <span class="text-xs font-medium text-gray-500">({{ items|length }})</span>
+                    <span class="group-count text-xs font-medium text-gray-500">({{ items|length }})</span>
                 </h2>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -118,10 +117,11 @@
                                 <div class="flex items-start justify-between gap-1">
                                     <h4 class="text-xs sm:text-sm font-bold text-white truncate group-hover:text-brand-500 transition" title="{{ item.display_title }}">{{ item.display_title }}</h4>
                                     <!-- Remove Single Item -->
-                                    <button hx-post="/watch/remove/" 
-                                            hx-vals='{"tmdb_id": "{{ item.id }}", "media_type": "{{ item.media_type }}"}'
+                                    <button hx-post="/progress/remove/" 
+                                            hx-vals='{"progress_id": "{{ item.progress_id }}", "tmdb_id": "{{ item.id }}", "media_type": "{{ item.media_type }}", "season": "{{ item.season|default:'' }}", "episode": "{{ item.episode|default:'' }}"}'
                                             hx-target="closest .history-item-card"
                                             hx-swap="outerHTML swap:300ms"
+                                            onclick="event.stopPropagation();"
                                             title="Remove from history"
                                             class="text-gray-500 hover:text-red-400 p-0.5 transition shrink-0">
                                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -171,9 +171,9 @@
             </div>
             {% endfor %}
         </div>
-        {% else %}
+        <div id="history-empty-state" class="{% if total_items > 0 %}hidden{% endif %}">
             {% include 'components/empty_state.html' with title="No Watch History" message="Titles you start watching will appear here with your saved position and episode progress." cta_url="/movies/" cta_text="Explore Catalog" %}
-        {% endif %}
+        </div>
     </div>
 
     <!-- ==================== TAB 2: RATED TITLES ==================== -->
@@ -285,5 +285,69 @@ function switchHistoryTab(tab) {
         if (clearForm) clearForm.classList.add('hidden');
     }
 }
+
+function updateHistoryCountersAndGroups() {
+    const groupSections = document.querySelectorAll('.history-group-section');
+    let totalCards = 0;
+
+    groupSections.forEach(section => {
+        const remainingCards = section.querySelectorAll('.history-item-card').length;
+        const countBadge = section.querySelector('.group-count');
+        if (countBadge) {
+            countBadge.textContent = `(${remainingCards})`;
+        }
+        if (remainingCards === 0) {
+            section.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+            section.style.opacity = '0';
+            section.style.transform = 'scale(0.98)';
+            setTimeout(() => {
+                section.remove();
+                checkAllHistoryEmpty();
+            }, 250);
+        } else {
+            totalCards += remainingCards;
+        }
+    });
+
+    const historyBadge = document.getElementById('history-badge');
+    if (historyBadge) {
+        historyBadge.textContent = `${totalCards} Streamed`;
+        if (totalCards === 0) historyBadge.classList.add('hidden');
+    }
+    const streamedTabText = document.getElementById('tab-streamed-text');
+    if (streamedTabText) {
+        streamedTabText.textContent = `Streamed History (${totalCards})`;
+    }
+    const clearForm = document.getElementById('clear-history-form');
+    if (clearForm && totalCards === 0) {
+        clearForm.classList.add('hidden');
+    }
+
+    checkAllHistoryEmpty(totalCards);
+}
+
+function checkAllHistoryEmpty(knownTotal) {
+    const remainingCards = typeof knownTotal === 'number' ? knownTotal : document.querySelectorAll('.history-item-card').length;
+    if (remainingCards === 0) {
+        const historyContainer = document.getElementById('streamed-history-container');
+        const emptyState = document.getElementById('history-empty-state');
+        const clearForm = document.getElementById('clear-history-form');
+        const historyBadge = document.getElementById('history-badge');
+        if (historyContainer) historyContainer.classList.add('hidden');
+        if (emptyState) emptyState.classList.remove('hidden');
+        if (clearForm) clearForm.classList.add('hidden');
+        if (historyBadge) historyBadge.classList.add('hidden');
+    }
+}
+
+document.body.addEventListener('historyRemoved', () => {
+    setTimeout(updateHistoryCountersAndGroups, 320);
+});
+
+document.body.addEventListener('htmx:afterSwap', (event) => {
+    if (event.detail.target && event.detail.target.classList.contains('history-item-card')) {
+        setTimeout(updateHistoryCountersAndGroups, 320);
+    }
+});
 </script>
 {% endblock %}

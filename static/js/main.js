@@ -244,6 +244,9 @@ function initHtmxFeedback() {
         if (event.detail.target && event.detail.target.classList.contains('continue-watching-card')) {
             showToast('Removed from Continue Watching', 'info');
         }
+        if (event.detail.target && event.detail.target.classList.contains('history-item-card')) {
+            showToast('Removed from watch history', 'info');
+        }
     });
 }
 
