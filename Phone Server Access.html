@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filvora - Phone Server Access & Credentials</title>
+  <style>
+    :root {
+      --bg: #030712;
+      --card-bg: #111827;
+      --border: #1f2937;
+      --primary: #e50914;
+      --primary-hover: #f40612;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --accent: #10b981;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-red { color: var(--primary); }
+    .badge {
+      background: rgba(229, 9, 20, 0.15);
+      border: 1px solid rgba(229, 9, 20, 0.4);
+      color: #f87171;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+    }
+    .container {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .device-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--accent);
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 3px 10px;
+      border-radius: 9999px;
+    }
+    .pulse {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse-dot 1.5s infinite;
+    }
+    @keyframes pulse-dot {
+      0% { transform: scale(0.9); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.8; }
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .info-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+    .info-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .info-val {
+      font-size: 15px;
+      font-weight: 700;
+      font-family: monospace;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .secret-input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-family: monospace;
+      font-size: 15px;
+      font-weight: 700;
+      outline: none;
+      width: 100px;
+    }
+    .copy-btn {
+      background: #1f2937;
+      border: none;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover {
+      background: #374151;
+      color: #fff;
+    }
+    .terminal-box {
+      background: #000;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-family: monospace;
+      font-size: 14px;
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+      word-break: break-all;
+    }
+    .action-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .btn {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+    .btn-secondary {
+      background: #1f2937;
+      color: var(--text);
+      border: 1px solid #374151;
+    }
+    .btn-secondary:hover {
+      background: #374151;
+    }
+    .cheat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 13px;
+    }
+    .cheat-row:last-child {
+      border-bottom: none;
+    }
+    .cheat-cmd {
+      background: #0b0f19;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-family: monospace;
+      color: #60a5fa;
+      font-size: 12px;
+    }
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">FILVORA <span class="badge">Dedicated Server Hub</span></div>
+    <p style="color: var(--muted); font-size: 14px; margin-top: 6px;">Xiaomi Redmi Note 8 Pro (MIUI 12.5.10 / Android 11)</p>
+  </div>
+
+  <div class="container">
+
+    <!-- SERVER CONNECTION CARD -->
+    <div class="card">
+      <div class="card-title">
+        <span>Server Connection Details</span>
+        <span class="device-status"><span class="pulse"></span> 24/7 Mobile Host</span>
+      </div>
+
+      <div class="grid">
+        <div class="info-box">
+          <div class="info-label">Static IP Address</div>
+          <div class="info-val">
+            <span>192.168.1.50</span>
+            <button class="copy-btn" onclick="copyText('192.168.1.50')">Copy</button>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <div class="info-label">SSH Port (Termux)</div>
+          <div class="info-val">
+            <span>8022</span>
+            <button class="copy-btn" onclick="copyText('8022')">Copy</button>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <div class="info-label">Termux Username</div>
+          <div class="info-val">
+            <span id="user-val">Check phone: whoami</span>
+            <button class="copy-btn" onclick="promptUser()">Edit</button>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <div class="info-label">Termux Password</div>
+          <div class="info-val">
+            <input type="password" id="pass-val" value="1234" class="secret-input" readonly>
+            <div>
+              <button class="copy-btn" onclick="togglePass()">Show</button>
+              <button class="copy-btn" onclick="copyText(document.getElementById('pass-val').value)">Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-label" style="margin-top: 18px;">Quick Connect SSH Command (PowerShell / CMD)</div>
+      <div class="terminal-box">
+        <span id="ssh-cmd">ssh -p 8022 u0_a245@192.168.1.50</span>
+        <button class="copy-btn" style="background:#111827; color:#34d399;" onclick="copyText(document.getElementById('ssh-cmd').innerText)">Copy Command</button>
+      </div>
+
+      <div class="action-row">
+        <a href="http://192.168.1.50:8000/" target="_blank" class="btn btn-primary">
+          Open Filvora Web App ↗
+        </a>
+        <button onclick="alert('You can run \"Connect to Phone Terminal.bat\" directly from your project folder to open the remote shell!')" class="btn btn-secondary">
+          Run Remote Terminal
+        </button>
+      </div>
+    </div>
+
+    <!-- CHEAT SHEET CARD -->
+    <div class="card">
+      <div class="card-title">Remote Terminal Cheat Sheet</div>
+
+      <div class="cheat-row">
+        <span>Stream live traffic & clicks in real time</span>
+        <span class="cheat-cmd">tail -f ~/filvora.log</span>
+      </div>
+
+      <div class="cheat-row">
+        <span>Check for server errors or 500s</span>
+        <span class="cheat-cmd">grep -iE "error|500" ~/filvora.log</span>
+      </div>
+
+      <div class="cheat-row">
+        <span>Verify Python server process is running</span>
+        <span class="cheat-cmd">pgrep -fl python</span>
+      </div>
+
+      <div class="cheat-row">
+        <span>Stop the running server</span>
+        <span class="cheat-cmd">pkill -f "python manage.py runserver"</span>
+      </div>
+
+      <div class="cheat-row">
+        <span>Pull latest code from GitHub & restart</span>
+        <span class="cheat-cmd">cd ~/Filvora && git pull</span>
+      </div>
+
+      <p class="hint">
+        💡 <strong>Tip</strong>: Double-click <code>Connect to Phone Terminal.bat</code> anytime in your project folder to immediately connect to this phone without opening a terminal manually.
+      </p>
+    </div>
+
+  </div>
+
+  <script>
+    function copyText(txt) {
+      navigator.clipboard.writeText(txt).then(() => {
+        alert('Copied to clipboard: ' + txt);
+      });
+    }
+
+    function togglePass() {
+      const input = document.getElementById('pass-val');
+      const btn = event.target;
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerText = 'Hide';
+      } else {
+        input.type = 'password';
+        btn.innerText = 'Show';
+      }
+    }
+
+    function promptUser() {
+      const current = document.getElementById('user-val').innerText;
+      const val = prompt('Enter your Termux username (run "whoami" on your phone):', current);
+      if (val) {
+        document.getElementById('user-val').innerText = val;
+        document.getElementById('ssh-cmd').innerText = `ssh -p 8022 ${val}@192.168.1.50`;
+        localStorage.setItem('filvora_ssh_user', val);
+      }
+    }
+
+    // Restore saved user if any
+    const saved = localStorage.getItem('filvora_ssh_user');
+    if (saved) {
+      document.getElementById('user-val').innerText = saved;
+      document.getElementById('ssh-cmd').innerText = `ssh -p 8022 ${saved}@192.168.1.50`;
+    }
+  </script>
+</body>
+</html>
