@@ -298,6 +298,10 @@ TEST_DESCRIPTIONS = {
     'test_recommendations_view_type_filters': 'Verifies /recommendations/ type filtering (?type=movie and ?type=tv)',
     'test_franchise_sequels_seed_deduplication': 'Verifies franchise and sequel seed deduplication prevents duplicate recommendation rails',
     'test_unwatched_sequel_prioritized_in_collection_recommendations': 'Verifies unwatched franchise sequels are prioritized in contextual recommendations',
+    'test_favicon_and_device_app_icons_exist_and_valid': 'Verifies all device OS icons, favicons, maskable assets, and OG preview files exist and are valid',
+    'test_root_favicon_and_manifest_redirects': 'Verifies root /favicon.ico, /manifest.json, /browserconfig.xml, and /sw.js redirect cleanly',
+    'test_base_template_meta_and_icons_integration': 'Verifies base.html integrates all device favicons, Apple touch icons, Windows tiles, OG tags, and PWA modal',
+    'test_manifest_json_structure_and_local_icons': 'Verifies static/manifest.json is valid JSON with local multi-OS icons and maskable assets',
 
     # --------------------------------------------------------------------------
     # CATEGORY 7: TMDB API Client, Caching & Resilience (apps.tmdb)

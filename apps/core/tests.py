@@ -430,6 +430,118 @@ class CoreViewsTestCase(TestCase):
         item_ids = [item.get('id') for item in rail['items']]
         self.assertIn(569094, item_ids, "Expected sequel (Across the Spider-Verse) to be recommended for Into the Spider-Verse!")
 
+    def test_favicon_and_device_app_icons_exist_and_valid(self):
+        """Verifies that all device OS icons, favicons, maskable icons, and OpenGraph preview files exist with valid non-empty byte sizes."""
+        import os
+        from django.conf import settings
+
+        base_static = settings.STATICFILES_DIRS[0]
+        icons_dir = os.path.join(base_static, 'icons')
+
+        expected_files = [
+            'favicon.ico',
+            'favicon.svg',
+            'favicon-16x16.png',
+            'favicon-32x32.png',
+            'favicon-48x48.png',
+            'apple-touch-icon.png',
+            'apple-touch-icon-120x120.png',
+            'apple-touch-icon-152x152.png',
+            'icon-192.png',
+            'icon-192-maskable.png',
+            'icon-512.png',
+            'icon-512-maskable.png',
+            'mstile-150x150.png',
+            'mstile-310x310.png',
+            'safari-pinned-tab.svg',
+            'browserconfig.xml',
+            'og-image.png'
+        ]
+
+        for fname in expected_files:
+            fpath = os.path.join(icons_dir, fname)
+            self.assertTrue(os.path.exists(fpath), f"Expected asset missing: {fpath}")
+            size = os.path.getsize(fpath)
+            self.assertGreater(size, 100, f"Asset file is unexpectedly small or empty: {fpath} ({size} bytes)")
+
+        # Verify static/favicon.ico mirror exists
+        self.assertTrue(os.path.exists(os.path.join(base_static, 'favicon.ico')))
+
+    def test_root_favicon_and_manifest_redirects(self):
+        """Verifies that requests to root /favicon.ico, /manifest.json, /browserconfig.xml, and /sw.js redirect correctly."""
+        for endpoint, target_sub in [
+            ('/favicon.ico', '/static/icons/favicon.ico'),
+            ('/manifest.json', '/static/manifest.json'),
+            ('/browserconfig.xml', '/static/icons/browserconfig.xml'),
+            ('/sw.js', '/static/sw.js')
+        ]:
+            response = self.client.get(endpoint)
+            self.assertEqual(response.status_code, 301, f"Expected 301 redirect for {endpoint}")
+            self.assertIn(target_sub, response.url, f"Unexpected redirect target for {endpoint}: {response.url}")
+
+    def test_base_template_meta_and_icons_integration(self):
+        """Verifies that base.html includes all required multi-device favicon, apple-touch-icon, Windows tile, OG, and install modal tags."""
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+
+        # Favicons
+        self.assertIn('rel="icon" type="image/svg+xml" href="/static/icons/favicon.svg"', content)
+        self.assertIn('rel="icon" type="image/x-icon" href="/static/icons/favicon.ico"', content)
+        self.assertIn('rel="icon" type="image/png" sizes="32x32"', content)
+        self.assertIn('rel="icon" type="image/png" sizes="16x16"', content)
+
+        # Apple Touch Icons
+        self.assertIn('rel="apple-touch-icon" sizes="180x180"', content)
+        self.assertIn('rel="mask-icon" href="/static/icons/safari-pinned-tab.svg"', content)
+        self.assertIn('name="apple-mobile-web-app-capable" content="yes"', content)
+
+        # Windows Tiles
+        self.assertIn('name="msapplication-TileImage" content="/static/icons/mstile-150x150.png"', content)
+        self.assertIn('name="msapplication-config" content="/static/icons/browserconfig.xml"', content)
+
+        # OpenGraph
+        self.assertIn('property="og:image" content="/static/icons/og-image.png"', content)
+        self.assertIn('name="twitter:image" content="/static/icons/og-image.png"', content)
+
+        # Manifest
+        self.assertIn('rel="manifest" href="/static/manifest.json"', content)
+
+        # Install App Modal
+        self.assertIn('id="install-app-modal"', content)
+        self.assertIn('triggerPwaInstall', content)
+        self.assertIn('openInstallModal', content)
+
+    def test_manifest_json_structure_and_local_icons(self):
+        """Verifies that static/manifest.json is valid JSON with proper local multi-OS icon references and maskable assets."""
+        import json, os
+        from django.conf import settings
+
+        manifest_path = os.path.join(settings.STATICFILES_DIRS[0], 'manifest.json')
+        self.assertTrue(os.path.exists(manifest_path))
+
+        with open(manifest_path, 'r', encoding='utf-8') as f:
+            manifest = json.load(f)
+
+        self.assertEqual(manifest.get('name'), 'Filvora — Ultimate Cinematic Streaming')
+        self.assertEqual(manifest.get('short_name'), 'Filvora')
+        self.assertEqual(manifest.get('display'), 'standalone')
+        self.assertEqual(manifest.get('background_color'), '#030712')
+
+        icons = manifest.get('icons', [])
+        self.assertGreaterEqual(len(icons), 4)
+
+        icon_srcs = [i['src'] for i in icons]
+        self.assertIn('/static/icons/icon-192.png', icon_srcs)
+        self.assertIn('/static/icons/icon-512.png', icon_srcs)
+        self.assertIn('/static/icons/icon-192-maskable.png', icon_srcs)
+        self.assertIn('/static/icons/icon-512-maskable.png', icon_srcs)
+
+        # Verify maskable purpose is declared
+        purposes = [i.get('purpose') for i in icons]
+        self.assertIn('maskable', purposes)
+
+
 
 
 

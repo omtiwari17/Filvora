@@ -1,10 +1,15 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}404 — Page Not Found · Filvora{% endblock %}
 
 {% block content %}
 <div class="min-h-[70vh] flex items-center justify-center px-4 py-20">
     <div class="text-center max-w-lg mx-auto space-y-6">
+        <div class="flex items-center justify-center gap-2 mb-2">
+            <img src="{% static 'icons/favicon.svg' %}" alt="Filvora Logo" class="w-10 h-10 rounded-2xl shadow-xl shadow-brand-500/30">
+            <span class="text-2xl font-black bg-gradient-to-r from-brand-500 via-rose-500 to-amber-500 bg-clip-text text-transparent tracking-tighter">FILVORA</span>
+        </div>
         <div class="relative">
             <span class="text-8xl sm:text-9xl font-black text-brand-500/20 select-none">404</span>
             <div class="absolute inset-0 flex items-center justify-center">

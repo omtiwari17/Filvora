@@ -3,9 +3,14 @@ URL configuration for config project.
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic.base import RedirectView
 from apps.watch import views as watch_views
 
 urlpatterns = [
+    path('favicon.ico', RedirectView.as_view(url='/static/icons/favicon.ico', permanent=True)),
+    path('browserconfig.xml', RedirectView.as_view(url='/static/icons/browserconfig.xml', permanent=True)),
+    path('manifest.json', RedirectView.as_view(url='/static/manifest.json', permanent=True)),
+    path('sw.js', RedirectView.as_view(url='/static/sw.js', permanent=True)),
     path('admin/', admin.site.urls),
     path('accounts/', include('apps.accounts.urls')),
     path('library/', include('apps.library.urls')),
@@ -22,3 +27,10 @@ urlpatterns = [
     path('', include('apps.catalog.urls')),
     path('', include('apps.core.urls')),
 ]
+
+from django.conf import settings
+from django.conf.urls.static import static
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
+

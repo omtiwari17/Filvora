@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Session Security Notice - Filvora v2.4{% endblock %}
+{% block title %}Session Security Notice - Filvora v2.5{% endblock %}
 
 {% block content %}
 <div class="relative min-h-[80vh] flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8">
@@ -20,7 +21,8 @@
 
         <div class="space-y-2">
             <div class="inline-flex items-center gap-2 mb-1">
-                <span class="text-xl font-black text-brand-500 tracking-tighter">FILVORA</span>
+                <img src="{% static 'icons/favicon.svg' %}" alt="Filvora Logo" class="w-6 h-6 rounded-lg shadow-md shadow-brand-500/25">
+                <span class="text-xl font-black bg-gradient-to-r from-brand-500 via-rose-500 to-amber-500 bg-clip-text text-transparent tracking-tighter">FILVORA</span>
                 <span class="bg-gradient-to-r from-red-600 to-rose-500 text-[10px] font-black text-white px-2 py-0.5 rounded-full ring-1 ring-white/20">Security</span>
             </div>
             <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Security Token Refreshed</h1>

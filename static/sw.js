@@ -8,13 +8,22 @@
  * and CSRF tokens that must ALWAYS come live from the network.
  */
 
-const CACHE_NAME = 'filvora-static-v4';
+const CACHE_NAME = 'filvora-static-v5';
 const STATIC_ASSETS = [
     '/static/css/main.css',
     '/static/js/main.js',
     '/static/vendor/tailwind.min.js',
     '/static/vendor/htmx.min.js',
-    '/static/manifest.json'
+    '/static/manifest.json',
+    '/static/icons/favicon.ico',
+    '/static/icons/favicon.svg',
+    '/static/icons/favicon-32x32.png',
+    '/static/icons/favicon-16x16.png',
+    '/static/icons/apple-touch-icon.png',
+    '/static/icons/icon-192.png',
+    '/static/icons/icon-512.png',
+    '/static/icons/icon-192-maskable.png',
+    '/static/icons/icon-512-maskable.png'
 ];
 
 // Install: Cache essential static styling & script assets only

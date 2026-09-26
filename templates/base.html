@@ -4,13 +4,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
-    <meta name="theme-color" content="#e50914">
+    <meta name="theme-color" content="#030712" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#e50914" media="(prefers-color-scheme: light)">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Filvora">
+
+    <!-- iOS / Apple Touch Icons -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Filvora">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'icons/apple-touch-icon.png' %}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{% static 'icons/apple-touch-icon-152x152.png' %}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{% static 'icons/apple-touch-icon-120x120.png' %}">
+    <link rel="mask-icon" href="{% static 'icons/safari-pinned-tab.svg' %}" color="#e50914">
+
+    <!-- Standard Favicons & Vector SVG (All Browsers & OS) -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/favicon.svg' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'icons/favicon.ico' %}">
+    <link rel="shortcut icon" href="{% static 'icons/favicon.ico' %}">
+    <link rel="icon" type="image/png" sizes="48x48" href="{% static 'icons/favicon-48x48.png' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'icons/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'icons/favicon-16x16.png' %}">
+
+    <!-- Microsoft Windows Tiles & Edge -->
+    <meta name="msapplication-TileColor" content="#030712">
+    <meta name="msapplication-TileImage" content="{% static 'icons/mstile-150x150.png' %}">
+    <meta name="msapplication-config" content="{% static 'icons/browserconfig.xml' %}">
+
+    <!-- Web App Manifest (Android, Chrome, Edge, PWA) -->
     <link rel="manifest" href="{% static 'manifest.json' %}">
-    <title>{% block title %}Filvora v2.4 - Next-Gen Cinema Platform{% endblock %}</title>
+
+    <!-- OpenGraph & Social Rich Sharing -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Filvora">
+    <meta property="og:title" content="Filvora — Ultimate Cinematic Streaming">
+    <meta property="og:description" content="Next-Gen Movie and TV Series Streaming Platform. High performance, zero ads, multi-profile cinema hub.">
+    <meta property="og:image" content="{% static 'icons/og-image.png' %}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Filvora — Ultimate Cinematic Streaming">
+    <meta name="twitter:description" content="Next-Gen Movie and TV Series Streaming Platform. High performance, zero ads, multi-profile cinema hub.">
+    <meta name="twitter:image" content="{% static 'icons/og-image.png' %}">
+
+    <title>{% block title %}Filvora v2.5 - Next-Gen Cinema Platform{% endblock %}</title>
     
     <!-- Critical Inline CSS: Prevents FOUC, white background, and SVG explosion offline -->
     <style>
@@ -270,6 +307,9 @@
     <!-- Universal Wi-Fi LAN QR Pairing Modal -->
     {% include 'components/qr_modal.html' %}
 
+    <!-- Universal PWA App Installation Modal -->
+    {% include 'components/install_app_modal.html' %}
+
     <!-- Custom JS -->
     <script src="{% static 'js/main.js' %}"></script>
     <script>
@@ -279,14 +319,14 @@
                 if ('caches' in window) {
                     caches.keys().then((keys) => {
                         keys.forEach((key) => {
-                            if (key.includes('shell') || key.includes('v2') || key.includes('v3')) {
+                            if (key.includes('shell') || key.includes('v2') || key.includes('v3') || key.includes('v4')) {
                                 caches.delete(key);
                             }
                         });
                     });
                 }
                 navigator.serviceWorker.register('/static/sw.js')
-                    .then((reg) => console.log('PWA ServiceWorker active (Static v4)'))
+                    .then((reg) => console.log('PWA ServiceWorker active (Static v5)'))
                     .catch((err) => console.log('PWA ServiceWorker registration failed: ', err));
             });
         }

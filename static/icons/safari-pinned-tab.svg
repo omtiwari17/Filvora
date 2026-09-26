@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Monochrome Silhouette of Filvora F Mark for Safari Pinned Tab -->
+  <g fill="#000000">
+    <!-- Vertical Stem -->
+    <rect x="120" y="110" width="82" height="292" rx="28"/>
+    <!-- Top Horizontal Beam -->
+    <rect x="160" y="110" width="220" height="74" rx="28"/>
+    <!-- Middle Horizontal Play Arrow -->
+    <path d="M 160 236 L 290 236 L 332 268 L 290 300 L 160 300 Z"/>
+  </g>
+</svg>
