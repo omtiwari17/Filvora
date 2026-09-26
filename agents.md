@@ -626,6 +626,14 @@ To eliminate the need to open Windows File Explorer or search through local dire
    - Modern browsers (Chrome, Edge, Safari) restrict `navigator.clipboard` to secure contexts (`HTTPS` or `localhost`), causing copy buttons on local HTTP IP addresses (`http://192.168.1.50:8000`) to fail silently.
    - Filvora incorporates a universal `fallbackCopyToClipboard` (`document.execCommand('copy')` with off-screen `textarea` element and iOS/Android selection range) across `static/js/main.js`, `templates/core/server_hub.html`, `Phone Server Access.html`, `templates/accounts/profiles.html`, and `templates/includes/navbar.html`. All copy actions operate reliably across both HTTP and HTTPS.
 
+### 6.10 Zero-Risk Global Remote Access via Tailscale (WireGuard Mesh)
+To stream movies from outside the home (e.g. mobile 4G/5G, work, travel) while guaranteeing **0.00% risk** to owned personal/business domains:
+- **Architecture**: Private peer-to-peer WireGuard mesh VPN (`Tailnet`). Eliminates public port forwarding, DNS records, and domain exposure.
+- **Network Scope**: Encrypted point-to-point tunnel between Redmi Note 8 Pro and authorized user client devices. Invisible to public web crawlers, search engines, and automated scanners.
+- **CSRF & Host Security**: `CSRF_TRUSTED_ORIGINS` in `config/settings.py` includes CGNAT IP ranges (`http://100.*`, `https://100.*`, `http://*.ts.net`, `https://*.ts.net`).
+- **Family Sharing**: Supports Tailscale Node Sharing, allowing family members to access the server phone using their own Gmail accounts without sharing passwords or exposing the host PC.
+
+
 
 
 
