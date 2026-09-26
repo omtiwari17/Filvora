@@ -31,18 +31,20 @@ echo.
 echo   [1] Connect to Phone Terminal Shell (Interactive SSH)
 echo   [2] Stream Live Filvora Logs (Real-time traffic and clicks)
 echo   [3] Check Recent Errors and Crashes (grep error / 500)
-echo   [4] Open Filvora in Browser (http://%PHONE_IP%:8000/)
-echo   [5] Change Username or Server IP
-echo   [6] Exit
+echo   [4] Pull Latest GitHub Code and Restart Server on Phone
+echo   [5] Open Filvora in Browser (http://%PHONE_IP%:8000/)
+echo   [6] Change Username or Server IP
+echo   [7] Exit
 echo.
-set /p opt=" Select Option (1-6) and press Enter: "
+set /p opt=" Select Option (1-7) and press Enter: "
 
 if "%opt%"=="1" goto SSH_SHELL
 if "%opt%"=="2" goto STREAM_LOGS
 if "%opt%"=="3" goto CHECK_ERRORS
-if "%opt%"=="4" goto OPEN_BROWSER
-if "%opt%"=="5" goto EDIT_CREDS
-if "%opt%"=="6" exit /b 0
+if "%opt%"=="4" goto PULL_UPDATE
+if "%opt%"=="5" goto OPEN_BROWSER
+if "%opt%"=="6" goto EDIT_CREDS
+if "%opt%"=="7" exit /b 0
 
 goto MENU
 
@@ -73,6 +75,21 @@ echo  [*] Checking for errors in ~/filvora.log...
 echo.
 ssh -t -p %SSH_PORT% %SSH_USER%@%PHONE_IP% "grep -iE 'error|exception|traceback|500' ~/filvora.log || echo 'No errors found in filvora.log! All clean.'"
 echo.
+pause
+goto MENU
+
+:PULL_UPDATE
+cls
+echo.
+echo  ====================================================================
+echo           PULLING LATEST CODE AND RESTARTING PHONE SERVER             
+echo  ====================================================================
+echo.
+echo  [*] Connecting to phone to pull updates and restart background server...
+echo.
+ssh -t -p %SSH_PORT% %SSH_USER%@%PHONE_IP% "cd ~/Filvora && git pull && python manage.py migrate && pkill -f 'python manage.py runserver' && nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 & && sleep 2 && tail -n 15 ~/filvora.log"
+echo.
+echo  [*] Update cycle finished.
 pause
 goto MENU
 

@@ -32,7 +32,7 @@
     }
     .header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
     .logo {
       font-size: 32px;
@@ -42,7 +42,6 @@
       align-items: center;
       gap: 8px;
     }
-    .logo-red { color: var(--primary); }
     .badge {
       background: rgba(229, 9, 20, 0.15);
       border: 1px solid rgba(229, 9, 20, 0.4);
@@ -55,7 +54,7 @@
     }
     .container {
       width: 100%;
-      max-width: 680px;
+      max-width: 720px;
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -138,30 +137,40 @@
     }
     .copy-btn {
       background: #1f2937;
-      border: none;
-      color: var(--muted);
+      border: 1px solid #374151;
+      color: #d1d5db;
       font-size: 11px;
-      padding: 4px 8px;
+      font-weight: 600;
+      padding: 4px 10px;
       border-radius: 6px;
       cursor: pointer;
       transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
     .copy-btn:hover {
       background: #374151;
       color: #fff;
+      border-color: #4b5563;
+    }
+    .copy-btn.copied {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #10b981;
+      color: #34d399;
     }
     .terminal-box {
       background: #000;
       border: 1px solid #1f2937;
       border-radius: 10px;
-      padding: 14px 16px;
+      padding: 12px 16px;
       font-family: monospace;
-      font-size: 14px;
+      font-size: 13px;
       color: #34d399;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: 12px;
+      margin-top: 10px;
       word-break: break-all;
     }
     .action-row {
@@ -203,26 +212,106 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
       font-size: 13px;
+      gap: 12px;
     }
     .cheat-row:last-child {
       border-bottom: none;
     }
+    .cheat-cmd-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
     .cheat-cmd {
       background: #0b0f19;
-      padding: 4px 8px;
+      padding: 5px 10px;
       border-radius: 6px;
       font-family: monospace;
       color: #60a5fa;
       font-size: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .cheat-cmd:hover {
+      background: #1e293b;
+      color: #93c5fd;
+      border-color: #3b82f6;
+    }
+    .step-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .step-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .step-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .step-badge {
+      background: #374151;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-desc {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .step-code-box {
+      background: #000;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: monospace;
+      font-size: 12px;
+      color: #38bdf8;
+      word-break: break-all;
     }
     .hint {
       font-size: 12px;
       color: var(--muted);
-      margin-top: 12px;
+      margin-top: 14px;
       line-height: 1.5;
+    }
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      background: #10b981;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 10px 22px;
+      border-radius: 9999px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      display: none;
+      z-index: 9999;
+      pointer-events: none;
     }
   </style>
 </head>
@@ -247,7 +336,7 @@
           <div class="info-label">Static IP Address</div>
           <div class="info-val">
             <span>192.168.1.50</span>
-            <button class="copy-btn" onclick="copyText('192.168.1.50')">Copy</button>
+            <button class="copy-btn" onclick="copyText('192.168.1.50', this)">Copy</button>
           </div>
         </div>
 
@@ -255,15 +344,18 @@
           <div class="info-label">SSH Port (Termux)</div>
           <div class="info-val">
             <span>8022</span>
-            <button class="copy-btn" onclick="copyText('8022')">Copy</button>
+            <button class="copy-btn" onclick="copyText('8022', this)">Copy</button>
           </div>
         </div>
 
         <div class="info-box">
           <div class="info-label">Termux Username</div>
           <div class="info-val">
-            <span id="user-val">Check phone: whoami</span>
-            <button class="copy-btn" onclick="promptUser()">Edit</button>
+            <span id="user-val">u0_a256</span>
+            <div style="display:flex; gap:6px;">
+              <button class="copy-btn" onclick="copyText(document.getElementById('user-val').innerText, this)">Copy</button>
+              <button class="copy-btn" onclick="promptUser()">Edit</button>
+            </div>
           </div>
         </div>
 
@@ -271,9 +363,9 @@
           <div class="info-label">Termux Password</div>
           <div class="info-val">
             <input type="password" id="pass-val" value="1234" class="secret-input" readonly>
-            <div>
+            <div style="display:flex; gap:6px;">
               <button class="copy-btn" onclick="togglePass()">Show</button>
-              <button class="copy-btn" onclick="copyText(document.getElementById('pass-val').value)">Copy</button>
+              <button class="copy-btn" onclick="copyText(document.getElementById('pass-val').value, this)">Copy</button>
               <button class="copy-btn" onclick="promptPass()">Edit</button>
             </div>
           </div>
@@ -283,60 +375,175 @@
       <div class="info-label" style="margin-top: 18px;">Quick Connect SSH Command (PowerShell / CMD)</div>
       <div class="terminal-box">
         <span id="ssh-cmd">ssh -p 8022 u0_a256@192.168.1.50</span>
-        <button class="copy-btn" style="background:#111827; color:#34d399;" onclick="copyText(document.getElementById('ssh-cmd').innerText)">Copy Command</button>
+        <button class="copy-btn" style="background:#111827; border-color:#34d399; color:#34d399;" onclick="copyText(document.getElementById('ssh-cmd').innerText, this)">Copy Command</button>
       </div>
 
       <div class="action-row">
         <a href="http://192.168.1.50:8000/" target="_blank" class="btn btn-primary">
           Open Filvora Web App ↗
         </a>
-        <button onclick="alert('You can run \"Connect to Phone Terminal.bat\" directly from your project folder to open the remote shell!')" class="btn btn-secondary">
-          Run Remote Terminal
+        <button onclick="copyText('ssh -p 8022 u0_a256@192.168.1.50', this)" class="btn btn-secondary">
+          Copy SSH Connect
         </button>
+      </div>
+    </div>
+
+    <!-- HOW TO PULL & UPDATE RUNNING CODE CARD -->
+    <div class="card">
+      <div class="card-title">
+        <span>How to Pull & Update Running Code</span>
+        <span style="font-size:12px; color:#38bdf8; font-weight:600;">Standard Deployment Runbook</span>
+      </div>
+
+      <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">
+        When you push new bug fixes or features from your PC to GitHub, follow these steps in your phone's terminal:
+      </p>
+
+      <!-- 1-CLICK ALL IN ONE -->
+      <div style="background:rgba(229,9,20,0.08); border:1px solid rgba(229,9,20,0.3); border-radius:12px; padding:16px; margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-size:13px; font-weight:800; color:#f87171; text-transform:uppercase; letter-spacing:0.5px;">⚡ 1-Click All-in-One Instant Update Command</span>
+          <button class="copy-btn" style="background:#e50914; color:#fff; border:none;" onclick="copyText('cd ~/Filvora && git pull && python manage.py migrate && pkill -f &quot;python manage.py runserver&quot; && nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &', this)">Copy All-in-One</button>
+        </div>
+        <div style="font-family:monospace; font-size:12px; color:#fca5a5; background:#0b0f19; padding:10px 12px; border-radius:8px; word-break:break-all;">
+          cd ~/Filvora && git pull && python manage.py migrate && pkill -f "python manage.py runserver" && nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &
+        </div>
+        <p style="font-size:11px; color:#9ca3af; margin-top:8px;">Pulls changes, updates database migrations, restarts the background server, and keeps logs flowing seamlessly in one go.</p>
+      </div>
+
+      <!-- STEP BY STEP CARDS -->
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-title"><span class="step-num">1</span> Pull Latest Code from GitHub</div>
+        </div>
+        <div class="step-desc">Downloads newly pushed code commits into your phone's Filvora repository.</div>
+        <div class="step-code-box">
+          <span>cd ~/Filvora && git pull</span>
+          <button class="copy-btn" onclick="copyText('cd ~/Filvora && git pull', this)">Copy</button>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-title"><span class="step-num">2</span> Run Database Migrations (If models changed)</div>
+        </div>
+        <div class="step-desc">Applies any new database tables or column schema changes safely.</div>
+        <div class="step-code-box">
+          <span>python manage.py migrate</span>
+          <button class="copy-btn" onclick="copyText('python manage.py migrate', this)">Copy</button>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-title"><span class="step-num">3</span> Stop the Old Server Process</div>
+        </div>
+        <div class="step-desc">Terminates the previous running instance so Python loads your new code.</div>
+        <div class="step-code-box">
+          <span>pkill -f "python manage.py runserver"</span>
+          <button class="copy-btn" onclick="copyText('pkill -f &quot;python manage.py runserver&quot;', this)">Copy</button>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-title"><span class="step-num">4</span> Start Updated Server in Background</div>
+        </div>
+        <div class="step-desc">Relaunches the server with <code>nohup</code> so it continues running even after you disconnect SSH.</div>
+        <div class="step-code-box">
+          <span>nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &</span>
+          <button class="copy-btn" onclick="copyText('nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &', this)">Copy</button>
+        </div>
+      </div>
+
+      <div class="step-card" style="margin-bottom:0;">
+        <div class="step-header">
+          <div class="step-title"><span class="step-num">5</span> Verify Startup in Logs</div>
+        </div>
+        <div class="step-desc">Checks that Django started cleanly without errors.</div>
+        <div class="step-code-box">
+          <span>tail -n 20 ~/filvora.log</span>
+          <button class="copy-btn" onclick="copyText('tail -n 20 ~/filvora.log', this)">Copy</button>
+        </div>
       </div>
     </div>
 
     <!-- CHEAT SHEET CARD -->
     <div class="card">
-      <div class="card-title">Remote Terminal Cheat Sheet</div>
+      <div class="card-title">Remote Terminal Cheat Sheet (1-Click Copy)</div>
 
       <div class="cheat-row">
         <span>Stream live traffic & clicks in real time</span>
-        <span class="cheat-cmd">tail -f ~/filvora.log</span>
+        <div class="cheat-cmd-group">
+          <span class="cheat-cmd" onclick="copyText('tail -f ~/filvora.log', this)">tail -f ~/filvora.log</span>
+          <button class="copy-btn" onclick="copyText('tail -f ~/filvora.log', this)">Copy</button>
+        </div>
       </div>
 
       <div class="cheat-row">
         <span>Check for server errors or 500s</span>
-        <span class="cheat-cmd">grep -iE "error|500" ~/filvora.log</span>
+        <div class="cheat-cmd-group">
+          <span class="cheat-cmd" onclick="copyText('grep -iE &quot;error|500&quot; ~/filvora.log', this)">grep -iE "error|500" ~/filvora.log</span>
+          <button class="copy-btn" onclick="copyText('grep -iE &quot;error|500&quot; ~/filvora.log', this)">Copy</button>
+        </div>
       </div>
 
       <div class="cheat-row">
         <span>Verify Python server process is running</span>
-        <span class="cheat-cmd">pgrep -fl python</span>
+        <div class="cheat-cmd-group">
+          <span class="cheat-cmd" onclick="copyText('pgrep -fl python', this)">pgrep -fl python</span>
+          <button class="copy-btn" onclick="copyText('pgrep -fl python', this)">Copy</button>
+        </div>
       </div>
 
       <div class="cheat-row">
-        <span>Stop the running server</span>
-        <span class="cheat-cmd">pkill -f "python manage.py runserver"</span>
+        <span>Clear old log file</span>
+        <div class="cheat-cmd-group">
+          <span class="cheat-cmd" onclick="copyText('> ~/filvora.log', this)">> ~/filvora.log</span>
+          <button class="copy-btn" onclick="copyText('> ~/filvora.log', this)">Copy</button>
+        </div>
       </div>
 
       <div class="cheat-row">
-        <span>Pull latest code from GitHub & restart</span>
-        <span class="cheat-cmd">cd ~/Filvora && git pull</span>
+        <span>Check phone local IP address</span>
+        <div class="cheat-cmd-group">
+          <span class="cheat-cmd" onclick="copyText('ifconfig wlan0 | grep inet', this)">ifconfig wlan0 | grep inet</span>
+          <button class="copy-btn" onclick="copyText('ifconfig wlan0 | grep inet', this)">Copy</button>
+        </div>
       </div>
 
       <p class="hint">
-        💡 <strong>Tip</strong>: Double-click <code>Connect to Phone Terminal.bat</code> anytime in your project folder to immediately connect to this phone without opening a terminal manually.
+        💡 <strong>Tip</strong>: Double-click <code>Connect to Phone Terminal.bat</code> anytime in your project folder to open the terminal without typing anything manually.
       </p>
     </div>
 
   </div>
 
+  <div id="toast">Copied to clipboard!</div>
+
   <script>
-    function copyText(txt) {
+    function copyText(txt, btnElement) {
       navigator.clipboard.writeText(txt).then(() => {
-        alert('Copied to clipboard: ' + txt);
+        showToast('Copied: ' + txt);
+        if (btnElement && btnElement.classList.contains('copy-btn')) {
+          const original = btnElement.innerText;
+          btnElement.innerText = 'Copied!';
+          btnElement.classList.add('copied');
+          setTimeout(() => {
+            btnElement.innerText = original;
+            btnElement.classList.remove('copied');
+          }, 1500);
+        }
       });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.style.display = 'block';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 2000);
     }
 
     function togglePass() {
@@ -367,7 +574,7 @@
       if (val) {
         document.getElementById('pass-val').value = val;
         localStorage.setItem('filvora_ssh_pass', val);
-        alert('Password updated and saved successfully!');
+        showToast('Password updated and saved!');
       }
     }
 
