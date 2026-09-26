@@ -14,9 +14,10 @@
   - Python Executable: `.\venv\Scripts\python.exe`
 - **Django Version**: 5.2+ (Django REST Framework, Requests, Python-Dotenv, curl-cffi, pynacl)
 - **Active Server Task**: 
-  - Django Development Server is active on **`http://127.0.0.1:8000/`** & **`http://192.168.1.5:8000/`**
+  - Django Development Server is active on **`http://127.0.0.1:8000/`** & **`http://192.168.1.5:8000/`** (Dev PC) and **`http://192.168.1.50:8000/`** (Dedicated Mobile 24/7 Server).
   - Command: `.\venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000`
   - All active routes (`/`, `/movies/`, `/series/`, `/discover/`, `/genres/`, `/history/`, `/analytics/`, `/library/`, `/search/`, `/watch/`) return `200 OK`.
+- **Dedicated 24/7 Mobile Host**: Redmi Note 8 Pro (`arm64-v8a`, MIUI 12.5.10 / Android 11) running Termux + Termux:Boot with persistent wake-lock and auto-recovery daemon at **`http://192.168.1.50:8000/`**.
 - **Automated Test Suite**: **174 tests** across all 7 active production apps (`apps.core`, `apps.catalog`, `apps.playback`, `apps.library`, `apps.watch`, `apps.tmdb`, `apps.accounts`), **100% passing**.
 - **Master Test Runner & Launcher**:
   - `run_all_tests.py` & `Run Tests.bat` located at root: single command/one-click execution running all 174 tests across all 7 active subsystems with ANSI-colorized tabular scorecard, execution times, detailed failure diagnostics, and exit code 0. Supports `--verbose`, `--failfast`, `--app <name>`, `--category <1-7>`, and `--fast`.
@@ -502,3 +503,93 @@ Filvora/
 ### Local Test Accounts:
 - **Main User**: `moon` (Password: `1234`)
 - **Superuser**: `admin` (Password: `1234`)
+
+---
+
+## 6. Android Mobile Server Deployment & 24/7 Hosting Architecture (Redmi Note 8 Pro / Termux)
+
+### 6.1 Target Device & OS Specifications
+- **Device**: Xiaomi Redmi Note 8 Pro (Codename: `begonia`)
+- **Chipset & Architecture**: MediaTek Helio G90T (Octa-core, 64-bit `arm64-v8a`)
+- **Operating System**: MIUI 12.5.10 based on Android 11
+- **Dedicated LAN Static IP**: **`http://192.168.1.50:8000/`**
+- **Hosting Role**: Low-power, fanless, dedicated 24/7 streaming and catalog server accessible by all client devices (PCs, Smart TVs, mobile phones) across the local Wi-Fi subnet.
+
+### 6.2 Network Topology & Static IP Preservation
+To eliminate the daily router power-cycle dilemma (where nightly router shut-offs cause DHCP IP changes and break client bookmarks):
+- **MIUI Static IP Lock**: In phone Settings > Wi-Fi > Connected Network (`>`) > **IP Settings** changed from `DHCP` to `Static`.
+  - **IP Address**: `192.168.1.50`
+  - **Gateway**: `192.168.1.1`
+  - **Prefix Length**: `24`
+  - **DNS 1 / 2**: `8.8.8.8` / `1.1.1.1`
+- **Result**: Upon daily router reboot or phone reconnection, the phone deterministically re-binds to `192.168.1.50`.
+
+### 6.3 Termux & Termux:Boot Installation Architecture
+> [!IMPORTANT]
+> Google Play Store versions of Termux are deprecated and broken. Installation must strictly originate from **GitHub Releases** to ensure matching cryptographic signing keys across packages:
+- **Termux App**: `termux-app_v0.118.3+github-debug_arm64-v8a.apk` (or latest GitHub release).
+- **Termux:Boot Plugin**: `termux-boot-app_v0.8.1+github.debug.apk` (or latest GitHub release).
+- **MIUI 12.5 Process Protection Configuration**:
+  1. **Autostart**: Enabled in MIUI *Security App > Permissions > Autostart* for both `Termux` and `Termux:Boot`.
+  2. **Battery Saver**: Set to **No restrictions** (*Settings > Apps > Manage Apps > Termux > Battery Saver*).
+  3. **Task Switcher Lock**: Pinned with Padlock icon (🔒) in MIUI Recent Apps to prevent RAM optimization kills.
+  4. **Termux Wake-Lock**: Invoked via `termux-wake-lock`, creating a persistent foreground notification that prevents Android deep sleep states when the screen is turned off.
+
+### 6.4 Auto-Boot & Autonomous Recovery Engine
+Filvora boots automatically upon phone boot without requiring manual shell interaction via the `Termux:Boot` extension.
+
+- **Boot Script Path**: `~/.termux/boot/start-filvora.sh`
+- **Script Permissions**: `chmod +x ~/.termux/boot/start-filvora.sh`
+- **Script Implementation**:
+  ```bash
+  #!/data/data/com.termux/files/usr/bin/sh
+
+  # 1. Acquire Android wake lock (prevents CPU sleep when screen is locked)
+  termux-wake-lock
+
+  # 2. Debounce delay (allows Wi-Fi stack to reconnect and acquire 192.168.1.50)
+  sleep 15
+
+  # 3. Enter application directory
+  cd /data/data/com.termux/files/home/Filvora
+
+  # 4. Daemonize Django development server with persistent output logging
+  nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &
+  ```
+
+### 6.5 Power-On Charger Recovery (Dead Battery Resilience)
+By default, powered-down Android devices enter an off-mode charging animation rather than booting the OS when connected to a charger. To ensure the server boots autonomously when re-connected to power after a dead-battery event:
+- **Fastboot OEM Command**:
+  ```powershell
+  # Connect phone to PC, boot to Fastboot mode
+  adb reboot bootloader
+  fastboot oem off-mode-charge 0
+  fastboot reboot
+  ```
+- **Behavior**: Disables the off-mode charge loop, forcing the bootloader to proceed directly to kernel and Android OS boot whenever DC power is detected.
+
+### 6.6 Database Migration & Environment Variables
+- **Database Parity**: Filvora's SQLite database (`db.sqlite3`) transferred from PC via temporary HTTP file transfer (`python -m http.server 8080` on PC, `curl -o db.sqlite3 http://192.168.1.5:8080/db.sqlite3` on Termux), maintaining 100% user profiles, watch history, bookmarks, and preferences.
+- **Environment Configuration (`~/Filvora/.env`)**:
+  ```env
+  DJANGO_SECRET_KEY=dev-secret-key-filvora-123
+  SECRET_KEY=dev-secret-key-filvora-123
+  DJANGO_DEBUG=True
+  TMDB_API_KEY=2782fa0761a29ed8209ddd73d8ad4861
+  ```
+- **Critical Architectural Note on Offline Fallback Symptom**:
+  If the homepage displays only 4 repeating titles (*Grand Theft Auto VI, Interstellar, Dune, Inception*) across all rails, `TMDB_API_KEY` is missing in `~/Filvora/.env`. When `TMDBClient._fetch` detects no API key or network failure, it falls back to `_get_mock_movies()`. Restoring `.env` and clearing `.cache/django_cache` restores the live TMDB cloud catalog.
+
+### 6.7 Live Monitoring & Server Observability Runbook
+All stdout and stderr from Django are routed to `~/filvora.log`. Use these operational commands in Termux:
+
+| Operational Objective | Exact Termux Shell Command |
+| :--- | :--- |
+| **Real-time Live Traffic & Request Streaming** | `tail -f ~/filvora.log` *(Press `Ctrl+C` to exit)* |
+| **Inspect Recent Activity (Last 50 Lines)** | `tail -n 50 ~/filvora.log` |
+| **Filter Server Errors, 500s & Tracebacks** | `grep -iE "error\|exception\|traceback\|500" ~/filvora.log` |
+| **Verify Background Server Process & PID** | `pgrep -fl python` *(or `ps aux \| grep runserver`)* |
+| **Gracefully Stop Background Server** | `pkill -f "python manage.py runserver"` |
+| **Deploy Upstream Code Updates from GitHub** | `cd ~/Filvora && git pull && pkill -f "python manage.py runserver" && nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &` |
+| **Truncate / Reset Log File** | `> ~/filvora.log` |
+
