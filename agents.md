@@ -16,7 +16,7 @@
 - **Active Server Task**: 
   - Django Development Server is active on **`http://127.0.0.1:8000/`** & **`http://192.168.1.5:8000/`** (Dev PC) and **`http://192.168.1.50:8000/`** (Dedicated Mobile 24/7 Server).
   - Command: `.\venv\Scripts\python.exe manage.py runserver 0.0.0.0:8000`
-  - All active routes (`/`, `/movies/`, `/series/`, `/discover/`, `/genres/`, `/history/`, `/analytics/`, `/library/`, `/search/`, `/watch/`) return `200 OK`.
+  - All active routes (`/`, `/movies/`, `/series/`, `/discover/`, `/genres/`, `/history/`, `/analytics/`, `/library/`, `/search/`, `/watch/`, `/server-hub/`, `/server-access/`) return `200 OK`.
 - **Dedicated 24/7 Mobile Host**: Redmi Note 8 Pro (`arm64-v8a`, MIUI 12.5.10 / Android 11) running Termux + Termux:Boot with persistent wake-lock and auto-recovery daemon at **`http://192.168.1.50:8000/`**.
 - **Automated Test Suite**: **174 tests** across all 7 active production apps (`apps.core`, `apps.catalog`, `apps.playback`, `apps.library`, `apps.watch`, `apps.tmdb`, `apps.accounts`), **100% passing**.
 - **Master Test Runner & Launcher**:
@@ -602,11 +602,30 @@ Whenever changes are pushed to GitHub from the PC, update the phone server using
 5. **Verify Startup**: `tail -n 20 ~/filvora.log`
 *(Alternatively, execute Option `[4]` in `Connect to Phone Terminal.bat` from Windows to execute the entire update cycle automatically over SSH).*
 
-### 6.9 Secret In-App Dashboard Endpoint (`/server-access/`)
-To eliminate the need to open Windows File Explorer and hunt through folders, `Phone Server Access.html` is served directly by Filvora via a secret URL:
-- **Secret URL**: **`http://192.168.1.50:8000/server-access/`** (Alias: `/phone-server/`)
-- **Controller**: `phone_server_access_view` in `apps/core/views.py` streaming `BASE_DIR / 'Phone Server Access.html'`.
-- **Capability**: Accessible from any browser (PC, phone, tablet) on the local Wi-Fi network, providing 1-click copy for credentials, SSH commands, log viewing, and update runbooks.
+### 6.9 Secret In-App Dashboard & Telemetry Endpoints (`/server-hub/` & `/server-access/`)
+To eliminate the need to open Windows File Explorer or search through local directories, Filvora exposes two dedicated secret management endpoints accessible from any browser on the local Wi-Fi:
+
+1. **`/server-hub/` (Full Integrated Console with Live HTMX Real-Time Log Streaming)**:
+   - **Canonical URL**: **`http://192.168.1.50:8000/server-hub/`**
+   - **Controller**: `ServerHubView` & `server_hub_log` in `apps/core/views.py`, template `templates/core/server_hub.html`.
+   - **Capabilities**:
+     - Full cinematic dark theme integrated with Filvora's layout, navbar, and footer.
+     - Live hardware telemetry display: OS detection (`Android 11 / MIUI 12.5.10 (Termux arm64)`), static IP (`192.168.1.50`), and Termux port (`8022`).
+     - **Embedded Live Log Viewer**: Streams recent lines directly from `~/filvora.log` without requiring an active SSH session. Features 1-click manual refresh and an **Auto-refresh (3s)** toggle driven by HTMX polling (`hx-get="{% url 'server_hub_log' %}"`).
+     - **1-Click Copy Engine**: Deploys the HTTP LAN-safe fallback copy engine for all update commands, Git pull snippets, and SSH connection strings.
+
+2. **`/server-access/` (Lightweight Standalone HTML Dashboard)**:
+   - **Canonical URL**: **`http://192.168.1.50:8000/server-access/`** (Alias: `http://192.168.1.50:8000/phone-server/`)
+   - **Controller**: `phone_server_access_view` in `apps/core/views.py` streaming `BASE_DIR / 'Phone Server Access.html'`.
+   - **Capabilities**:
+     - Lightweight standalone card dashboard rendered independently of Django template tags.
+     - Displays connection credentials (IP, Port, Username, Show/Hide Password, and inline credential editor saving to `localStorage`).
+     - Includes standard remote deployment runbook with individual copy buttons for Git Pull, Migrate, Stop, Relaunch, and the 1-Line All-in-One command.
+
+3. **Universal HTTP LAN Resilient Clipboard Engine**:
+   - Modern browsers (Chrome, Edge, Safari) restrict `navigator.clipboard` to secure contexts (`HTTPS` or `localhost`), causing copy buttons on local HTTP IP addresses (`http://192.168.1.50:8000`) to fail silently.
+   - Filvora incorporates a universal `fallbackCopyToClipboard` (`document.execCommand('copy')` with off-screen `textarea` element and iOS/Android selection range) across `static/js/main.js`, `templates/core/server_hub.html`, `Phone Server Access.html`, `templates/accounts/profiles.html`, and `templates/includes/navbar.html`. All copy actions operate reliably across both HTTP and HTTPS.
+
 
 
 
