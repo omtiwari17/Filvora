@@ -274,6 +274,7 @@
             <div>
               <button class="copy-btn" onclick="togglePass()">Show</button>
               <button class="copy-btn" onclick="copyText(document.getElementById('pass-val').value)">Copy</button>
+              <button class="copy-btn" onclick="promptPass()">Edit</button>
             </div>
           </div>
         </div>
@@ -281,7 +282,7 @@
 
       <div class="info-label" style="margin-top: 18px;">Quick Connect SSH Command (PowerShell / CMD)</div>
       <div class="terminal-box">
-        <span id="ssh-cmd">ssh -p 8022 u0_a245@192.168.1.50</span>
+        <span id="ssh-cmd">ssh -p 8022 u0_a256@192.168.1.50</span>
         <button class="copy-btn" style="background:#111827; color:#34d399;" onclick="copyText(document.getElementById('ssh-cmd').innerText)">Copy Command</button>
       </div>
 
@@ -360,11 +361,25 @@
       }
     }
 
+    function promptPass() {
+      const current = document.getElementById('pass-val').value;
+      const val = prompt('Enter your Termux password:', current);
+      if (val) {
+        document.getElementById('pass-val').value = val;
+        localStorage.setItem('filvora_ssh_pass', val);
+        alert('Password updated and saved successfully!');
+      }
+    }
+
     // Restore saved user if any
-    const saved = localStorage.getItem('filvora_ssh_user');
-    if (saved) {
-      document.getElementById('user-val').innerText = saved;
-      document.getElementById('ssh-cmd').innerText = `ssh -p 8022 ${saved}@192.168.1.50`;
+    const savedUser = localStorage.getItem('filvora_ssh_user') || 'u0_a256';
+    document.getElementById('user-val').innerText = savedUser;
+    document.getElementById('ssh-cmd').innerText = `ssh -p 8022 ${savedUser}@192.168.1.50`;
+
+    // Restore saved password if any
+    const savedPass = localStorage.getItem('filvora_ssh_pass');
+    if (savedPass) {
+      document.getElementById('pass-val').value = savedPass;
     }
   </script>
 </body>
