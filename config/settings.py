@@ -53,6 +53,10 @@ else:
         'http://192.168.*',
         'http://10.*',
         'http://172.16.*',
+        'http://100.*',
+        'https://100.*',
+        'http://*.ts.net',
+        'https://*.ts.net',
     ]
 
 # Dedicated Branded CSRF Failure View with Token Auto-Healing
