@@ -602,4 +602,11 @@ Whenever changes are pushed to GitHub from the PC, update the phone server using
 5. **Verify Startup**: `tail -n 20 ~/filvora.log`
 *(Alternatively, execute Option `[4]` in `Connect to Phone Terminal.bat` from Windows to execute the entire update cycle automatically over SSH).*
 
+### 6.9 Secret In-App Dashboard Endpoint (`/server-access/`)
+To eliminate the need to open Windows File Explorer and hunt through folders, `Phone Server Access.html` is served directly by Filvora via a secret URL:
+- **Secret URL**: **`http://192.168.1.50:8000/server-access/`** (Alias: `/phone-server/`)
+- **Controller**: `phone_server_access_view` in `apps/core/views.py` streaming `BASE_DIR / 'Phone Server Access.html'`.
+- **Capability**: Accessible from any browser (PC, phone, tablet) on the local Wi-Fi network, providing 1-click copy for credentials, SSH commands, log viewing, and update runbooks.
+
+
 
