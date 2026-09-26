@@ -270,4 +270,60 @@ class RecommendationsView(TemplateView):
         return context
 
 
+def _read_latest_filvora_log(lines=60):
+    """Helper to read recent lines from filvora.log across Termux and standard environments."""
+    from pathlib import Path
+    from django.conf import settings
+    candidates = [
+        Path.home() / 'filvora.log',
+        Path('/data/data/com.termux/files/home/filvora.log'),
+        settings.BASE_DIR / 'filvora.log',
+    ]
+    for p in candidates:
+        if p.exists():
+            try:
+                with open(p, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.readlines()
+                    return ''.join(content[-lines:])
+            except Exception:
+                pass
+    return "Server is actively running. (filvora.log is clean or running in direct console mode)."
+
+
+class ServerHubView(TemplateView):
+    """Secret Phone Server Access and Monitoring Hub."""
+    template_name = 'core/server_hub.html'
+
+    def get_context_data(self, **kwargs):
+        import platform
+        from pathlib import Path
+        context = super().get_context_data(**kwargs)
+        client = TMDBClient()
+
+        is_android = 'com.termux' in str(Path.home()) or 'android' in platform.platform().lower()
+        context['is_android'] = is_android
+        context['system_os'] = 'Android 11 / MIUI 12.5.10 (Termux arm64)' if is_android else platform.platform()
+        context['server_ip'] = '192.168.1.50'
+        context['ssh_port'] = '8022'
+        context['ssh_user'] = 'u0_a256'
+        context['is_tmdb_online'] = not client.is_offline()
+        context['recent_log'] = _read_latest_filvora_log(50)
+        return context
+
+
+def server_hub_log(request):
+    """HTMX real-time polling endpoint for live server log streaming."""
+    log_text = _read_latest_filvora_log(50)
+    return HttpResponse(f"<pre class='font-mono text-xs text-emerald-400 whitespace-pre-wrap leading-relaxed select-text'>{log_text}</pre>")
+
+
+def phone_server_access_view(request):
+    """Direct secret view serving Phone Server Access.html from project root."""
+    from pathlib import Path
+    from django.conf import settings
+    file_path = settings.BASE_DIR / 'Phone Server Access.html'
+    if file_path.exists():
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return HttpResponse(f.read(), content_type='text/html')
+    return HttpResponse("Phone Server Access file not found.", status=404)
 
