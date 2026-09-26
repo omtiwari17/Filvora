@@ -230,6 +230,51 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
+// --- Universal Resilient Clipboard Copy Engine (HTTP & HTTPS LAN Compatible) ---
+window.copyToClipboard = function(text, message = 'Copied to clipboard!') {
+    if (!text) return;
+    
+    // 1. Try modern Async Clipboard API if available in a secure context (HTTPS or localhost)
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast(message, 'success');
+        }).catch(() => {
+            fallbackCopyToClipboard(text, message);
+        });
+    } else {
+        // 2. Guaranteed fallback for plain HTTP, LAN IPs (192.168.x.x), and older mobile browsers
+        fallbackCopyToClipboard(text, message);
+    }
+};
+
+function fallbackCopyToClipboard(text, message) {
+    try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.setAttribute('readonly', '');
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        textArea.style.top = '0';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        textArea.setSelectionRange(0, 99999);
+
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+
+        if (successful) {
+            showToast(message, 'success');
+        } else {
+            prompt('Copy manually:', text);
+        }
+    } catch (err) {
+        console.warn('Fallback copy failed:', err);
+        prompt('Copy manually:', text);
+    }
+}
+
 // --- HTMX Interactive Feedback ---
 function initHtmxFeedback() {
     document.body.addEventListener('htmx:afterSwap', (event) => {

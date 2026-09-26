@@ -189,16 +189,52 @@
 
 <script>
     function copyToClipboard(text, label) {
-        navigator.clipboard.writeText(text).then(() => {
-            const toast = document.getElementById('hub-toast');
-            toast.innerText = 'Copied ' + (label || 'text') + '!';
-            toast.classList.remove('opacity-0', 'translate-y-2');
-            toast.classList.add('opacity-100', 'translate-y-0');
-            setTimeout(() => {
-                toast.classList.remove('opacity-100', 'translate-y-0');
-                toast.classList.add('opacity-0', 'translate-y-2');
-            }, 2000);
-        });
+        const msg = 'Copied ' + (label || 'text') + '!';
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                showHubToast(msg);
+            }).catch(() => {
+                fallbackHubCopy(text, msg);
+            });
+        } else {
+            fallbackHubCopy(text, msg);
+        }
+    }
+
+    function fallbackHubCopy(text, msg) {
+        try {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            ta.style.top = '0';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            ta.setSelectionRange(0, 99999);
+            const success = document.execCommand('copy');
+            document.body.removeChild(ta);
+            if (success) {
+                showHubToast(msg);
+            } else {
+                prompt('Copy text:', text);
+            }
+        } catch (e) {
+            prompt('Copy text:', text);
+        }
+    }
+
+    function showHubToast(msg) {
+        const toast = document.getElementById('hub-toast');
+        toast.innerText = msg;
+        toast.classList.remove('opacity-0', 'translate-y-2');
+        toast.classList.add('opacity-100', 'translate-y-0');
+        setTimeout(() => {
+            toast.classList.remove('opacity-100', 'translate-y-0');
+            toast.classList.add('opacity-0', 'translate-y-2');
+        }, 2000);
     }
 
     function toggleHubPassword() {
