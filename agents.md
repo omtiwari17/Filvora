@@ -590,6 +590,16 @@ All stdout and stderr from Django are routed to `~/filvora.log`. Use these opera
 | **Filter Server Errors, 500s & Tracebacks** | `grep -iE "error\|exception\|traceback\|500" ~/filvora.log` |
 | **Verify Background Server Process & PID** | `pgrep -fl python` *(or `ps aux \| grep runserver`)* |
 | **Gracefully Stop Background Server** | `pkill -f "python manage.py runserver"` |
-| **Deploy Upstream Code Updates from GitHub** | `cd ~/Filvora && git pull && pkill -f "python manage.py runserver" && nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &` |
+| **All-in-One Instant Git Pull, Migrate & Restart** | `cd ~/Filvora && git pull && python manage.py migrate && pkill -f "python manage.py runserver" && nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &` |
 | **Truncate / Reset Log File** | `> ~/filvora.log` |
+
+### 6.8 Step-by-Step Code Update Procedure
+Whenever changes are pushed to GitHub from the PC, update the phone server using these distinct steps:
+1. **Pull Code**: `cd ~/Filvora && git pull`
+2. **Apply Migrations**: `python manage.py migrate`
+3. **Stop Old Process**: `pkill -f "python manage.py runserver"`
+4. **Daemonize New Process**: `nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &`
+5. **Verify Startup**: `tail -n 20 ~/filvora.log`
+*(Alternatively, execute Option `[4]` in `Connect to Phone Terminal.bat` from Windows to execute the entire update cycle automatically over SSH).*
+
 
