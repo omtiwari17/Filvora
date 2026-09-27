@@ -159,7 +159,7 @@ def get_admin_dashboard_data():
     total_profiles = UserProfile.objects.count()
     kids_profiles = UserProfile.objects.filter(is_kids=True).count()
     standard_profiles = total_profiles - kids_profiles
-    recent_users = User.objects.order_by('-date_joined')[:6]
+    all_users = User.objects.prefetch_related('profiles').order_by('-date_joined')[:100]
 
     users_data = {
         'total_users': total_users,
@@ -170,7 +170,8 @@ def get_admin_dashboard_data():
         'total_profiles': total_profiles,
         'standard_profiles': standard_profiles,
         'kids_profiles': kids_profiles,
-        'recent_users': recent_users,
+        'recent_users': all_users,
+        'all_users': all_users,
     }
 
     # 3. Streaming & Playback Metrics

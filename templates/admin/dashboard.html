@@ -655,8 +655,8 @@
         <div class="p-5 rounded-2xl bg-gray-900/70 border border-gray-800 shadow-xl">
             <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-800">
                 <div>
-                    <h2 class="text-sm font-bold text-white">Registered User Accounts</h2>
-                    <p class="text-xs text-gray-400">System credentials, staff privileges, and profile breakdown</p>
+                    <h2 class="text-sm font-bold text-white">Registered User Accounts ({{ users.total_users }})</h2>
+                    <p class="text-xs text-gray-400">All system credentials, staff privileges, and profile breakdown</p>
                 </div>
                 <a href="/admin/auth/user/add/" target="_blank" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition">
                     + Add New User
@@ -664,24 +664,39 @@
             </div>
 
             <div class="space-y-3">
-                {% for u in users.recent_users %}
+                {% for u in users.all_users %}
                 <div class="p-3.5 rounded-xl bg-gray-950/60 border border-gray-800 flex items-center justify-between gap-3 text-xs">
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
                             {{ u.username|slice:":1"|upper }}
                         </div>
                         <div class="min-w-0">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
                                 <span class="font-bold text-white text-sm truncate">{{ u.username }}</span>
                                 {% if u.is_superuser %}
                                 <span class="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">Superuser</span>
                                 {% elif u.is_staff %}
                                 <span class="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">Staff</span>
                                 {% endif %}
+                                {% if u.last_login %}
+                                <span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 font-mono">
+                                    Active {{ u.last_login|timesince }} ago
+                                </span>
+                                {% endif %}
                             </div>
                             <p class="text-[11px] text-gray-400 mt-0.5">
                                 {{ u.email|default:"No email registered" }} • Joined {{ u.date_joined|date:"M d, Y" }}
                             </p>
+                            <!-- Profile Pills -->
+                            {% if u.profiles.all %}
+                            <div class="flex items-center gap-1.5 flex-wrap mt-1">
+                                {% for prof in u.profiles.all %}
+                                <span class="text-[10px] px-1.5 py-0.2 rounded bg-gray-800/80 text-gray-300 border border-gray-700/80 font-medium">
+                                    {{ prof.name }}{% if prof.is_kids %} (Kids){% endif %}
+                                </span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
