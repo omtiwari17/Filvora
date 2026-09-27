@@ -406,31 +406,63 @@ def admin_purge_cache(request):
 @staff_member_required(login_url='/accounts/login/')
 def admin_ping_tmdb(request):
     """HTMX endpoint to test TMDB API latency live."""
+    import subprocess
     client = TMDBClient()
     start_time = time.time()
     online = False
     status_code = None
     error_msg = ""
+    api_key = client.api_key or getattr(settings, 'TMDB_API_KEY', os.environ.get('TMDB_API_KEY', ''))
 
+    # Strategy 1: Fast native curl probe (forces IPv4 to bypass ISP / TLS handshake connection resets)
     try:
-        # Lightweight check: ping configuration or popular
-        import requests
-        headers = {'accept': 'application/json'}
-        token = os.environ.get('TMDB_ACCESS_TOKEN', '')
-        api_key = os.environ.get('TMDB_API_KEY', '')
-        if token:
-            headers['Authorization'] = f'Bearer {token}'
-            url = 'https://api.themoviedb.org/3/configuration'
-        elif api_key:
-            url = f'https://api.themoviedb.org/3/configuration?api_key={api_key}'
-        else:
-            url = 'https://api.themoviedb.org/3/movie/popular'
+        bin_name = 'curl.exe' if os.name == 'nt' else 'curl'
+        null_out = 'NUL' if os.name == 'nt' else '/dev/null'
+        url = f"https://api.themoviedb.org/3/configuration?api_key={api_key}"
+        res = subprocess.run(
+            [bin_name, '-s', '-o', null_out, '-w', '%{http_code}', '-4', '--connect-timeout', '3', url],
+            capture_output=True,
+            text=True,
+            timeout=4
+        )
+        if res.returncode == 0:
+            raw_code = res.stdout.strip()
+            if raw_code.isdigit():
+                code_val = int(raw_code)
+                if code_val in [200, 304]:
+                    online = True
+                    status_code = 200
+                    TMDBClient.mark_online()
+                else:
+                    status_code = code_val
+    except Exception:
+        pass
 
-        resp = requests.get(url, headers=headers, timeout=4)
-        status_code = resp.status_code
-        online = (status_code == 200)
-    except Exception as e:
-        error_msg = str(e)[:60]
+    # Strategy 2: If curl was unavailable, test through TMDBClient._fetch
+    if not online:
+        try:
+            cfg = client._fetch('/configuration')
+            if cfg and (cfg.get('images') or cfg.get('status_code') == 200):
+                online = True
+                status_code = 200
+                TMDBClient.mark_online()
+            elif client.is_offline():
+                error_msg = "Offline Circuit Active"
+        except Exception as e:
+            error_msg = str(e)[:40]
+
+    # Strategy 3: Standard requests fallback
+    if not online and not error_msg:
+        try:
+            import requests
+            headers = {'User-Agent': 'Filvora/2.5', 'Accept': 'application/json'}
+            resp = requests.get(f"https://api.themoviedb.org/3/configuration?api_key={api_key}", headers=headers, timeout=3)
+            status_code = resp.status_code
+            if status_code in [200, 304]:
+                online = True
+                TMDBClient.mark_online()
+        except Exception as e:
+            error_msg = str(e)[:40]
 
     elapsed_ms = int((time.time() - start_time) * 1000)
 
@@ -445,7 +477,7 @@ def admin_ping_tmdb(request):
             return HttpResponse(
                 f'<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/30">'
                 f'<span class="w-2 h-2 rounded-full bg-rose-400"></span>'
-                f'Failed ({status_code or error_msg or "Timeout"})</span>'
+                f'Failed ({status_code or error_msg or "Unreachable"})</span>'
             )
 
     return JsonResponse({'online': online, 'latency_ms': elapsed_ms, 'status_code': status_code})
