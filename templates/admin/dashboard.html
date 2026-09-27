@@ -296,7 +296,7 @@
                                 <p class="text-[11px] text-gray-400 truncate mt-0.5">
                                     <span class="text-gray-300 font-medium">{{ stream.user.username }}</span>
                                     {% if stream.profile %}<span class="text-brand-400">[{{ stream.profile.name }}]</span>{% endif %}
-                                    • {{ stream.watch_date_display|default:stream.updated_at|timesince }} ago
+                                    • {% if stream.watch_date_display %}{{ stream.watch_date_display }}{% elif stream.updated_at %}{{ stream.updated_at|timesince }} ago{% endif %}
                                 </p>
                             </div>
                         </div>

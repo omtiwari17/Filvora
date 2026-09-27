@@ -1,6 +1,6 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
-from apps.watch.models import WatchProgress
+from apps.watch.models import WatchProgress, UserRating
 from apps.library.models import LibraryItem
 
 class CoreViewsTestCase(TestCase):
@@ -561,6 +561,21 @@ class AdminDashboardTestCase(TestCase):
 
     def test_admin_dashboard_staff_access_success(self):
         self.client.login(username='staffadmin', password='password123')
+        # Create active stream and rating to verify feed rendering
+        WatchProgress.objects.create(
+            user=self.staff_user,
+            tmdb_id=157336,
+            media_type='movie',
+            position_seconds=1200,
+            duration_seconds=7200,
+            completed=False
+        )
+        UserRating.objects.create(
+            user=self.staff_user,
+            tmdb_id=157336,
+            media_type='movie',
+            score=5
+        )
         response = self.client.get('/admin/dashboard/')
         self.assertEqual(response.status_code, 200)
         self.assertIn('system', response.context)
@@ -573,6 +588,7 @@ class AdminDashboardTestCase(TestCase):
         self.assertIn('Admin & Developer Dashboard', content)
         self.assertIn('Purge Cache', content)
         self.assertIn('Test TMDB Ping', content)
+        self.assertIn('TMDB #157336', content)
 
     def test_admin_purge_cache_endpoint(self):
         self.client.login(username='staffadmin', password='password123')
