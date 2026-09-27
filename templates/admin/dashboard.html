@@ -1,0 +1,762 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin & Developer Dashboard — Filvora Operations Hub{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-950 text-gray-100 pb-20 pt-4 sm:pt-6 px-3 sm:px-6 lg:px-10 max-w-7xl mx-auto">
+
+    <!-- Top Command Center Header -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-gray-800/80">
+        <div>
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <span class="p-2 rounded-xl bg-gradient-to-br from-brand-600/30 to-purple-600/30 border border-brand-500/30 text-brand-400">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                </span>
+                <div>
+                    <h1 class="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white flex items-center gap-2">
+                        Admin & Developer Dashboard
+                        <span class="text-xs px-2 py-0.5 rounded-full font-mono font-bold bg-brand-500/20 text-brand-400 border border-brand-500/30">OPS HUB</span>
+                    </h1>
+                    <p class="text-xs text-gray-400 mt-0.5">Filvora v2.5 Architecture • System Telemetry, Real-time Metrics & Platform Operations</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header Quick Action Bar -->
+        <div class="flex items-center gap-2 flex-wrap text-xs">
+            <!-- Purge Cache Button -->
+            <button 
+                hx-post="{% url 'admin_purge_cache' %}"
+                hx-target="#cache-action-result"
+                hx-swap="innerHTML"
+                hx-indicator="#cache-spinner"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-900 hover:bg-gray-800 border border-gray-700/80 text-gray-200 hover:text-white transition shadow-sm active:scale-95">
+                <svg id="cache-spinner" class="w-3.5 h-3.5 text-amber-400 htmx-indicator animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span>Purge Cache</span>
+            </button>
+
+            <!-- Ping TMDB API Button -->
+            <button 
+                hx-get="{% url 'admin_ping_tmdb' %}"
+                hx-target="#tmdb-ping-result"
+                hx-swap="innerHTML"
+                hx-indicator="#tmdb-spinner"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-900 hover:bg-gray-800 border border-gray-700/80 text-gray-200 hover:text-white transition shadow-sm active:scale-95">
+                <svg id="tmdb-spinner" class="w-3.5 h-3.5 text-emerald-400 htmx-indicator animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Test TMDB Ping</span>
+            </button>
+
+            <!-- Check DB Button -->
+            <button 
+                hx-post="{% url 'admin_check_db' %}"
+                hx-target="#db-check-result"
+                hx-swap="innerHTML"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-900 hover:bg-gray-800 border border-gray-700/80 text-gray-200 hover:text-white transition shadow-sm active:scale-95">
+                <svg class="w-3.5 h-3.5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                </svg>
+                <span>DB Check</span>
+            </button>
+
+            <!-- Link to Standard Django Admin -->
+            <a href="/admin/" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-950/60 hover:bg-purple-900/80 border border-purple-800/60 text-purple-200 hover:text-white transition shadow-sm">
+                <svg class="w-3.5 h-3.5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                <span>Django Admin</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Action feedback containers -->
+    <div class="flex items-center gap-3 flex-wrap mt-3 empty:hidden" id="action-feedbacks">
+        <div id="cache-action-result"></div>
+        <div id="tmdb-ping-result"></div>
+        <div id="db-check-result"></div>
+    </div>
+
+    <!-- Primary Executive KPI Cards Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mt-6">
+        <!-- 1. Registered Users -->
+        <div class="p-3.5 sm:p-4 rounded-2xl bg-gray-900/80 border border-gray-800/80 hover:border-indigo-500/40 transition shadow-lg relative overflow-hidden group">
+            <div class="flex items-center justify-between text-gray-400 mb-2">
+                <span class="text-[11px] font-semibold uppercase tracking-wider">Total Users</span>
+                <span class="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:scale-110 transition-transform">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-white tracking-tight">{{ users.total_users }}</div>
+            <div class="text-[10px] text-gray-400 mt-1 flex items-center gap-1 font-mono">
+                <span class="text-emerald-400">{{ users.active_24h }} online 24h</span> • {{ users.staff_users }} staff
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 to-transparent"></div>
+        </div>
+
+        <!-- 2. Streaming Sessions -->
+        <div class="p-3.5 sm:p-4 rounded-2xl bg-gray-900/80 border border-gray-800/80 hover:border-brand-500/40 transition shadow-lg relative overflow-hidden group">
+            <div class="flex items-center justify-between text-gray-400 mb-2">
+                <span class="text-[11px] font-semibold uppercase tracking-wider">Streams Logged</span>
+                <span class="p-1.5 rounded-lg bg-brand-500/10 text-brand-400 group-hover:scale-110 transition-transform">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-white tracking-tight">{{ streaming.total_streams }}</div>
+            <div class="text-[10px] text-gray-400 mt-1 flex items-center gap-1 font-mono">
+                <span class="text-emerald-400">{{ streaming.completed_streams }} done</span> • {{ streaming.completion_rate }}% rate
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-brand-500 to-transparent"></div>
+        </div>
+
+        <!-- 3. Hours Streamed -->
+        <div class="p-3.5 sm:p-4 rounded-2xl bg-gray-900/80 border border-gray-800/80 hover:border-amber-500/40 transition shadow-lg relative overflow-hidden group">
+            <div class="flex items-center justify-between text-gray-400 mb-2">
+                <span class="text-[11px] font-semibold uppercase tracking-wider">Watch Time</span>
+                <span class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-white tracking-tight">{{ streaming.total_hours }}<span class="text-sm font-normal text-gray-400 ml-1">hrs</span></div>
+            <div class="text-[10px] text-gray-400 mt-1 flex items-center gap-1 font-mono">
+                {{ streaming.movies_streamed }} movies • {{ streaming.tv_streamed }} tv eps
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-500 to-transparent"></div>
+        </div>
+
+        <!-- 4. Community Ratings -->
+        <div class="p-3.5 sm:p-4 rounded-2xl bg-gray-900/80 border border-gray-800/80 hover:border-yellow-500/40 transition shadow-lg relative overflow-hidden group">
+            <div class="flex items-center justify-between text-gray-400 mb-2">
+                <span class="text-[11px] font-semibold uppercase tracking-wider">Avg Rating</span>
+                <span class="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-400 group-hover:scale-110 transition-transform">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-amber-400 tracking-tight">{{ ratings.avg_score }}<span class="text-xs font-normal text-gray-400 ml-1">/ 5.0</span></div>
+            <div class="text-[10px] text-gray-400 mt-1 font-mono">
+                {{ ratings.total_ratings }} total reviews logged
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-yellow-500 to-transparent"></div>
+        </div>
+
+        <!-- 5. Cache & Disk Size -->
+        <div class="p-3.5 sm:p-4 rounded-2xl bg-gray-900/80 border border-gray-800/80 hover:border-emerald-500/40 transition shadow-lg relative overflow-hidden group">
+            <div class="flex items-center justify-between text-gray-400 mb-2">
+                <span class="text-[11px] font-semibold uppercase tracking-wider">Cache & DB</span>
+                <span class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-white tracking-tight">{{ system.cache_size_mb }}<span class="text-sm font-normal text-gray-400 ml-1">MB</span></div>
+            <div class="text-[10px] text-gray-400 mt-1 flex items-center gap-1 font-mono">
+                {{ system.cache_files }} cache files • DB: {{ system.db_size_mb }} MB
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500 to-transparent"></div>
+        </div>
+
+        <!-- 6. TMDB API Status -->
+        <div class="p-3.5 sm:p-4 rounded-2xl bg-gray-900/80 border border-gray-800/80 hover:border-cyan-500/40 transition shadow-lg relative overflow-hidden group">
+            <div class="flex items-center justify-between text-gray-400 mb-2">
+                <span class="text-[11px] font-semibold uppercase tracking-wider">TMDB Probe</span>
+                <span class="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:scale-110 transition-transform">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
+                    </svg>
+                </span>
+            </div>
+            <div class="text-xl sm:text-2xl font-black {% if system.tmdb_offline %}text-rose-400{% else %}text-emerald-400{% endif %} tracking-tight flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full {% if system.tmdb_offline %}bg-rose-500 animate-pulse{% else %}bg-emerald-400{% endif %}"></span>
+                {% if system.tmdb_offline %}Offline{% else %}Online{% endif %}
+            </div>
+            <div class="text-[10px] text-gray-400 mt-1 font-mono">
+                Key: {{ system.tmdb_masked }}
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-500 to-transparent"></div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex items-center gap-1.5 sm:gap-2 mt-8 border-b border-gray-800 overflow-x-auto pb-2 scrollbar-none" id="dashboard-tab-nav">
+        <button onclick="switchTab('overview')" class="tab-btn active px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 text-white bg-gray-900 border border-gray-700/80 shadow-sm" data-tab="overview">
+            <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+            Overview
+        </button>
+        <button onclick="switchTab('developer')" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 text-gray-400 hover:text-white hover:bg-gray-900/60" data-tab="developer">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+            Developer & Telemetry
+        </button>
+        <button onclick="switchTab('models')" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 text-gray-400 hover:text-white hover:bg-gray-900/60" data-tab="models">
+            <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+            Model Hub
+        </button>
+        <button onclick="switchTab('streaming')" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 text-gray-400 hover:text-white hover:bg-gray-900/60" data-tab="streaming">
+            <svg class="w-4 h-4 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            Streaming & Content
+        </button>
+        <button onclick="switchTab('users')" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 text-gray-400 hover:text-white hover:bg-gray-900/60" data-tab="users">
+            <svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+            Users & Profiles
+        </button>
+        <button onclick="switchTab('logs')" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 text-gray-400 hover:text-white hover:bg-gray-900/60" data-tab="logs">
+            <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            Server Logs
+        </button>
+    </div>
+
+    <!-- TAB 1: OVERVIEW -->
+    <div id="tab-overview" class="tab-pane mt-6 space-y-6">
+        <!-- Quick Inspector Banner -->
+        <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-gray-900 via-gray-900 to-indigo-950/40 border border-gray-800 shadow-xl">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <svg class="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        Quick Entity Inspector
+                    </h2>
+                    <p class="text-xs text-gray-400">Search by username or TMDB ID to inspect watch progress, ratings, and saved items instantly.</p>
+                </div>
+                <form 
+                    hx-get="{% url 'admin_quick_inspect' %}" 
+                    hx-target="#inspect-results" 
+                    hx-swap="innerHTML"
+                    class="flex items-center gap-2 w-full md:w-96">
+                    <input 
+                        type="text" 
+                        name="q" 
+                        placeholder="e.g. omtiwari or 157336" 
+                        class="w-full px-3.5 py-2 rounded-xl bg-gray-950 border border-gray-700/80 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 transition shadow-inner">
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-bold text-white transition shrink-0 active:scale-95">
+                        Inspect
+                    </button>
+                </form>
+            </div>
+            <div id="inspect-results" class="mt-3 empty:hidden"></div>
+        </div>
+
+        <!-- 2 Columns: Recent Streaming Activity vs Top Watched Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Recent Activity (2 Cols) -->
+            <div class="lg:col-span-2 p-5 rounded-2xl bg-gray-900/70 border border-gray-800 shadow-xl">
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-800">
+                    <div>
+                        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                            Live Streaming Activity Feed
+                        </h2>
+                        <p class="text-xs text-gray-400">Latest active video playback sessions across all profiles</p>
+                    </div>
+                    <span class="text-xs font-mono text-gray-400">{{ streaming.recent_activity|length }} most recent</span>
+                </div>
+
+                <div class="space-y-3">
+                    {% for stream in streaming.recent_activity %}
+                    <div class="p-3 rounded-xl bg-gray-950/60 border border-gray-800/80 hover:border-gray-700 transition flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-600 to-rose-600 flex items-center justify-center text-xs font-black text-white shrink-0">
+                                {{ stream.media_type|upper|slice:":2" }}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-xs font-bold text-white truncate">TMDB #{{ stream.tmdb_id }}</span>
+                                    {% if stream.media_type == 'tv' and stream.season %}
+                                    <span class="text-[10px] font-mono px-1.5 py-0.2 bg-blue-500/20 text-blue-300 rounded border border-blue-500/30">
+                                        S{{ stream.season|stringformat:"02d" }}E{{ stream.episode|stringformat:"02d" }}
+                                    </span>
+                                    {% endif %}
+                                    {% if stream.completed %}
+                                    <span class="text-[10px] font-semibold px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/30">Finished</span>
+                                    {% else %}
+                                    <span class="text-[10px] font-semibold px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">In Progress</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-[11px] text-gray-400 truncate mt-0.5">
+                                    <span class="text-gray-300 font-medium">{{ stream.user.username }}</span>
+                                    {% if stream.profile %}<span class="text-brand-400">[{{ stream.profile.name }}]</span>{% endif %}
+                                    • {{ stream.watch_date_display|default:stream.updated_at|timesince }} ago
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar & Actions -->
+                        <div class="flex items-center gap-3 shrink-0">
+                            <div class="w-20 sm:w-28 text-right">
+                                <div class="text-[11px] font-mono text-gray-300">{{ stream.progress_percentage }}%</div>
+                                <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden mt-1">
+                                    <div class="h-full {% if stream.completed %}bg-emerald-500{% else %}bg-brand-500{% endif %}" style="width: {{ stream.progress_percentage }}%;"></div>
+                                </div>
+                            </div>
+                            <a href="/watch/{{ stream.media_type }}/{{ stream.tmdb_id }}/{% if stream.media_type == 'tv' and stream.season %}{{ stream.season }}/{{ stream.episode }}/{% endif %}" target="_blank" title="Play / Inspect Title" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            </a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8 text-gray-500 text-xs">No active streaming history recorded yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Top Watched Titles & Ratings Distribution (1 Col) -->
+            <div class="space-y-6">
+                <!-- Top Watched Titles -->
+                <div class="p-5 rounded-2xl bg-gray-900/70 border border-gray-800 shadow-xl">
+                    <h2 class="text-sm font-bold text-white mb-3 pb-2 border-b border-gray-800 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-brand-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" /><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" /></svg>
+                        Top Streamed Titles
+                    </h2>
+                    <div class="space-y-2.5">
+                        {% for item in streaming.top_watched %}
+                        <div class="flex items-center justify-between p-2 rounded-xl bg-gray-950/60 border border-gray-800/80 text-xs">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="font-mono text-gray-500 font-bold w-4">#{{ forloop.counter }}</span>
+                                <span class="text-white font-medium truncate">TMDB #{{ item.tmdb_id }}</span>
+                                <span class="text-[9px] uppercase px-1 py-0.5 rounded bg-gray-800 text-gray-400 font-mono">{{ item.media_type }}</span>
+                            </div>
+                            <span class="text-xs font-mono font-bold text-brand-400 shrink-0">{{ item.views }} stream{{ item.views|pluralize }}</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-xs text-gray-500 py-3 text-center">No ranked streams available.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Star Rating Distribution -->
+                <div class="p-5 rounded-2xl bg-gray-900/70 border border-gray-800 shadow-xl">
+                    <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-800">
+                        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                            <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                            Ratings Breakdown
+                        </h2>
+                        <span class="text-xs font-bold text-amber-400">{{ ratings.avg_score }} ★ Avg</span>
+                    </div>
+                    <div class="space-y-2">
+                        {% for star, data in ratings.star_distribution.items %}
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="font-mono text-gray-400 w-12 text-right shrink-0">{{ star }} Star</span>
+                            <div class="flex-grow bg-gray-800 h-2 rounded-full overflow-hidden">
+                                <div class="h-full bg-amber-400" style="width: {{ data.percentage }}%;"></div>
+                            </div>
+                            <span class="font-mono text-gray-400 w-8 text-right shrink-0">{{ data.count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: DEVELOPER & SYSTEM TELEMETRY -->
+    <div id="tab-developer" class="tab-pane hidden mt-6 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- System Runtime & Environment -->
+            <div class="p-5 rounded-2xl bg-gray-900/70 border border-gray-800 shadow-xl space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>
+                        Runtime & Environment
+                    </h2>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Active</span>
+                </div>
+                <div class="space-y-2.5 text-xs">
+                    <div class="flex justify-between py-1 border-b border-gray-800/60">
+                        <span class="text-gray-400">Python Version</span>
+                        <span class="font-mono text-white">{{ system.python_version }}</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-gray-800/60">
+                        <span class="text-gray-400">Django Version</span>
+                        <span class="font-mono text-white">{{ system.django_version }}</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-gray-800/60">
+                        <span class="text-gray-400">DEBUG Mode</span>
+                        <span class="font-mono font-bold {% if system.debug_mode %}text-amber-400{% else %}text-emerald-400{% endif %}">
+                            {{ system.debug_mode|yesno:"Enabled,Production (False)" }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-gray-800/60">
+                        <span class="text-gray-400">Operating System</span>
+                        <span class="font-mono text-white text-right truncate max-w-[180px]">{{ system.os_name }} {{ system.os_release }}</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-gray-800/60">
+                        <span class="text-gray-400">Machine Arch</span>
+                        <span class="font-mono text-white">{{ system.machine }}</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-gray-800/60">
+                        <span class="text-gray-400">Process PID</span>
+                        <span class="font-mono text-indigo-400">#{{ system.pid }}</span>
+                    </div>
+                    <div class="flex justify-between py-1">
+                        <span class="text-gray-400">Timezone</span>
+                        <span class="font-mono text-white">{{ system.timezone }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database Architecture & Performance -->
+            <div class="p-5 rounded-2xl bg-gray-900/70 border border-gray-800 shadow-xl space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
+                        Database Engine & WAL
+                    </h2>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">{{ system.db_engine }}</span>
+                </div>
+                <div class="space-y-2.5 text-xs">
+                    <div class="flex justify-between py-1 border-b border-gray-800/60">
+                        <span class="text-gray-400">DB File Name</span>
+                        <span class="font-mono text-white">{{ system.db_name }}</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-gray-800/60">
+                        <span class="text-gray-400">Database Size</span>
+                        <span class="font-mono text-white font-bold">{{ system.db_size_mb }} MB</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-gray-800/60">
+                        <span class="text-gray-400">WAL Journal Mode</span>
+                        <span class="font-mono {% if system.db_wal %}text-emerald-400 font-bold{% else %}text-gray-400{% endif %}">
+                            {{ system.db_wal|yesno:"Active (WAL),Standard Rollback" }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-gray-800/60">
+                        <span class="text-gray-400">Busy Timeout</span>
+                        <span class="font-mono text-white">30,000 ms</span>
+                    </div>
+                    <div class="flex justify-between py-1">
+                        <span class="text-gray-400">Integrity Check</span>
+                        <button 
+                            hx-post="{% url 'admin_check_db' %}" 
+                            hx-target="#db-check-status-pill"
+                            hx-swap="innerHTML"
+                            class="text-xs text-blue-400 hover:underline">
+                            Run PRAGMA Check
+                        </button>
+                    </div>
+                    <div id="db-check-status-pill" class="text-right">
+                        <span class="text-[10px] font-mono text-gray-500">Not verified this session</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Persistent Cache Architecture -->
+            <div class="p-5 rounded-2xl bg-gray-900/70 border border-gray-800 shadow-xl space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        Cache Subsystem
+                    </h2>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">{{ system.cache_backend }}</span>
+                </div>
+                <div class="space-y-2.5 text-xs">
+                    <div class="flex justify-between py-1 border-b border-gray-800/60">
+                        <span class="text-gray-400">Cache Directory</span>
+                        <span class="font-mono text-gray-300 text-right truncate max-w-[180px]">{{ system.cache_dir }}</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-gray-800/60">
+                        <span class="text-gray-400">Cached File Entries</span>
+                        <span class="font-mono text-white font-bold">{{ system.cache_files }} files</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-gray-800/60">
+                        <span class="text-gray-400">Disk Consumption</span>
+                        <span class="font-mono text-white font-bold">{{ system.cache_size_mb }} MB</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-gray-800/60">
+                        <span class="text-gray-400">TMDB In-Memory Ratings</span>
+                        <span class="font-mono text-emerald-400">{{ system.tmdb_rating_cache_count }} items</span>
+                    </div>
+                    <div class="pt-2">
+                        <button 
+                            hx-post="{% url 'admin_purge_cache' %}" 
+                            hx-target="#cache-action-result" 
+                            class="w-full py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 text-xs font-bold transition flex items-center justify-center gap-2 active:scale-95">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            Purge Cache Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network & Server Endpoints -->
+        <div class="p-5 rounded-2xl bg-gray-900/70 border border-gray-800 shadow-xl">
+            <h2 class="text-sm font-bold text-white mb-3 pb-2 border-b border-gray-800 flex items-center gap-2">
+                <svg class="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" /></svg>
+                Network Topology & Server Nodes
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                {% for ip in system.lan_ips %}
+                <div class="p-3 rounded-xl bg-gray-950/60 border border-gray-800 flex items-center justify-between">
+                    <div>
+                        <p class="font-bold text-white font-mono">{{ ip }}</p>
+                        <p class="text-[10px] text-gray-500 mt-0.5">
+                            {% if '127.0.0.1' in ip %}Local Host Loopback
+                            {% elif '192.168.1.50' in ip %}Dedicated Redmi 24/7 Server
+                            {% elif '192.168.1.5' in ip %}Development PC Server
+                            {% else %}Network LAN Interface{% endif %}
+                        </p>
+                    </div>
+                    <a href="http://{{ ip }}" target="_blank" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Video Streaming Provider Distribution -->
+        <div class="p-5 rounded-2xl bg-gray-900/70 border border-gray-800 shadow-xl">
+            <h2 class="text-sm font-bold text-white mb-3 pb-2 border-b border-gray-800 flex items-center gap-2">
+                <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
+                Streaming Embed Providers & Failover Distribution
+            </h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                {% for prov in provider_counts %}
+                <div class="p-3 rounded-xl bg-gray-950/60 border border-gray-800">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-white uppercase font-mono">{{ prov.provider_id }}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono">{{ prov.total }} saved</span>
+                    </div>
+                    <p class="text-[10px] text-gray-500 mt-1">User preferred playback source</p>
+                </div>
+                {% empty %}
+                <div class="col-span-4 text-center py-4 text-gray-500 text-xs">No custom server preferences recorded yet. Default multi-server failover active.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: MODEL MANAGEMENT HUB -->
+    <div id="tab-models" class="tab-pane hidden mt-6 space-y-6">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+            <div>
+                <h2 class="text-base font-bold text-white">Registered Django ORM Models</h2>
+                <p class="text-xs text-gray-400">Direct administrative access to change lists, record creation, and raw database inspection</p>
+            </div>
+            <a href="/admin/" target="_blank" class="text-xs text-purple-400 hover:underline flex items-center gap-1">
+                Open Full Django Admin &rarr;
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for m in models %}
+            <div class="p-4 rounded-2xl bg-gray-900/80 border border-gray-800 hover:border-gray-700 transition shadow-lg flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-mono uppercase tracking-wider text-gray-400">{{ m.app }}.{{ m.model }}</span>
+                        <span class="text-xs font-black px-2 py-0.5 rounded-full bg-gray-800 text-white font-mono">
+                            {{ m.count }} records
+                        </span>
+                    </div>
+                    <h3 class="text-base font-bold text-white">{{ m.name }}</h3>
+                    <p class="text-xs text-gray-400 mt-1">{{ m.description }}</p>
+                </div>
+                <div class="flex items-center gap-2 mt-4 pt-3 border-t border-gray-800/80">
+                    <a href="{{ m.admin_url }}" target="_blank" class="flex-grow py-1.5 px-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-white text-center transition">
+                        View Records
+                    </a>
+                    <a href="{{ m.add_url }}" target="_blank" class="py-1.5 px-3 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/30 text-xs font-semibold text-center transition">
+                        + Add
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- TAB 4: STREAMING & CONTENT -->
+    <div id="tab-streaming" class="tab-pane hidden mt-6 space-y-6">
+        <!-- Streaming Breakdown Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="p-4 rounded-2xl bg-gray-900/80 border border-gray-800">
+                <span class="text-xs text-gray-400 uppercase font-semibold">Movies vs TV Episodes</span>
+                <div class="text-2xl font-black text-white mt-1">{{ streaming.movies_streamed }} <span class="text-sm font-normal text-gray-400">Movies</span> / {{ streaming.tv_streamed }} <span class="text-sm font-normal text-gray-400">TV</span></div>
+                <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden mt-3 flex">
+                    {% if streaming.total_streams > 0 %}
+                    <div class="h-full bg-brand-500" style="width: calc({{ streaming.movies_streamed }} / {{ streaming.total_streams }} * 100%);"></div>
+                    <div class="h-full bg-blue-500" style="width: calc({{ streaming.tv_streamed }} / {{ streaming.total_streams }} * 100%);"></div>
+                    {% endif %}
+                </div>
+                <div class="flex justify-between text-[10px] text-gray-400 mt-1 font-mono">
+                    <span class="text-brand-400">■ Movies</span>
+                    <span class="text-blue-400">■ TV Series</span>
+                </div>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-gray-900/80 border border-gray-800">
+                <span class="text-xs text-gray-400 uppercase font-semibold">Library Items Saved</span>
+                <div class="text-2xl font-black text-emerald-400 mt-1">{{ library.library_items_count }}</div>
+                <p class="text-xs text-gray-400 mt-2">{{ library.collections_count }} custom collections ({{ library.collection_items_count }} items inside)</p>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-gray-900/80 border border-gray-800">
+                <span class="text-xs text-gray-400 uppercase font-semibold">Scene Bookmarks & Actors</span>
+                <div class="text-2xl font-black text-cyan-400 mt-1">{{ library.bookmarks_count }} <span class="text-sm font-normal text-gray-400">Bookmarks</span></div>
+                <p class="text-xs text-gray-400 mt-2">{{ library.favorite_people_count }} favorited actors/directors</p>
+            </div>
+        </div>
+
+        <!-- Recent Ratings Table -->
+        <div class="p-5 rounded-2xl bg-gray-900/70 border border-gray-800 shadow-xl">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-800">
+                <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                    <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                    Recent User Ratings & Reviews
+                </h2>
+                <a href="/admin/watch/userrating/" target="_blank" class="text-xs text-amber-400 hover:underline">Manage All &rarr;</a>
+            </div>
+            <div class="space-y-2.5">
+                {% for r in ratings.recent_ratings %}
+                <div class="p-2.5 rounded-xl bg-gray-950/60 border border-gray-800 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="font-bold text-white">{{ r.user.username }}</span>
+                        {% if r.profile %}<span class="text-brand-400">[{{ r.profile.name }}]</span>{% endif %}
+                        <span class="text-gray-500">•</span>
+                        <span class="text-gray-300">TMDB #{{ r.tmdb_id }} ({{ r.media_type }})</span>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <span class="text-amber-400 font-bold font-mono">
+                            {% for i in "12345" %}{% if forloop.counter <= r.score %}★{% else %}☆{% endif %}{% endfor %}
+                            ({{ r.score }}/5)
+                        </span>
+                        <span class="text-[10px] text-gray-500 font-mono">{{ r.updated_at|timesince }} ago</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-xs text-gray-500 py-4 text-center">No ratings submitted yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 5: USERS & PROFILES -->
+    <div id="tab-users" class="tab-pane hidden mt-6 space-y-6">
+        <div class="p-5 rounded-2xl bg-gray-900/70 border border-gray-800 shadow-xl">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-800">
+                <div>
+                    <h2 class="text-sm font-bold text-white">Registered User Accounts</h2>
+                    <p class="text-xs text-gray-400">System credentials, staff privileges, and profile breakdown</p>
+                </div>
+                <a href="/admin/auth/user/add/" target="_blank" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition">
+                    + Add New User
+                </a>
+            </div>
+
+            <div class="space-y-3">
+                {% for u in users.recent_users %}
+                <div class="p-3.5 rounded-xl bg-gray-950/60 border border-gray-800 flex items-center justify-between gap-3 text-xs">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-white font-bold shrink-0">
+                            {{ u.username|slice:":1"|upper }}
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-white text-sm truncate">{{ u.username }}</span>
+                                {% if u.is_superuser %}
+                                <span class="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">Superuser</span>
+                                {% elif u.is_staff %}
+                                <span class="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">Staff</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-0.5">
+                                {{ u.email|default:"No email registered" }} • Joined {{ u.date_joined|date:"M d, Y" }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-[11px] font-mono text-gray-400">
+                            {{ u.profiles.count }} Profile{{ u.profiles.count|pluralize }}
+                        </span>
+                        <a href="/admin/auth/user/{{ u.id }}/change/" target="_blank" class="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition">
+                            Edit
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-xs text-gray-500 py-4 text-center">No users registered.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 6: SERVER LOGS -->
+    <div id="tab-logs" class="tab-pane hidden mt-6 space-y-4">
+        <div class="p-5 rounded-2xl bg-gray-900/70 border border-gray-800 shadow-xl">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-800">
+                <div>
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Live Server & Application Log Stream
+                    </h2>
+                    <p class="text-xs text-gray-400">Reading real-time output from filvora.log across Termux and dev workstations</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button 
+                        hx-get="{% url 'admin_logs_stream' %}"
+                        hx-target="#logs-console"
+                        hx-swap="outerHTML"
+                        class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-white transition flex items-center gap-1.5 active:scale-95">
+                        <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        Refresh Logs
+                    </button>
+                </div>
+            </div>
+
+            <div id="logs-console">
+                <pre class="font-mono text-xs text-emerald-400/90 whitespace-pre-wrap leading-relaxed select-text p-4 bg-gray-950/90 rounded-xl border border-gray-800 max-h-96 overflow-y-auto">{{ recent_logs }}</pre>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Tab Switching Script -->
+<script>
+function switchTab(tabId) {
+    // 1. Hide all panes
+    document.querySelectorAll('.tab-pane').forEach(function(pane) {
+        pane.classList.add('hidden');
+    });
+
+    // 2. Remove active state from all buttons
+    document.querySelectorAll('#dashboard-tab-nav .tab-btn').forEach(function(btn) {
+        btn.classList.remove('active', 'text-white', 'bg-gray-900', 'border', 'border-gray-700/80', 'shadow-sm');
+        btn.classList.add('text-gray-400');
+    });
+
+    // 3. Show targeted pane
+    var targetPane = document.getElementById('tab-' + tabId);
+    if (targetPane) {
+        targetPane.classList.remove('hidden');
+    }
+
+    // 4. Set active on targeted button
+    var targetBtn = document.querySelector('#dashboard-tab-nav [data-tab="' + tabId + '"]');
+    if (targetBtn) {
+        targetBtn.classList.add('active', 'text-white', 'bg-gray-900', 'border', 'border-gray-700/80', 'shadow-sm');
+        targetBtn.classList.remove('text-gray-400');
+    }
+}
+</script>
+{% endblock %}

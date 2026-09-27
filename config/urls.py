@@ -11,6 +11,7 @@ urlpatterns = [
     path('browserconfig.xml', RedirectView.as_view(url='/static/icons/browserconfig.xml', permanent=True)),
     path('manifest.json', RedirectView.as_view(url='/static/manifest.json', permanent=True)),
     path('sw.js', RedirectView.as_view(url='/static/sw.js', permanent=True)),
+    path('admin/dashboard/', include('apps.core.dashboard_urls')),
     path('admin/', admin.site.urls),
     path('accounts/', include('apps.accounts.urls')),
     path('library/', include('apps.library.urls')),

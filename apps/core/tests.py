@@ -542,6 +542,91 @@ class CoreViewsTestCase(TestCase):
         self.assertIn('maskable', purposes)
 
 
+class AdminDashboardTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.regular_user = User.objects.create_user(username='regular', password='password123')
+        self.staff_user = User.objects.create_user(username='staffadmin', password='password123', is_staff=True)
+        self.superuser = User.objects.create_superuser(username='superadmin', password='password123', email='admin@filvora.com')
+
+    def test_admin_dashboard_anonymous_redirect(self):
+        response = self.client.get('/admin/dashboard/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response.url)
+
+    def test_admin_dashboard_non_staff_redirect(self):
+        self.client.login(username='regular', password='password123')
+        response = self.client.get('/admin/dashboard/')
+        self.assertEqual(response.status_code, 302)
+
+    def test_admin_dashboard_staff_access_success(self):
+        self.client.login(username='staffadmin', password='password123')
+        response = self.client.get('/admin/dashboard/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('system', response.context)
+        self.assertIn('users', response.context)
+        self.assertIn('streaming', response.context)
+        self.assertIn('ratings', response.context)
+        self.assertIn('library', response.context)
+        self.assertIn('models', response.context)
+        content = response.content.decode('utf-8')
+        self.assertIn('Admin & Developer Dashboard', content)
+        self.assertIn('Purge Cache', content)
+        self.assertIn('Test TMDB Ping', content)
+
+    def test_admin_purge_cache_endpoint(self):
+        self.client.login(username='staffadmin', password='password123')
+        response = self.client.post('/admin/dashboard/purge-cache/', HTTP_HX_REQUEST='true')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Cache Purged', response.content.decode('utf-8'))
+
+    def test_admin_ping_tmdb_endpoint(self):
+        self.client.login(username='staffadmin', password='password123')
+        response = self.client.get('/admin/dashboard/ping-tmdb/', HTTP_HX_REQUEST='true')
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_check_db_endpoint(self):
+        self.client.login(username='staffadmin', password='password123')
+        response = self.client.post('/admin/dashboard/check-db/', HTTP_HX_REQUEST='true')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('PRAGMA check', response.content.decode('utf-8'))
+
+    def test_admin_reset_breaker_endpoint(self):
+        self.client.login(username='staffadmin', password='password123')
+        response = self.client.post('/admin/dashboard/reset-breaker/', HTTP_HX_REQUEST='true')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Circuit Breaker Reset', response.content.decode('utf-8'))
+
+    def test_admin_quick_inspect_endpoints(self):
+        self.client.login(username='staffadmin', password='password123')
+        # inspect by username
+        resp1 = self.client.get('/admin/dashboard/inspect/?q=regular')
+        self.assertEqual(resp1.status_code, 200)
+        self.assertIn('regular', resp1.content.decode('utf-8'))
+
+        # inspect by tmdb id
+        resp2 = self.client.get('/admin/dashboard/inspect/?q=157336')
+        self.assertEqual(resp2.status_code, 200)
+        self.assertIn('TMDB ID #157336', resp2.content.decode('utf-8'))
+
+    def test_admin_models_registered_in_django_admin(self):
+        from django.contrib import admin
+        from apps.accounts.models import UserProfile
+        from apps.library.models import LibraryItem, CustomCollection, SceneBookmark, FavoritePerson
+        from apps.playback.models import PlaybackServerPreference
+        from apps.watch.models import WatchProgress, UserRating
+
+        self.assertIn(UserProfile, admin.site._registry)
+        self.assertIn(LibraryItem, admin.site._registry)
+        self.assertIn(CustomCollection, admin.site._registry)
+        self.assertIn(SceneBookmark, admin.site._registry)
+        self.assertIn(FavoritePerson, admin.site._registry)
+        self.assertIn(PlaybackServerPreference, admin.site._registry)
+        self.assertIn(WatchProgress, admin.site._registry)
+        self.assertIn(UserRating, admin.site._registry)
+
+
+
 
 
 
