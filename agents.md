@@ -537,27 +537,51 @@ To eliminate the daily router power-cycle dilemma (where nightly router shut-off
   3. **Task Switcher Lock**: Pinned with Padlock icon (🔒) in MIUI Recent Apps to prevent RAM optimization kills.
   4. **Termux Wake-Lock**: Invoked via `termux-wake-lock`, creating a persistent foreground notification that prevents Android deep sleep states when the screen is turned off.
 
-### 6.4 Auto-Boot & Autonomous Recovery Engine
-Filvora boots automatically upon phone boot without requiring manual shell interaction via the `Termux:Boot` extension.
+### 6.4 Auto-Boot & Autonomous Recovery Engine (Nightly Wi-Fi Drop Resilience)
+Filvora boots automatically upon phone boot via the `Termux:Boot` extension and runs a persistent low-overhead watchdog daemon that survives nightly Wi-Fi router power shut-offs:
 
-- **Boot Script Path**: `~/.termux/boot/start-filvora.sh`
+- **Boot Script Path**: `~/.termux/boot/start-filvora.sh` (mirrored to `~/start.sh`)
 - **Script Permissions**: `chmod +x ~/.termux/boot/start-filvora.sh`
 - **Script Implementation**:
   ```bash
   #!/data/data/com.termux/files/usr/bin/sh
 
-  # 1. Acquire Android wake lock (prevents CPU sleep when screen is locked)
+  # 1. Acquire Android wake lock (critical: prevents CPU sleep and keeps notification active)
   termux-wake-lock
 
-  # 2. Debounce delay (allows Wi-Fi stack to reconnect and acquire 192.168.1.50)
-  sleep 15
+  # 2. Ensure OpenSSH is running
+  sshd 2>/dev/null
 
   # 3. Enter application directory
-  cd /data/data/com.termux/files/home/Filvora
+  cd /data/data/com.termux/files/home/Filvora || exit 1
 
-  # 4. Daemonize Django development server with persistent output logging
-  nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &
+  echo "[$(date)] Filvora 24/7 Watchdog Started" >> ~/filvora.log
+
+  # 4. Clean any existing stuck processes on port 8000
+  pkill -9 -f "manage.py runserver" 2>/dev/null
+  sleep 1
+
+  # 5. Continuous Watchdog Loop
+  while true; do
+      if ! pgrep -f "manage.py runserver" > /dev/null; then
+          echo "[$(date)] Server offline. Starting Filvora..." >> ~/filvora.log
+          pkill -9 -f "manage.py runserver" 2>/dev/null
+          sleep 2
+          nohup python manage.py runserver 0.0.0.0:8000 >> ~/filvora.log 2>&1 &
+          sleep 3
+      fi
+
+      # Rotate log if larger than 2MB to keep phone fast
+      if [ -f ~/filvora.log ] && [ $(wc -c < ~/filvora.log) -gt 2097152 ]; then
+          tail -n 500 ~/filvora.log > ~/filvora.log.tmp && mv ~/filvora.log.tmp ~/filvora.log
+      fi
+
+      # 30-second low-power sleep (0.0% CPU overhead, preserves battery overnight)
+      sleep 30
+  done
   ```
+- **Nightly Wi-Fi Power-Off Behavior**:
+  When the Wi-Fi router is powered down overnight, the phone remains awake in low-power idle via `termux-wake-lock`. Python remains bound to `0.0.0.0:8000`. The 30s check consumes 0.0% CPU without loop spinning. When Wi-Fi is restored in the morning, the phone re-associates with static IP `192.168.1.50` and incoming connections on port 8000 and 8022 succeed instantaneously with zero manual intervention.
 
 ### 6.5 Power-On Charger Recovery (Dead Battery Resilience)
 By default, powered-down Android devices enter an off-mode charging animation rather than booting the OS when connected to a charger. To ensure the server boots autonomously when re-connected to power after a dead-battery event:

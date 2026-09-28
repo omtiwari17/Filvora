@@ -87,7 +87,7 @@ echo  ====================================================================
 echo.
 echo  [*] Connecting to phone to pull updates and restart background server...
 echo.
-ssh -t -p %SSH_PORT% %SSH_USER%@%PHONE_IP% "cd ~/Filvora && git pull && python manage.py migrate && pkill -f 'python manage.py runserver' && nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 & && sleep 2 && tail -n 15 ~/filvora.log"
+ssh -t -p %SSH_PORT% %SSH_USER%@%PHONE_IP% "cd ~/Filvora && git pull && python manage.py migrate && pkill -9 -f 'manage.py runserver' && sleep 1 && nohup python manage.py runserver 0.0.0.0:8000 >> ~/filvora.log 2>&1 & sleep 2; tail -n 15 ~/filvora.log"
 echo.
 echo  [*] Update cycle finished.
 pause
