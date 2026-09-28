@@ -33,18 +33,20 @@ echo   [2] Stream Live Filvora Logs (Real-time traffic and clicks)
 echo   [3] Check Recent Errors and Crashes (grep error / 500)
 echo   [4] Pull Latest GitHub Code and Restart Server on Phone
 echo   [5] Open Filvora in Browser (http://%PHONE_IP%:8000/)
-echo   [6] Change Username or Server IP
-echo   [7] Exit
+echo   [6] Install 'status' and 'update' Shortcuts on Phone
+echo   [7] Change Username or Server IP
+echo   [8] Exit
 echo.
-set /p opt=" Select Option (1-7) and press Enter: "
+set /p opt=" Select Option (1-8) and press Enter: "
 
 if "%opt%"=="1" goto SSH_SHELL
 if "%opt%"=="2" goto STREAM_LOGS
 if "%opt%"=="3" goto CHECK_ERRORS
 if "%opt%"=="4" goto PULL_UPDATE
 if "%opt%"=="5" goto OPEN_BROWSER
-if "%opt%"=="6" goto EDIT_CREDS
-if "%opt%"=="7" exit /b 0
+if "%opt%"=="6" goto INSTALL_SHORTCUTS
+if "%opt%"=="7" goto EDIT_CREDS
+if "%opt%"=="8" exit /b 0
 
 goto MENU
 
@@ -95,6 +97,21 @@ goto MENU
 
 :OPEN_BROWSER
 start http://%PHONE_IP%:8000/
+goto MENU
+
+:INSTALL_SHORTCUTS
+cls
+echo.
+echo  ====================================================================
+echo         INSTALL CLI SHORTCUTS ('status' ^& 'update') ON PHONE         
+echo  ====================================================================
+echo.
+echo  [*] Connecting to phone to install 'status' and 'update' commands...
+echo.
+ssh -t -p %SSH_PORT% %SSH_USER%@%PHONE_IP% "bash ~/Filvora/scripts/install_phone_shortcuts.sh"
+echo.
+echo  [*] Done! You can now type 'status' and 'update' anytime in Termux.
+pause
 goto MENU
 
 :EDIT_CREDS
