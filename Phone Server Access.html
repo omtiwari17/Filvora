@@ -2,24 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Filvora - Phone Server Access & Credentials</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <title>Filvora - Dedicated Phone Server Access & Remote Control</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <style>
     :root {
       --bg: #030712;
       --card-bg: #111827;
+      --card-bg-subtle: rgba(17, 24, 39, 0.7);
       --border: #1f2937;
+      --border-light: rgba(255, 255, 255, 0.08);
       --primary: #e50914;
       --primary-hover: #f40612;
       --text: #f3f4f6;
       --muted: #9ca3af;
       --accent: #10b981;
+      --sky: #38bdf8;
+      --code-bg: #000000;
     }
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
     body {
       background-color: var(--bg);
@@ -28,19 +34,70 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 40px 20px;
+      padding: max(20px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
     }
+    
+    /* Top Nav Bar */
+    .top-nav {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 10px;
+    }
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+    .nav-btn:hover, .nav-btn:active {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+      border-color: #374151;
+    }
+    .nav-btn.primary {
+      color: var(--sky);
+      border-color: rgba(56, 189, 248, 0.3);
+      background: rgba(56, 189, 248, 0.06);
+    }
+    .nav-btn.primary:hover, .nav-btn.primary:active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--sky);
+    }
+
     .header {
       text-align: center;
-      margin-bottom: 25px;
+      margin-bottom: 22px;
+      width: 100%;
+      max-width: 720px;
     }
     .logo {
-      font-size: 32px;
+      font-size: clamp(22px, 6vw, 32px);
       font-weight: 900;
       letter-spacing: -0.5px;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
       gap: 8px;
+      line-height: 1.2;
+    }
+    .logo-brand {
+      color: #fff;
+      background: linear-gradient(135deg, #fff 40%, #9ca3af 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
     .badge {
       background: rgba(229, 9, 20, 0.15);
@@ -48,135 +105,225 @@
       color: #f87171;
       font-size: 11px;
       font-weight: 700;
-      padding: 2px 8px;
+      padding: 3px 10px;
       border-radius: 9999px;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
+      vertical-align: middle;
+      -webkit-text-fill-color: #f87171;
     }
+    .header-sub {
+      color: var(--muted);
+      font-size: clamp(12px, 3.5vw, 14px);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
     .container {
       width: 100%;
       max-width: 720px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 18px;
     }
+
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      padding: clamp(16px, 4vw, 24px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
+
     .card-title {
-      font-size: 18px;
+      font-size: clamp(15px, 4vw, 18px);
       font-weight: 700;
       margin-bottom: 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
     }
+
     .device-status {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 12px;
+      font-size: 11px;
+      font-weight: 600;
       color: var(--accent);
       background: rgba(16, 185, 129, 0.1);
       border: 1px solid rgba(16, 185, 129, 0.25);
-      padding: 3px 10px;
+      padding: 3px 9px;
       border-radius: 9999px;
     }
     .pulse {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       background: var(--accent);
       border-radius: 50%;
       animation: pulse-dot 1.5s infinite;
+      shrink: 0;
     }
     @keyframes pulse-dot {
       0% { transform: scale(0.9); opacity: 0.8; }
       50% { transform: scale(1.3); opacity: 1; }
       100% { transform: scale(0.9); opacity: 0.8; }
     }
+
+    /* Grid Layout */
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 14px;
+      gap: 12px;
     }
+    @media (max-width: 600px) {
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+    }
+
     .info-box {
       background: rgba(255,255,255,0.03);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 16px;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     .info-label {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--muted);
       text-transform: uppercase;
-      font-weight: 600;
+      font-weight: 700;
       letter-spacing: 0.5px;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
     .info-val {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
-      font-family: monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       color: #fff;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 8px;
     }
+    .info-val-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
     .secret-input {
       background: transparent;
       border: none;
       color: #fff;
-      font-family: monospace;
-      font-size: 15px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 14px;
       font-weight: 700;
       outline: none;
-      width: 100px;
+      width: 70px;
     }
+
+    /* Buttons */
     .copy-btn {
       background: #1f2937;
       border: 1px solid #374151;
       color: #d1d5db;
       font-size: 11px;
       font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 6px;
+      padding: 6px 10px;
+      border-radius: 7px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s ease-in-out;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 4px;
+      user-select: none;
+      touch-action: manipulation;
     }
     .copy-btn:hover {
       background: #374151;
       color: #fff;
       border-color: #4b5563;
     }
+    .copy-btn:active {
+      transform: scale(0.96);
+    }
     .copy-btn.copied {
       background: rgba(16, 185, 129, 0.2);
       border-color: #10b981;
       color: #34d399;
     }
+    .edit-btn {
+      color: var(--sky);
+      border-color: rgba(56, 189, 248, 0.3);
+      background: rgba(56, 189, 248, 0.08);
+    }
+    .edit-btn:hover {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: var(--sky);
+      color: #fff;
+    }
+
+    /* Terminal & Code Boxes */
     .terminal-box {
-      background: #000;
-      border: 1px solid #1f2937;
-      border-radius: 10px;
-      padding: 12px 16px;
-      font-family: monospace;
-      font-size: 13px;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
       color: #34d399;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: 10px;
-      word-break: break-all;
+      gap: 10px;
+      margin-top: 8px;
     }
+    .terminal-cmd {
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      line-height: 1.4;
+      user-select: all;
+    }
+    @media (max-width: 540px) {
+      .terminal-box {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 12px;
+      }
+      .terminal-box .copy-btn {
+        width: 100%;
+        padding: 9px 12px;
+        font-size: 12px;
+      }
+    }
+
+    /* Actions Row */
     .action-row {
       display: flex;
-      gap: 12px;
-      margin-top: 20px;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    @media (max-width: 520px) {
+      .action-row {
+        flex-direction: column;
+        gap: 10px;
+      }
     }
     .btn {
       flex: 1;
@@ -184,18 +331,25 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 12px 20px;
+      padding: 12px 18px;
       border-radius: 10px;
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13px;
       text-decoration: none;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s;
+      user-select: none;
+      touch-action: manipulation;
+      min-height: 44px;
+    }
+    .btn:active {
+      transform: scale(0.98);
     }
     .btn-primary {
       background: var(--primary);
       color: #fff;
       border: none;
+      box-shadow: 0 4px 14px rgba(229, 9, 20, 0.3);
     }
     .btn-primary:hover {
       background: var(--primary-hover);
@@ -207,52 +361,73 @@
     }
     .btn-secondary:hover {
       background: #374151;
+      color: #fff;
     }
-    .cheat-row {
+
+    /* All in One Banner */
+    .aio-banner {
+      background: rgba(229, 9, 20, 0.07);
+      border: 1px solid rgba(229, 9, 20, 0.28);
+      border-radius: 14px;
+      padding: clamp(12px, 3.5vw, 16px);
+      margin-bottom: 16px;
+    }
+    .aio-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      font-size: 13px;
-      gap: 12px;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
     }
-    .cheat-row:last-child {
-      border-bottom: none;
-    }
-    .cheat-cmd-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .cheat-cmd {
-      background: #0b0f19;
-      padding: 5px 10px;
-      border-radius: 6px;
-      font-family: monospace;
-      color: #60a5fa;
+    .aio-title {
       font-size: 12px;
-      border: 1px solid rgba(255,255,255,0.05);
-      cursor: pointer;
-      transition: all 0.15s;
+      font-weight: 800;
+      color: #f87171;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
-    .cheat-cmd:hover {
-      background: #1e293b;
-      color: #93c5fd;
-      border-color: #3b82f6;
+    .aio-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fca5a5;
+      background: #0b0f19;
+      padding: 10px 12px;
+      border-radius: 8px;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      border: 1px solid rgba(229, 9, 20, 0.2);
+      user-select: all;
     }
+    .aio-desc {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 8px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .aio-desc code {
+      color: #cbd5e1;
+      background: rgba(0,0,0,0.5);
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+
+    /* Step Cards */
     .step-card {
       background: rgba(255,255,255,0.02);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
     }
     .step-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .step-title {
       font-size: 13px;
@@ -262,64 +437,182 @@
       align-items: center;
       gap: 8px;
     }
-    .step-badge {
+    .step-num {
       background: #374151;
       color: #fff;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 800;
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
     }
     .step-desc {
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--muted);
       margin-bottom: 8px;
-      line-height: 1.4;
+      line-height: 1.35;
     }
     .step-code-box {
-      background: #000;
+      background: var(--code-bg);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 8px;
-      padding: 8px 12px;
+      padding: 8px 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-family: monospace;
-      font-size: 12px;
-      color: #38bdf8;
-      word-break: break-all;
+      gap: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11.5px;
+      color: var(--sky);
     }
+    .step-cmd {
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+      user-select: all;
+    }
+    @media (max-width: 500px) {
+      .step-code-box {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 9px;
+      }
+      .step-code-box .copy-btn {
+        width: 100%;
+        padding: 7px 10px;
+        font-size: 11px;
+      }
+    }
+
+    /* Cheat Sheet */
+    .cheat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 12.5px;
+      gap: 12px;
+    }
+    .cheat-row:last-child {
+      border-bottom: none;
+    }
+    .cheat-desc {
+      color: #d1d5db;
+      line-height: 1.35;
+    }
+    .cheat-cmd-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .cheat-cmd {
+      background: #0b0f19;
+      padding: 5px 9px;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #60a5fa;
+      font-size: 11.5px;
+      border: 1px solid rgba(255,255,255,0.06);
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: all;
+    }
+    .cheat-cmd:hover {
+      background: #1e293b;
+      color: #93c5fd;
+      border-color: #3b82f6;
+    }
+    @media (max-width: 600px) {
+      .cheat-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 7px;
+        padding: 11px 0;
+      }
+      .cheat-cmd-group {
+        width: 100%;
+        display: flex;
+        gap: 6px;
+      }
+      .cheat-cmd {
+        flex: 1;
+        word-break: break-all;
+        overflow-wrap: anywhere;
+        font-size: 11px;
+        padding: 7px 9px;
+      }
+      .cheat-cmd-group .copy-btn {
+        padding: 7px 12px;
+      }
+    }
+
     .hint {
       font-size: 12px;
       color: var(--muted);
       margin-top: 14px;
       line-height: 1.5;
     }
+    .hint code {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e5e7eb;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+
+    /* Responsive Floating Toast */
     #toast {
       position: fixed;
-      bottom: 24px;
+      bottom: max(20px, env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
       background: #10b981;
       color: #fff;
       font-weight: 700;
-      font-size: 13px;
-      padding: 10px 22px;
+      font-size: 12px;
+      padding: 10px 20px;
       border-radius: 9999px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.6);
       display: none;
       z-index: 9999;
       pointer-events: none;
+      white-space: nowrap;
+      max-width: 90vw;
+      text-align: center;
+      animation: toast-fade 0.2s ease-out;
+    }
+    @keyframes toast-fade {
+      from { opacity: 0; transform: translate(-50%, 10px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
     }
   </style>
 </head>
 <body>
 
+  <!-- Top Navigation Shortcuts -->
+  <div class="top-nav">
+    <a href="/" class="nav-btn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to Filvora
+    </a>
+    <a href="/server-hub/" class="nav-btn primary">
+      Live Server Hub ↗
+    </a>
+  </div>
+
   <div class="header">
-    <div class="logo">FILVORA <span class="badge">Dedicated Server Hub</span></div>
-    <p style="color: var(--muted); font-size: 14px; margin-top: 6px;">Xiaomi Redmi Note 8 Pro (MIUI 12.5.10 / Android 11)</p>
+    <div class="logo">
+      <span class="logo-brand">FILVORA</span>
+      <span class="badge">Dedicated Server Hub</span>
+    </div>
+    <p class="header-sub">Xiaomi Redmi Note 8 Pro (MIUI 12.5.10 / Android 11 / Termux arm64)</p>
   </div>
 
   <div class="container">
@@ -333,9 +626,9 @@
 
       <div class="grid">
         <div class="info-box">
-          <div class="info-label">Static IP Address</div>
+          <div class="info-label">Static LAN IP Address</div>
           <div class="info-val">
-            <span>192.168.1.50</span>
+            <span class="info-val-text">192.168.1.50</span>
             <button class="copy-btn" onclick="copyText('192.168.1.50', this)">Copy</button>
           </div>
         </div>
@@ -343,7 +636,7 @@
         <div class="info-box">
           <div class="info-label">SSH Port (Termux)</div>
           <div class="info-val">
-            <span>8022</span>
+            <span class="info-val-text">8022</span>
             <button class="copy-btn" onclick="copyText('8022', this)">Copy</button>
           </div>
         </div>
@@ -351,10 +644,10 @@
         <div class="info-box">
           <div class="info-label">Termux Username</div>
           <div class="info-val">
-            <span id="user-val">u0_a256</span>
-            <div style="display:flex; gap:6px;">
+            <span id="user-val" class="info-val-text">u0_a256</span>
+            <div class="btn-group">
               <button class="copy-btn" onclick="copyText(document.getElementById('user-val').innerText, this)">Copy</button>
-              <button class="copy-btn" onclick="promptUser()">Edit</button>
+              <button class="copy-btn edit-btn" onclick="promptUser()">Edit</button>
             </div>
           </div>
         </div>
@@ -363,26 +656,31 @@
           <div class="info-label">Termux Password</div>
           <div class="info-val">
             <input type="password" id="pass-val" value="1234" class="secret-input" readonly>
-            <div style="display:flex; gap:6px;">
-              <button class="copy-btn" onclick="togglePass()">Show</button>
+            <div class="btn-group">
+              <button class="copy-btn" onclick="togglePass(this)">Show</button>
               <button class="copy-btn" onclick="copyText(document.getElementById('pass-val').value, this)">Copy</button>
-              <button class="copy-btn" onclick="promptPass()">Edit</button>
+              <button class="copy-btn edit-btn" onclick="promptPass()">Edit</button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="info-label" style="margin-top: 18px;">Quick Connect SSH Command (PowerShell / CMD)</div>
+      <div class="info-label" style="margin-top: 16px;">Quick Connect SSH Command (PowerShell / Terminal)</div>
       <div class="terminal-box">
-        <span id="ssh-cmd">ssh -p 8022 u0_a256@192.168.1.50</span>
-        <button class="copy-btn" style="background:#111827; border-color:#34d399; color:#34d399;" onclick="copyText(document.getElementById('ssh-cmd').innerText, this)">Copy Command</button>
+        <span id="ssh-cmd" class="terminal-cmd">ssh -p 8022 u0_a256@192.168.1.50</span>
+        <button class="copy-btn" style="background:#111827; border-color:#34d399; color:#34d399;" onclick="copyText(document.getElementById('ssh-cmd').innerText, this)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          Copy Command
+        </button>
       </div>
 
       <div class="action-row">
-        <a href="http://192.168.1.50:8000/" target="_blank" class="btn btn-primary">
-          Open Filvora Web App ↗
+        <a href="http://192.168.1.50:8000/" target="_blank" rel="noopener" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+          Open Filvora Web App
         </a>
-        <button onclick="copyText('ssh -p 8022 u0_a256@192.168.1.50', this)" class="btn btn-secondary">
+        <button onclick="copyText(document.getElementById('ssh-cmd').innerText, this)" class="btn btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
           Copy SSH Connect
         </button>
       </div>
@@ -392,23 +690,25 @@
     <div class="card">
       <div class="card-title">
         <span>How to Pull & Update Running Code</span>
-        <span style="font-size:12px; color:#38bdf8; font-weight:600;">Standard Deployment Runbook</span>
+        <span style="font-size:11px; color:var(--sky); font-weight:700;">Deployment Runbook</span>
       </div>
 
-      <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">
-        When you push new bug fixes or features from your PC to GitHub, follow these steps in your phone's terminal:
+      <p style="font-size:12.5px; color:var(--muted); margin-bottom:14px; line-height:1.4;">
+        When you push new bug fixes or features from your PC to GitHub, run these commands in your phone's Termux:
       </p>
 
       <!-- 1-CLICK ALL IN ONE -->
-      <div style="background:rgba(229,9,20,0.08); border:1px solid rgba(229,9,20,0.3); border-radius:12px; padding:16px; margin-bottom:20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <span style="font-size:13px; font-weight:800; color:#f87171; text-transform:uppercase; letter-spacing:0.5px;">⚡ 1-Click All-in-One Instant Update Command</span>
-          <button class="copy-btn" style="background:#e50914; color:#fff; border:none;" onclick="copyText('update', this)">Copy 'update'</button>
+      <div class="aio-banner">
+        <div class="aio-header">
+          <span class="aio-title">⚡ 1-Click All-in-One Instant Update</span>
+          <button class="copy-btn" style="background:#e50914; color:#fff; border:none; padding:6px 12px; font-weight:700;" onclick="copyText('update', this)">Copy 'update'</button>
         </div>
-        <div style="font-family:monospace; font-size:12px; color:#fca5a5; background:#0b0f19; padding:10px 12px; border-radius:8px; word-break:break-all;">
+        <div class="aio-code">
           update
         </div>
-        <p style="font-size:11px; color:#9ca3af; margin-top:8px;">Or run the full pipeline: <code>cd ~/Filvora && git pull && python manage.py migrate && pkill -9 -f "manage.py runserver" && sleep 1 && nohup python manage.py runserver 0.0.0.0:8000 >> ~/filvora.log 2>&1 < /dev/null & sleep 2</code></p>
+        <p class="aio-desc">
+          Or run the direct pipeline: <code>cd ~/Filvora && git pull && python manage.py migrate && pkill -f "python manage.py runserver" && nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &</code>
+        </p>
       </div>
 
       <!-- STEP BY STEP CARDS -->
@@ -416,20 +716,20 @@
         <div class="step-header">
           <div class="step-title"><span class="step-num">1</span> Pull Latest Code from GitHub</div>
         </div>
-        <div class="step-desc">Downloads newly pushed code commits into your phone's Filvora repository.</div>
+        <div class="step-desc">Downloads newly pushed commits into your phone's Filvora repository.</div>
         <div class="step-code-box">
-          <span>cd ~/Filvora && git pull</span>
+          <span class="step-cmd">cd ~/Filvora && git pull</span>
           <button class="copy-btn" onclick="copyText('cd ~/Filvora && git pull', this)">Copy</button>
         </div>
       </div>
 
       <div class="step-card">
         <div class="step-header">
-          <div class="step-title"><span class="step-num">2</span> Run Database Migrations (If models changed)</div>
+          <div class="step-title"><span class="step-num">2</span> Run Database Migrations</div>
         </div>
         <div class="step-desc">Applies any new database tables or column schema changes safely.</div>
         <div class="step-code-box">
-          <span>python manage.py migrate</span>
+          <span class="step-cmd">python manage.py migrate</span>
           <button class="copy-btn" onclick="copyText('python manage.py migrate', this)">Copy</button>
         </div>
       </div>
@@ -440,7 +740,7 @@
         </div>
         <div class="step-desc">Terminates the previous running instance so Python loads your new code.</div>
         <div class="step-code-box">
-          <span>pkill -f "python manage.py runserver"</span>
+          <span class="step-cmd">pkill -f "python manage.py runserver"</span>
           <button class="copy-btn" onclick="copyText('pkill -f &quot;python manage.py runserver&quot;', this)">Copy</button>
         </div>
       </div>
@@ -449,9 +749,9 @@
         <div class="step-header">
           <div class="step-title"><span class="step-num">4</span> Start Updated Server in Background</div>
         </div>
-        <div class="step-desc">Relaunches the server with <code>nohup</code> so it continues running even after you disconnect SSH.</div>
+        <div class="step-desc">Relaunches the server with <code>nohup</code> so it continues running after SSH disconnects.</div>
         <div class="step-code-box">
-          <span>nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &</span>
+          <span class="step-cmd">nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &</span>
           <button class="copy-btn" onclick="copyText('nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &', this)">Copy</button>
         </div>
       </div>
@@ -462,7 +762,7 @@
         </div>
         <div class="step-desc">Checks that Django started cleanly without errors.</div>
         <div class="step-code-box">
-          <span>tail -n 20 ~/filvora.log</span>
+          <span class="step-cmd">tail -n 20 ~/filvora.log</span>
           <button class="copy-btn" onclick="copyText('tail -n 20 ~/filvora.log', this)">Copy</button>
         </div>
       </div>
@@ -473,7 +773,7 @@
       <div class="card-title">Remote Terminal Cheat Sheet (1-Click Copy)</div>
 
       <div class="cheat-row">
-        <span>Stream live traffic & clicks in real time</span>
+        <span class="cheat-desc">Stream live traffic & clicks in real time</span>
         <div class="cheat-cmd-group">
           <span class="cheat-cmd" onclick="copyText('tail -f ~/filvora.log', this)">tail -f ~/filvora.log</span>
           <button class="copy-btn" onclick="copyText('tail -f ~/filvora.log', this)">Copy</button>
@@ -481,7 +781,7 @@
       </div>
 
       <div class="cheat-row">
-        <span>Check for server errors or 500s</span>
+        <span class="cheat-desc">Check for server errors or 500s</span>
         <div class="cheat-cmd-group">
           <span class="cheat-cmd" onclick="copyText('grep -iE &quot;error|500&quot; ~/filvora.log', this)">grep -iE "error|500" ~/filvora.log</span>
           <button class="copy-btn" onclick="copyText('grep -iE &quot;error|500&quot; ~/filvora.log', this)">Copy</button>
@@ -489,7 +789,7 @@
       </div>
 
       <div class="cheat-row">
-        <span>Verify Python server process is running</span>
+        <span class="cheat-desc">Verify Python server process is running</span>
         <div class="cheat-cmd-group">
           <span class="cheat-cmd" onclick="copyText('pgrep -fl python', this)">pgrep -fl python</span>
           <button class="copy-btn" onclick="copyText('pgrep -fl python', this)">Copy</button>
@@ -497,7 +797,7 @@
       </div>
 
       <div class="cheat-row">
-        <span>Clear old log file</span>
+        <span class="cheat-desc">Clear old log file</span>
         <div class="cheat-cmd-group">
           <span class="cheat-cmd" onclick="copyText('> ~/filvora.log', this)">> ~/filvora.log</span>
           <button class="copy-btn" onclick="copyText('> ~/filvora.log', this)">Copy</button>
@@ -505,7 +805,7 @@
       </div>
 
       <div class="cheat-row">
-        <span>Check phone local IP address</span>
+        <span class="cheat-desc">Check phone local IP address</span>
         <div class="cheat-cmd-group">
           <span class="cheat-cmd" onclick="copyText('ifconfig wlan0 | grep inet', this)">ifconfig wlan0 | grep inet</span>
           <button class="copy-btn" onclick="copyText('ifconfig wlan0 | grep inet', this)">Copy</button>
@@ -513,7 +813,7 @@
       </div>
 
       <p class="hint">
-        💡 <strong>Tip</strong>: Double-click <code>Connect to Phone Terminal.bat</code> anytime in your project folder to open the terminal without typing anything manually.
+        💡 <strong>Tip</strong>: Double-click <code>Connect to Phone Terminal.bat</code> anytime on your PC to launch an instant SSH terminal without typing commands.
       </p>
     </div>
 
@@ -562,11 +862,11 @@
     function onCopySuccess(txt, btnElement) {
       showToast('Copied: ' + txt);
       if (btnElement && btnElement.classList.contains('copy-btn')) {
-        const original = btnElement.innerText;
-        btnElement.innerText = 'Copied!';
+        const original = btnElement.innerHTML;
+        btnElement.innerHTML = '✓ Copied';
         btnElement.classList.add('copied');
         setTimeout(() => {
-          btnElement.innerText = original;
+          btnElement.innerHTML = original;
           btnElement.classList.remove('copied');
         }, 1500);
       }
@@ -581,9 +881,8 @@
       }, 2000);
     }
 
-    function togglePass() {
+    function togglePass(btn) {
       const input = document.getElementById('pass-val');
-      const btn = event.target;
       if (input.type === 'password') {
         input.type = 'text';
         btn.innerText = 'Hide';
@@ -596,33 +895,37 @@
     function promptUser() {
       const current = document.getElementById('user-val').innerText;
       const val = prompt('Enter your Termux username (run "whoami" on your phone):', current);
-      if (val) {
-        document.getElementById('user-val').innerText = val;
-        document.getElementById('ssh-cmd').innerText = `ssh -p 8022 ${val}@192.168.1.50`;
-        localStorage.setItem('filvora_ssh_user', val);
+      if (val && val.trim()) {
+        const cleanVal = val.trim();
+        document.getElementById('user-val').innerText = cleanVal;
+        document.getElementById('ssh-cmd').innerText = `ssh -p 8022 ${cleanVal}@192.168.1.50`;
+        localStorage.setItem('filvora_ssh_user', cleanVal);
+        showToast('Username updated!');
       }
     }
 
     function promptPass() {
       const current = document.getElementById('pass-val').value;
       const val = prompt('Enter your Termux password:', current);
-      if (val) {
-        document.getElementById('pass-val').value = val;
-        localStorage.setItem('filvora_ssh_pass', val);
-        showToast('Password updated and saved!');
+      if (val && val.trim()) {
+        const cleanVal = val.trim();
+        document.getElementById('pass-val').value = cleanVal;
+        localStorage.setItem('filvora_ssh_pass', cleanVal);
+        showToast('Password saved locally!');
       }
     }
 
-    // Restore saved user if any
-    const savedUser = localStorage.getItem('filvora_ssh_user') || 'u0_a256';
-    document.getElementById('user-val').innerText = savedUser;
-    document.getElementById('ssh-cmd').innerText = `ssh -p 8022 ${savedUser}@192.168.1.50`;
+    // Restore saved user & pass if any
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedUser = localStorage.getItem('filvora_ssh_user') || 'u0_a256';
+      document.getElementById('user-val').innerText = savedUser;
+      document.getElementById('ssh-cmd').innerText = `ssh -p 8022 ${savedUser}@192.168.1.50`;
 
-    // Restore saved password if any
-    const savedPass = localStorage.getItem('filvora_ssh_pass');
-    if (savedPass) {
-      document.getElementById('pass-val').value = savedPass;
-    }
+      const savedPass = localStorage.getItem('filvora_ssh_pass');
+      if (savedPass) {
+        document.getElementById('pass-val').value = savedPass;
+      }
+    });
   </script>
 </body>
 </html>

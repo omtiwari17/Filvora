@@ -3,14 +3,14 @@
 {% block title %}Host Control & Phone Server Hub — Filvora{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+<div class="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-16">
 
     <!-- Secret Hub Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-6 border-b border-gray-800/80">
-        <div>
-            <div class="flex items-center gap-3 mb-1.5">
-                <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Phone Host Control Hub</h1>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight">Phone Host Control Hub</h1>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shrink-0">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
                     24/7 Mobile Server Active
                 </span>
@@ -19,68 +19,71 @@
                 Secret management console for your dedicated Xiaomi Redmi Note 8 Pro (MIUI 12.5.10 / Termux host).
             </p>
         </div>
-        <div class="flex items-center gap-2">
-            <a href="/" class="px-3.5 py-1.5 bg-gray-900 hover:bg-gray-800 border border-gray-700/80 rounded-lg text-xs font-semibold text-gray-300 transition">
-                ← Back to Home
+        <div class="grid grid-cols-2 sm:flex sm:items-center gap-2 shrink-0">
+            <a href="/" class="px-3.5 py-2 sm:py-1.5 bg-gray-900 hover:bg-gray-800 border border-gray-700/80 rounded-lg text-xs font-semibold text-gray-300 transition text-center flex items-center justify-center gap-1 active:scale-95">
+                ← Home
             </a>
-            <button onclick="copyToClipboard('ssh -p 8022 u0_a256@192.168.1.50', 'SSH Command')" class="px-3.5 py-1.5 bg-brand-500 hover:bg-brand-600 rounded-lg text-xs font-bold text-white transition shadow-lg shadow-brand-500/20">
+            <a href="{% url 'phone_server_access' %}" class="px-3.5 py-2 sm:py-1.5 bg-gray-900 hover:bg-gray-800 border border-gray-700/80 rounded-lg text-xs font-semibold text-sky-400 transition text-center flex items-center justify-center gap-1 active:scale-95">
+                Quick Access ↗
+            </a>
+            <button onclick="copyToClipboard('ssh -p 8022 u0_a256@192.168.1.50', 'SSH Command')" class="col-span-2 sm:col-span-1 px-3.5 py-2 sm:py-1.5 bg-brand-500 hover:bg-brand-600 rounded-lg text-xs font-bold text-white transition shadow-lg shadow-brand-500/20 text-center flex items-center justify-center gap-1 active:scale-95">
                 Copy SSH Connect
             </button>
         </div>
     </div>
 
     <!-- Grid: Host Credentials & Quick Actions -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
         
         <!-- Box 1: Static IP -->
-        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-4 backdrop-blur-md">
+        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-3.5 sm:p-4 backdrop-blur-md flex flex-col justify-center">
             <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">LAN Static IP</span>
-            <div class="flex items-center justify-between">
-                <span class="text-base font-mono font-bold text-white">{{ server_ip }}</span>
-                <button onclick="copyToClipboard('{{ server_ip }}', 'IP Address')" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[11px] font-medium text-gray-300 transition">Copy</button>
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-sm sm:text-base font-mono font-bold text-white truncate">{{ server_ip }}</span>
+                <button onclick="copyToClipboard('{{ server_ip }}', 'IP Address')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs sm:text-[11px] font-medium text-gray-300 transition shrink-0 active:scale-95">Copy</button>
             </div>
         </div>
 
         <!-- Box 2: SSH Port -->
-        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-4 backdrop-blur-md">
+        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-3.5 sm:p-4 backdrop-blur-md flex flex-col justify-center">
             <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">SSH Port (Termux)</span>
-            <div class="flex items-center justify-between">
-                <span class="text-base font-mono font-bold text-white">{{ ssh_port }}</span>
-                <button onclick="copyToClipboard('{{ ssh_port }}', 'SSH Port')" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[11px] font-medium text-gray-300 transition">Copy</button>
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-sm sm:text-base font-mono font-bold text-white truncate">{{ ssh_port }}</span>
+                <button onclick="copyToClipboard('{{ ssh_port }}', 'SSH Port')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs sm:text-[11px] font-medium text-gray-300 transition shrink-0 active:scale-95">Copy</button>
             </div>
         </div>
 
         <!-- Box 3: Username -->
-        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-4 backdrop-blur-md">
+        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-3.5 sm:p-4 backdrop-blur-md flex flex-col justify-center">
             <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Termux Username</span>
-            <div class="flex items-center justify-between">
-                <span id="hub-username-val" class="text-base font-mono font-bold text-white">{{ ssh_user }}</span>
-                <div class="flex items-center gap-1">
-                    <button onclick="copyToClipboard(document.getElementById('hub-username-val').innerText, 'Username')" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[11px] font-medium text-gray-300 transition">Copy</button>
-                    <button onclick="editHubUsername()" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[11px] font-medium text-sky-400 transition">Edit</button>
+            <div class="flex items-center justify-between gap-2">
+                <span id="hub-username-val" class="text-sm sm:text-base font-mono font-bold text-white truncate">{{ ssh_user }}</span>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <button onclick="copyToClipboard(document.getElementById('hub-username-val').innerText, 'Username')" class="px-2 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs sm:text-[11px] font-medium text-gray-300 transition active:scale-95">Copy</button>
+                    <button onclick="editHubUsername()" class="px-2 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs sm:text-[11px] font-medium text-sky-400 transition active:scale-95">Edit</button>
                 </div>
             </div>
         </div>
 
         <!-- Box 4: Password -->
-        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-4 backdrop-blur-md">
+        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-3.5 sm:p-4 backdrop-blur-md flex flex-col justify-center">
             <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Termux Password</span>
-            <div class="flex items-center justify-between">
-                <input type="password" id="hub-password-val" value="1234" class="bg-transparent text-base font-mono font-bold text-white outline-none w-24" readonly>
-                <div class="flex items-center gap-1">
-                    <button onclick="toggleHubPassword()" id="hub-pass-btn" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[11px] font-medium text-gray-300 transition">Show</button>
-                    <button onclick="editHubPassword()" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[11px] font-medium text-sky-400 transition">Edit</button>
+            <div class="flex items-center justify-between gap-2">
+                <input type="password" id="hub-password-val" value="1234" class="bg-transparent text-sm sm:text-base font-mono font-bold text-white outline-none w-20 sm:w-24 shrink" readonly>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <button onclick="toggleHubPassword()" id="hub-pass-btn" class="px-2 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs sm:text-[11px] font-medium text-gray-300 transition active:scale-95">Show</button>
+                    <button onclick="editHubPassword()" class="px-2 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs sm:text-[11px] font-medium text-sky-400 transition active:scale-95">Edit</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Quick SSH Terminal Command Box -->
-    <div class="bg-gray-900/80 border border-gray-800/90 rounded-2xl p-5 mb-8 shadow-xl">
+    <div class="bg-gray-900/80 border border-gray-800/90 rounded-2xl p-4 sm:p-5 mb-8 shadow-xl">
         <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Connect From PowerShell or Terminal</span>
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-black/80 border border-gray-800 rounded-xl p-3 font-mono text-xs sm:text-sm text-emerald-400">
-            <span id="hub-ssh-full-cmd">ssh -p 8022 u0_a256@192.168.1.50</span>
-            <button onclick="copyToClipboard(document.getElementById('hub-ssh-full-cmd').innerText, 'SSH Command')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs font-semibold shrink-0 transition flex items-center justify-center gap-1.5">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-black/80 border border-gray-800 rounded-xl p-3 sm:p-3.5 font-mono text-xs sm:text-sm text-emerald-400">
+            <span id="hub-ssh-full-cmd" class="break-all select-all leading-relaxed">ssh -p 8022 u0_a256@192.168.1.50</span>
+            <button onclick="copyToClipboard(document.getElementById('hub-ssh-full-cmd').innerText, 'SSH Command')" class="w-full sm:w-auto px-3.5 py-2.5 sm:py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs font-semibold shrink-0 transition flex items-center justify-center gap-1.5 active:scale-95">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                 </svg>
@@ -90,92 +93,94 @@
     </div>
 
     <!-- Live Log Console Card -->
-    <div class="bg-gray-900/80 border border-gray-800/90 rounded-2xl p-5 sm:p-6 mb-8 shadow-2xl">
+    <div class="bg-gray-900/80 border border-gray-800/90 rounded-2xl p-4 sm:p-6 mb-8 shadow-2xl">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-800">
-            <div class="flex items-center gap-2">
-                <div class="flex gap-1.5 mr-2">
+            <div class="flex items-center gap-2 min-w-0">
+                <div class="flex gap-1.5 mr-1 sm:mr-2 shrink-0">
                     <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
                     <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
                     <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
                 </div>
-                <h2 class="text-sm font-bold text-white tracking-wide">Live Phone Server Output (<span class="font-mono text-gray-400">~/filvora.log</span>)</h2>
+                <h2 class="text-xs sm:text-sm font-bold text-white tracking-wide truncate">
+                    Live Phone Server Output (<span class="font-mono text-gray-400">~/filvora.log</span>)
+                </h2>
             </div>
-            <div class="flex items-center gap-2.5">
+            <div class="flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
                 <button hx-get="{% url 'server_hub_log' %}" 
                         hx-target="#server-log-content" 
-                        class="px-3 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 rounded-lg text-xs font-medium transition flex items-center gap-1.5">
+                        class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 rounded-lg text-xs font-medium transition flex items-center gap-1.5 active:scale-95">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                     </svg>
                     Refresh
                 </button>
-                <label class="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none">
+                <label class="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none py-1 px-2.5 rounded-lg bg-gray-800/40 border border-gray-700/50">
                     <input type="checkbox" id="auto-refresh-toggle" onchange="toggleAutoRefresh(this.checked)" class="rounded bg-gray-800 border-gray-700 text-brand-500 focus:ring-0">
                     Auto-refresh (3s)
                 </label>
             </div>
         </div>
 
-        <div id="server-log-container" class="bg-black/90 rounded-xl p-4 border border-gray-800/80 h-72 sm:h-80 overflow-y-auto">
+        <div id="server-log-container" class="bg-black/90 rounded-xl p-3 sm:p-4 border border-gray-800/80 h-64 sm:h-80 overflow-y-auto">
             <div id="server-log-content">
-                <pre class="font-mono text-xs text-emerald-400 whitespace-pre-wrap leading-relaxed select-text">{{ recent_log }}</pre>
+                <pre class="font-mono text-[11px] sm:text-xs text-emerald-400 whitespace-pre-wrap leading-relaxed select-text">{{ recent_log }}</pre>
             </div>
         </div>
-        <p class="text-[11px] text-gray-500 mt-2">Streaming latest runtime lines directly from phone storage without SSH required.</p>
+        <p class="text-[10px] sm:text-[11px] text-gray-500 mt-2">Streaming latest runtime lines directly from phone storage without SSH required.</p>
     </div>
 
     <!-- Code Update Runbook Card -->
-    <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 sm:p-6 mb-8">
-        <div class="flex items-center justify-between mb-4">
+    <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-4 sm:p-6 mb-8">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
             <h3 class="text-sm font-bold text-white">How to Pull & Update Running Code</h3>
             <span class="text-xs text-sky-400 font-medium">Remote Deployment Runbook</span>
         </div>
 
         <!-- 1-Click All in One -->
-        <div class="bg-brand-500/10 border border-brand-500/30 rounded-xl p-4 mb-4">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+        <div class="bg-brand-500/10 border border-brand-500/30 rounded-xl p-3.5 sm:p-4 mb-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-2">
                 <span class="text-xs font-bold text-red-300 uppercase tracking-wider">⚡ 1-Click All-in-One Update Command</span>
-                <button onclick="copyToClipboard('cd ~/Filvora && git pull && python manage.py migrate && pkill -f &quot;python manage.py runserver&quot; && nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &', 'All-in-One Command')" class="px-2.5 py-1 bg-brand-500 hover:bg-brand-600 text-white rounded text-xs font-bold transition self-start sm:self-auto">
+                <button onclick="copyToClipboard('cd ~/Filvora && git pull && python manage.py migrate && pkill -f &quot;python manage.py runserver&quot; && nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &', 'All-in-One Command')" class="w-full sm:w-auto px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white rounded text-xs font-bold transition flex items-center justify-center gap-1 active:scale-95">
                     Copy All-in-One
                 </button>
             </div>
-            <div class="font-mono text-xs text-red-200 bg-black/60 p-2.5 rounded-lg break-all">
+            <div class="font-mono text-[11px] sm:text-xs text-red-200 bg-black/60 p-2.5 rounded-lg break-all select-all">
                 cd ~/Filvora && git pull && python manage.py migrate && pkill -f "python manage.py runserver" && nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &
             </div>
         </div>
 
         <!-- Steps Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div class="bg-black/40 border border-gray-800/80 rounded-xl p-3 flex items-center justify-between">
-                <div>
+            <div class="bg-black/40 border border-gray-800/80 rounded-xl p-3 flex items-center justify-between gap-2.5">
+                <div class="min-w-0">
                     <span class="font-semibold text-gray-300 block mb-0.5">1. Pull Git Updates</span>
-                    <span class="font-mono text-sky-400 text-[11px]">cd ~/Filvora && git pull</span>
+                    <span class="font-mono text-sky-400 text-[11px] block truncate">cd ~/Filvora && git pull</span>
                 </div>
-                <button onclick="copyToClipboard('cd ~/Filvora && git pull', 'Git Pull')" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-[11px]">Copy</button>
+                <button onclick="copyToClipboard('cd ~/Filvora && git pull', 'Git Pull')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs font-medium shrink-0 active:scale-95">Copy</button>
             </div>
 
-            <div class="bg-black/40 border border-gray-800/80 rounded-xl p-3 flex items-center justify-between">
-                <div>
+            <div class="bg-black/40 border border-gray-800/80 rounded-xl p-3 flex items-center justify-between gap-2.5">
+                <div class="min-w-0">
                     <span class="font-semibold text-gray-300 block mb-0.5">2. Run Migrations</span>
-                    <span class="font-mono text-sky-400 text-[11px]">python manage.py migrate</span>
+                    <span class="font-mono text-sky-400 text-[11px] block truncate">python manage.py migrate</span>
                 </div>
-                <button onclick="copyToClipboard('python manage.py migrate', 'Migrate')" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-[11px]">Copy</button>
+                <button onclick="copyToClipboard('python manage.py migrate', 'Migrate')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs font-medium shrink-0 active:scale-95">Copy</button>
             </div>
 
-            <div class="bg-black/40 border border-gray-800/80 rounded-xl p-3 flex items-center justify-between">
-                <div>
+            <div class="bg-black/40 border border-gray-800/80 rounded-xl p-3 flex items-center justify-between gap-2.5">
+                <div class="min-w-0">
                     <span class="font-semibold text-gray-300 block mb-0.5">3. Stop Old Server</span>
-                    <span class="font-mono text-sky-400 text-[11px]">pkill -f "python manage.py runserver"</span>
+                    <span class="font-mono text-sky-400 text-[11px] block truncate">pkill -f "python manage.py runserver"</span>
                 </div>
-                <button onclick="copyToClipboard('pkill -f &quot;python manage.py runserver&quot;', 'Stop Server')" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-[11px]">Copy</button>
+                <button onclick="copyToClipboard('pkill -f &quot;python manage.py runserver&quot;', 'Stop Server')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs font-medium shrink-0 active:scale-95">Copy</button>
             </div>
 
-            <div class="bg-black/40 border border-gray-800/80 rounded-xl p-3 flex items-center justify-between">
-                <div>
+            <div class="bg-black/40 border border-gray-800/80 rounded-xl p-3 flex items-center justify-between gap-2.5">
+                <div class="min-w-0">
                     <span class="font-semibold text-gray-300 block mb-0.5">4. Relaunch Background</span>
-                    <span class="font-mono text-sky-400 text-[11px]">nohup python manage.py runserver ...</span>
+                    <span class="font-mono text-sky-400 text-[11px] block truncate">nohup python manage.py runserver ...</span>
                 </div>
-                <button onclick="copyToClipboard('nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &', 'Start Server')" class="px-2 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-[11px]">Copy</button>
+                <button onclick="copyToClipboard('nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &', 'Start Server')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs font-medium shrink-0 active:scale-95">Copy</button>
             </div>
         </div>
     </div>
@@ -183,7 +188,7 @@
 </div>
 
 <!-- Toast Feedback -->
-<div id="hub-toast" class="fixed bottom-6 right-6 bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 rounded-full shadow-2xl opacity-0 pointer-events-none transition-all duration-300 z-50">
+<div id="hub-toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 rounded-full shadow-2xl opacity-0 pointer-events-none transition-all duration-300 z-50 whitespace-nowrap">
     Copied to clipboard!
 </div>
 
