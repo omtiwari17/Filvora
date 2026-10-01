@@ -30,6 +30,7 @@
 
 | Feature & Subsystem | Primary Codebase Footprint | Architectural Summary & Capabilities |
 | :--- | :--- | :--- |
+| **Dual-App Mobile Fleet Deployment & Bank-Grade Remote Web Terminal** | `scripts/install_phone_shortcuts.sh`, `Connect to Phone Terminal.bat`, `~/.cloudflared/config.yml`, `~/.termux/boot/start-services.sh` | Hosts two independent Django production applications (**Filvora Media & Cinema** on Port 8000 and **Vishwaguru Billing** on Port 8080) alongside a high-performance **Remote Web Terminal** (`ttyd` on Port 7681) on a single dedicated mobile host (Xiaomi Redmi Note 8 Pro, Android 11 / MIUI 12.5.10, Termux arm64). Features a bank-grade 2-tier security shield for the remote web terminal: Tier 1 Cloudflare Edge WAF firewall rule blocking 100% of unauthorized internet bots with Cloudflare's "Access Denied" page while granting entry exclusively via secret query parameter `?key=<your-secret-key>` (with explicit path exemptions for `/token` session auth and `/ws` WebSocket streaming); Tier 2 origin HTTP Basic Auth (`<username>:<password>`) with Android PTY initialization (`-W login`). Provides on-demand anonymous streaming via `share-filvora` (Cloudflare Quick Tunnel `trycloudflare.com`), completely isolating media streaming from the user's personal domain. Ships a dedicated 1-word CLI shortcuts suite (`status`, `update`, `update2`, `share-filvora`) in `$PREFIX/bin/` with targeted zero-collateral process updates. |
 | **Mobile-Optimized Server Hub & Phone Access UI Engine** | `Phone Server Access.html`, `templates/core/server_hub.html`, `apps/core/views.py`, `apps/core/urls.py` | Delivers a luxury, responsive mobile-first interface across both `/server-access/` (alias `/phone-server/`) and `/server-hub/` consoles. Automatically adapts from compact mobile screens (320px–640px) to ultra-wide displays: replaces squashed multi-column credential grids with adaptive single/dual-column layouts (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`), wraps terminal commands with `break-all` and `overflow-wrap: anywhere` preventing horizontal viewport distortion, stacks action and runbook code boxes vertically with full-width touch-friendly buttons (`min-height: 44px` on main CTAs, `min-height: 36px` on copy buttons), reformats the remote terminal cheat sheet into clean stacked cards with full-width command pills, centers floating copy toast notifications (`left: 50%; transform: translateX(-50%)`), respects viewport safe-area insets (`env(safe-area-inset-*)`), and integrates seamless cross-navigation between Filvora home, `/server-access/`, and `/server-hub/`. |
 | **Custom Developer & Admin Operations Dashboard Hub Engine** | `apps/core/admin_dashboard.py`, `apps/core/dashboard_urls.py`, `templates/admin/dashboard.html`, `templates/admin/base_site.html`, `templates/admin/index.html`, `apps/accounts/admin.py`, `apps/library/admin.py`, `apps/playback/admin.py`, `apps/watch/admin.py`, `config/urls.py`, `templates/includes/navbar.html`, `apps/core/tests.py`, `run_all_tests.py` | Ships a comprehensive, dark luxury-themed Operations & Developer Command Center at `/admin/dashboard/` tailored specifically for developers and system administrators. Provides an executive KPI grid tracking total registered users, 24h active streamers, staff counts, total watch hours logged, stream completion rates, average star ratings (with 5-star distribution bars), cache and database disk sizes, and live TMDB connectivity. Implements 6 organized operational tabs: (1) **Overview & KPIs**: Recent live streaming activity feed with progress bars and watch dates, ranked top-watched TMDB titles, rating breakdown, and an instant username/TMDB ID Entity Inspector; (2) **Developer & System Telemetry**: Python runtime, Django version, DEBUG mode indicator, operating system architecture, process PID, timezone, SQLite WAL journal mode check, busy timeout, file-based cache directory metrics, and network node topology (`127.0.0.1`, `192.168.1.5`, `192.168.1.50`); (3) **Model Management Hub**: Centralized grid of all 9 registered models (`Users`, `Profiles`, `Watch Progress`, `Ratings`, `Watchlist`, `Collections`, `Bookmarks`, `Favorite People`, `Server Preferences`) with record counts and 1-click links to changelists and creation forms; (4) **Streaming & Content Analytics**: Movies vs TV series playback distribution bars, watchlist volumes, and latest ratings; (5) **Users & Profiles**: System accounts overview with staff/superuser tags, registration dates, and profile counts; (6) **Live Server Logs**: Real-time monospace log viewer streaming `filvora.log` with 1-click HTMX refresh. Equips the dashboard header with real-time HTMX operations: 1-click **Purge Cache** (clearing file cache, Django cache, and in-memory ratings), 1-click **Test TMDB Ping** (measuring live millisecond latency to TMDB API), and 1-click **PRAGMA DB Check**. Seamlessly integrates with standard Django admin via custom `templates/admin/base_site.html` and `templates/admin/index.html` banners, and adds a dedicated "Admin Dashboard" entry with staff badge in the user profile navigation menu. Verified with 9 dedicated automated unit tests (40 core tests, 187 total project tests, 100% passing). |
 | **Multi-Device OS App Logo, Favicon Suite & PWA Installation Engine** | `scripts/build_icons.py`, `static/icons/`, `static/manifest.json`, `static/sw.js`, `templates/base.html`, `templates/includes/navbar.html`, `templates/components/install_app_modal.html`, `config/urls.py`, `apps/core/tests.py`, `run_all_tests.py` | Ships a comprehensive, multi-platform brand identity suite with high-resolution vector and raster assets tailored for every device OS. Generates the iconic Filvora 3D Cinema "F" Play Prism across standard multi-size binary `favicon.ico` (16, 32, 48, 64 px layers), modern scalable `favicon.svg`, standard PNG favicons (16x16, 32x32, 48x48), Apple Touch Icons (180x180, 152x152, 120x120 for iPhone/iPad), Safari pinned tab silhouette mask (`safari-pinned-tab.svg`), Android/PWA app icons (192x192, 512x512) and 20% safe-zone adaptive maskable icons (`icon-192-maskable.png`, `icon-512-maskable.png`), Windows 10/11 Live Start tiles (`mstile-150x150.png`, `mstile-310x310.png`, `browserconfig.xml`), and OpenGraph/Twitter widescreen social cards (`og-image.png`, 1200x630). Configures direct root redirect routes in `config/urls.py` (`/favicon.ico`, `/manifest.json`, `/browserconfig.xml`, `/sw.js`) completely eliminating 404 lookups. Integrates the glowing Filvora logo mark across Navbar, Login, Registration, 404, 403, and 500 error views. Introduces an interactive PWA Installation Modal (`install_app_modal.html`) with automatic OS detection (1-click install for Android/Chrome/Edge/Windows via `beforeinstallprompt`, visual Share -> Add to Home Screen step-by-step guide for iOS Safari, and standalone detection). Pre-caches all assets in Service Worker (`filvora-static-v5`). Verified with 4 new dedicated automated unit tests (31 core tests, 178 total project tests, 100% passing). |
@@ -595,19 +596,37 @@ By default, powered-down Android devices enter an off-mode charging animation ra
   ```
 - **Behavior**: Disables the off-mode charge loop, forcing the bootloader to proceed directly to kernel and Android OS boot whenever DC power is detected.
 
-### 6.6 Database Migration & Environment Variables
+### 6.6 Dual-Django Multi-App Fleet Architecture on Single Mobile Host
+The Redmi Note 8 Pro concurrently hosts two completely independent production Django applications plus administrative microservices on a single battery-efficient mobile device:
+1. **Filvora Media & Cinema Engine**:
+   - **Root Directory**: `~/Filvora`
+   - **Network Binding**: `0.0.0.0:8000` (Local LAN URL: `http://192.168.1.50:8000/`)
+   - **Primary Log**: `~/filvora.log`
+   - **Database**: SQLite with WAL mode (`~/Filvora/db.sqlite3`)
+   - **Public Access**: Ephemeral anonymous Cloudflare Quick Tunnel via `share-filvora` (`https://*.trycloudflare.com`).
+2. **Vishwaguru Billing App**:
+   - **Root Directory**: `~/vishwaguru-billing`
+   - **Network Binding**: `0.0.0.0:8080` (Local LAN URL: `http://192.168.1.50:8080/`)
+   - **Primary Log**: `~/billing.log`
+   - **Database**: SQLite (`~/vishwaguru-billing/db.sqlite3`)
+3. **Strict Process & Service Isolation**:
+   - Both Django applications execute concurrently under independent Python virtual environments / processes.
+   - Upgrading Filvora via `update` performs a targeted process termination of **Port 8000 only**, leaving Billing on Port 8080 and the Web Terminal on Port 7681 completely untouched.
+   - Upgrading Billing via `update2` targets **Port 8080 only**, ensuring that users streaming movies on Filvora never experience connection drops.
+
+### 6.7 Database Migration, Parity & Environment Variables
 - **Database Parity**: Filvora's SQLite database (`db.sqlite3`) transferred from PC via temporary HTTP file transfer (`python -m http.server 8080` on PC, `curl -o db.sqlite3 http://192.168.1.5:8080/db.sqlite3` on Termux), maintaining 100% user profiles, watch history, bookmarks, and preferences.
 - **Environment Configuration (`~/Filvora/.env`)**:
   ```env
-  DJANGO_SECRET_KEY=dev-secret-key-filvora-123
-  SECRET_KEY=dev-secret-key-filvora-123
+  DJANGO_SECRET_KEY=your-django-secret-key-here
+  SECRET_KEY=your-django-secret-key-here
   DJANGO_DEBUG=True
-  TMDB_API_KEY=2782fa0761a29ed8209ddd73d8ad4861
+  TMDB_API_KEY=your_tmdb_api_key_here
   ```
 - **Critical Architectural Note on Offline Fallback Symptom**:
   If the homepage displays only 4 repeating titles (*Grand Theft Auto VI, Interstellar, Dune, Inception*) across all rails, `TMDB_API_KEY` is missing in `~/Filvora/.env`. When `TMDBClient._fetch` detects no API key or network failure, it falls back to `_get_mock_movies()`. Restoring `.env` and clearing `.cache/django_cache` restores the live TMDB cloud catalog.
 
-### 6.7 Live Monitoring & Server Observability Runbook
+### 6.8 Live Monitoring & Server Observability Runbook
 All stdout and stderr from Django are routed to `~/filvora.log`. Use these operational commands in Termux:
 
 | Operational Objective | Exact Termux Shell Command |
@@ -620,7 +639,7 @@ All stdout and stderr from Django are routed to `~/filvora.log`. Use these opera
 | **All-in-One Instant Git Pull, Migrate & Restart** | `cd ~/Filvora && git pull && python manage.py migrate && pkill -f "python manage.py runserver" && nohup python manage.py runserver 0.0.0.0:8000 > ~/filvora.log 2>&1 &` |
 | **Truncate / Reset Log File** | `> ~/filvora.log` |
 
-### 6.8 Step-by-Step Code Update Procedure
+### 6.9 Step-by-Step Code Update Procedure
 Whenever changes are pushed to GitHub from the PC, update the phone server using these distinct steps:
 1. **Pull Code**: `cd ~/Filvora && git pull`
 2. **Apply Migrations**: `python manage.py migrate`
@@ -629,36 +648,109 @@ Whenever changes are pushed to GitHub from the PC, update the phone server using
 5. **Verify Startup**: `tail -n 20 ~/filvora.log`
 *(Alternatively, execute Option `[4]` in `Connect to Phone Terminal.bat` from Windows to execute the entire update cycle automatically over SSH).*
 
-### 6.9 Secret In-App Dashboard & Telemetry Endpoints (`/server-hub/` & `/server-access/`)
+### 6.10 Secret In-App Dashboard & Telemetry Endpoints (`/server-hub/` & `/server-access/`)
 To eliminate the need to open Windows File Explorer or search through local directories, Filvora exposes two dedicated secret management endpoints accessible from any browser on the local Wi-Fi:
 
 1. **`/server-hub/` (Full Integrated Console with Live HTMX Real-Time Log Streaming)**:
    - **Canonical URL**: **`http://192.168.1.50:8000/server-hub/`**
    - **Controller**: `ServerHubView` & `server_hub_log` in `apps/core/views.py`, template `templates/core/server_hub.html`.
-   - **Capabilities**:
-     - Full cinematic dark theme integrated with Filvora's layout, navbar, and footer.
-     - Live hardware telemetry display: OS detection (`Android 11 / MIUI 12.5.10 (Termux arm64)`), static IP (`192.168.1.50`), and Termux port (`8022`).
-     - **Embedded Live Log Viewer**: Streams recent lines directly from `~/filvora.log` without requiring an active SSH session. Features 1-click manual refresh and an **Auto-refresh (3s)** toggle driven by HTMX polling (`hx-get="{% url 'server_hub_log' %}"`).
-     - **1-Click Copy Engine**: Deploys the HTTP LAN-safe fallback copy engine for all update commands, Git pull snippets, and SSH connection strings.
+   - **Capabilities**: Full cinematic dark theme, live hardware telemetry (`Android 11 / MIUI 12.5.10 (Termux arm64)`), static IP (`192.168.1.50`), Termux SSH port (`8022`), embedded live log viewer streaming `~/filvora.log` with 3s HTMX auto-refresh, and HTTP LAN-safe fallback copy engine for all runbooks.
 
 2. **`/server-access/` (Lightweight Standalone HTML Dashboard)**:
    - **Canonical URL**: **`http://192.168.1.50:8000/server-access/`** (Alias: `http://192.168.1.50:8000/phone-server/`)
    - **Controller**: `phone_server_access_view` in `apps/core/views.py` streaming `BASE_DIR / 'Phone Server Access.html'`.
-   - **Capabilities**:
-     - Lightweight standalone card dashboard rendered independently of Django template tags.
-     - Displays connection credentials (IP, Port, Username, Show/Hide Password, and inline credential editor saving to `localStorage`).
-     - Includes standard remote deployment runbook with individual copy buttons for Git Pull, Migrate, Stop, Relaunch, and the 1-Line All-in-One command.
+   - **Capabilities**: Lightweight standalone dashboard with connection credentials editor (saving to `localStorage`), remote deployment runbook, and 1-click copy buttons.
 
 3. **Universal HTTP LAN Resilient Clipboard Engine**:
-   - Modern browsers (Chrome, Edge, Safari) restrict `navigator.clipboard` to secure contexts (`HTTPS` or `localhost`), causing copy buttons on local HTTP IP addresses (`http://192.168.1.50:8000`) to fail silently.
-   - Filvora incorporates a universal `fallbackCopyToClipboard` (`document.execCommand('copy')` with off-screen `textarea` element and iOS/Android selection range) across `static/js/main.js`, `templates/core/server_hub.html`, `Phone Server Access.html`, `templates/accounts/profiles.html`, and `templates/includes/navbar.html`. All copy actions operate reliably across both HTTP and HTTPS.
+   - Modern browsers restrict `navigator.clipboard` to secure contexts (`HTTPS`), causing copy buttons on local HTTP IP addresses (`http://192.168.1.50:8000`) to fail silently.
+   - Filvora incorporates a universal `fallbackCopyToClipboard` (`document.execCommand('copy')` with off-screen `textarea` element) across all templates. All copy actions operate reliably across both HTTP and HTTPS.
 
-### 6.10 Zero-Risk Global Remote Access via Tailscale (WireGuard Mesh)
-To stream movies from outside the home (e.g. mobile 4G/5G, work, travel) while guaranteeing **0.00% risk** to owned personal/business domains:
-- **Architecture**: Private peer-to-peer WireGuard mesh VPN (`Tailnet`). Eliminates public port forwarding, DNS records, and domain exposure.
-- **Network Scope**: Encrypted point-to-point tunnel between Redmi Note 8 Pro and authorized user client devices. Invisible to public web crawlers, search engines, and automated scanners.
-- **CSRF & Host Security**: `CSRF_TRUSTED_ORIGINS` in `config/settings.py` includes CGNAT IP ranges (`http://100.*`, `https://100.*`, `http://*.ts.net`, `https://*.ts.net`).
-- **Family Sharing**: Supports Tailscale Node Sharing, allowing family members to access the server phone using their own Gmail accounts without sharing passwords or exposing the host PC.
+### 6.11 Remote Web Terminal (`ttyd` on Port 7681) & Android PTY Shell
+To enable remote management from any laptop, PC, or mobile browser without requiring SSH keys or terminal emulators on the client:
+- **Engine**: `ttyd` (compiled C web terminal wrapping xterm.js and libwebsockets).
+- **Execution Command**:
+  ```bash
+  ttyd -p 7681 -c <username>:<password> -W login
+  ```
+- **Android PTY Initialization (`-W login`)**: Standard `ttyd bash` fails in Termux because Android lacks `/etc/passwd` and glibc terminal hooks. Passing `-W login` forces Termux to initialize the complete Android pseudo-terminal (PTY) environment, properly populating `$PATH`, `$PREFIX`, `$HOME`, terminal dimensions, ANSI color profiles, and touch-screen virtual keyboard navigation.
+- **Native Authentication**: Password-protected via `-c <username>:<password>` (Username and Password configured in shell parameters).
+- **Public Domain**: Mapped to `https://terminal.<your-domain>.com/?key=<your-secret-key>` via Cloudflare Tunnel.
+
+### 6.12 Cloudflare Remote Infrastructure: Named vs. Quick Tunnel Architecture
+To balance enterprise-grade security for developer tools against complete domain protection for media streaming, Filvora deploys a hybrid dual-tunnel model on the mobile host:
+
+1. **Permanent Named Tunnel (`phone-server`)**:
+   - **Tunnel ID**: `<your-tunnel-uuid>` (36-character Cloudflare tunnel UUID)
+   - **Config Path**: `~/.cloudflared/config.yml`
+   - **Credentials**: `~/.cloudflared/<your-tunnel-uuid>.json`
+   - **Origin Certificate**: `~/.cloudflared/cert.pem` (authorized for your Cloudflare domain zone)
+   - **Target Route**: Ingress maps `terminal.<your-domain>.com` $\rightarrow$ `http://localhost:7681` (`ttyd`).
+   - **Lifecycle**: Permanent, unchanging connection. Auto-reconnects with exponential backoff on network dips.
+
+2. **Ephemeral Quick Tunnel (`share-filvora`)**:
+   - **Service Endpoint**: `cloudflared tunnel --url http://localhost:8000`
+   - **Domain**: Randomized `https://*.trycloudflare.com` sandbox subdomain.
+   - **Security Rationale**: Filvora streams TMDB-aggregated media embeds. Hosting this traffic on a personal portfolio domain carries DMCA/reputation risk. The Quick Tunnel provides complete anonymity with zero domain association.
+   - **Lifecycle & Reconnection Quirks**: Quick tunnels are ephemeral test sandboxes. Cloudflare edge servers cycle connections every several hours or during network interface switches, generating a brand-new random URL on reconnect and causing previous links to display "Site can't be reached". Running `share-filvora` in Termux regenerates a fresh live link in 3 seconds. Django `CSRF_TRUSTED_ORIGINS` in `config/settings.py` includes `http://*.trycloudflare.com` and `https://*.trycloudflare.com` guaranteeing seamless login and POST operations.
+
+### 6.13 Two-Tier Bank-Grade Security Defense on Web Terminal
+To protect the web terminal shell from internet bots, vulnerability scanners, and automated credential stuffing:
+
+1. **Tier 1 — Cloudflare Edge WAF Firewall Rule**:
+   - **Behavior for Unauthorized Visitors**: Any request to `https://terminal.<your-domain>.com` without the secret key is blocked at Cloudflare's edge with HTTP 403 Forbidden (**"Sorry, you have been blocked / Access Denied"**). Zero packets reach the phone, conserving mobile CPU and battery.
+   - **Secret Parameter Key**: Authorized access requires `?key=<your-secret-key>` in the address bar.
+   - **The Critical `/token` and `/ws` Protocol Fix**:  
+     `ttyd`'s xterm frontend establishes a session by first issuing an internal `fetch('/token')` HTTP GET, then upgrading to `wss://.../ws`. The compiled client does NOT propagate URL query parameters (`?key=<your-secret-key>`) onto the `/token` fetch request. If the WAF rule blocks requests lacking the key, the token fetch is rejected with 403 Forbidden, causing the WebSocket to immediately disconnect with **`Press ↵ to Reconnect`**.  
+     The WAF rule resolves this by explicitly exempting `/token` and `/ws` paths from the block:
+     ```text
+     (http.host eq "terminal.<your-domain>.com" and not (http.request.uri contains "key=<your-secret-key>" or http.request.uri.path eq "/token" or http.request.uri.path eq "/ws"))
+     ```
+2. **Tier 2 — Origin HTTP Basic Authentication**:
+   - Even if an attacker attempts direct requests against exempted endpoints (`/token` or `/ws`), `ttyd` demands HTTP Basic Auth (`<username>:<password>`). Without valid credentials, the origin server returns `401 Unauthorized` and terminates the connection.
+
+### 6.14 Eliminated Remote Access Alternatives & Battle-Tested Decision Log
+During mobile deployment engineering, several remote connectivity technologies were evaluated and rejected based on real-world mobile operating constraints:
+
+| Alternative Evaluated | Why It Failed / Was Dropped | Strategic Takeaway |
+| :--- | :--- | :--- |
+| **Tailscale (WireGuard Mesh)** | Requires running VPN profile slots on client devices (blocking other VPNs), causes high battery drain and frequent background disconnects on Android aggressive sleep, and makes sharing streaming links with family members difficult (requires installing Tailscale app and signing in with personal Gmail). | Dropped per user directive in favor of zero-VPN web tunnels accessible by any standard browser. |
+| **Ngrok** | Free ingress endpoints heavily throttled, rate-limited, and periodically blocked by major Indian telecom ISPs (Jio and Airtel 4G/5G). | Dropped due to ISP routing instability in the local deployment region. |
+| **Serveo** | Free SSH reverse-tunnel sessions are hard-capped at 10 minutes and terminate automatically after 2 minutes of idle traffic. | Dropped due to strict session lifespan constraints incompatible with 24/7 hosting. |
+| **Playit.gg** | Statically compiled Go/Rust binaries fail on Android Termux due to missing glibc network resolution (`/etc/resolv.conf` not present in Android's bionic libc). | Dropped due to native Android libc DNS incompatibility. |
+| **Cloudflare Tunnel (Winner)** | Native `arm64-v8a` Linux binary, handles high-throughput video traffic, traverses carrier-grade NAT (CGNAT) without port forwarding, auto-reconnects, and requires **zero client software**. | Selected as the primary global backbone for both terminal management and public streaming. |
+
+### 6.15 Domain Separation Strategy & Burner Domain Blueprint
+1. **Strict Personal Domain Protection**:  
+   Personal developer domains represent professional brand and engineering portfolios. Because Filvora aggregates third-party video embed players (VidLink, VidFast, AutoEmbed), hosting media streams directly on a primary personal domain introduces unnecessary DMCA notice, DNS flagging, and zone suspension risks.
+2. **Current Solution (Anonymous Sandbox)**:  
+   Filvora is hosted on ephemeral `trycloudflare.com` links generated via `share-filvora`, maintaining 100% legal and cryptographic separation from personal domains.
+3. **Permanent Fixed-URL Blueprint (Optional Secondary Burner Domain)**:  
+   If a permanent URL that never changes and never resets is desired without endangering a primary domain:
+   - Acquire a free or ultra-cheap secondary domain (e.g. `nic.us.kg` free, or a $1 `.xyz` / `.site` / `.online` domain from Spaceship or Porkbun).
+   - Point nameservers to Cloudflare (Free Plan).
+   - Add a CNAME pointing to the existing `phone-server` tunnel ID (`<your-tunnel-uuid>.cfargotunnel.com`).
+   - Add the ingress mapping to `~/.cloudflared/config.yml` on the phone:
+     ```yaml
+     ingress:
+       - hostname: terminal.<your-domain>.com
+         service: http://localhost:7681
+       - hostname: watch.your-burner-domain.com
+         service: http://localhost:8000
+       - service: http_status:404
+     ```
+   - Restart the tunnel (`nohup cloudflared tunnel run phone-server > /dev/null 2>&1 &`). Filvora is permanently live with 24/7 uptime and zero personal domain risk.
+
+### 6.16 Dedicated Fleet CLI Commands & Shortcut Suite (`status`, `update`, `update2`, `share-filvora`)
+To eliminate the need to memorize long shell invocations or manage individual process IDs, Filvora equips the phone's Termux environment with a 1-word CLI shortcut suite installed directly into `$PREFIX/bin/` (via `scripts/install_phone_shortcuts.sh`):
+
+| CLI Command | Installation Path | Target Subsystem | Architectural Role & Execution Workflow |
+| :--- | :--- | :--- | :--- |
+| **`status`** | `$PREFIX/bin/status` | Full Mobile Fleet | **Master Fleet Health Scorecard**: Inspects all active services simultaneously without disturbing running processes. Displays color-coded operational status, PIDs, and direct HTTP/HTTPS URLs for: (1) **Filvora (Port 8000)**; (2) **Vishwaguru Billing (Port 8080)**; (3) **Web Terminal `ttyd` (Port 7681)**; (4) **Cloudflare Tunnels** (differentiates between permanent `phone-server` named tunnel and `trycloudflare` quick tunnel); (5) **Watchdog Supervisor** (`start-services.sh` / `start-filvora.sh`); (6) **OpenSSH (`sshd`)** on Port 8022; and (7) streams the last 3 lines of recent incoming traffic from `~/filvora.log`. |
+| **`update`** | `$PREFIX/bin/update` | Filvora (Port 8000) | **Surgical Zero-Collateral Filvora Updater**: Navigates to `~/Filvora`, runs `git pull` from GitHub, executes `python manage.py migrate`, and performs a surgically targeted termination of **Port 8000 processes only** (`pkill -9 -f "runserver.*8000"`). Leaves Vishwaguru Billing (Port 8080), Web Terminal (Port 7681), SSH (Port 8022), and Cloudflare Tunnels completely unharmed. Relaunches Filvora with `nohup python manage.py runserver 0.0.0.0:8000 >> ~/filvora.log 2>&1 < /dev/null &` and validates health. |
+| **`update2`** | `$PREFIX/bin/update2` | Vishwaguru Billing (Port 8080) | **Surgical Billing App Updater**: Navigates to `~/vishwaguru-billing`, runs `git pull`, applies database migrations (`python manage.py migrate`), terminates ONLY the Port 8080 server (`pkill -9 -f "runserver.*8080"`), and daemonizes Billing with `nohup python manage.py runserver 0.0.0.0:8080 >> ~/billing.log 2>&1 < /dev/null &`. Completely isolates updates so streaming on Filvora is never interrupted. |
+| **`share-filvora`** | `$PREFIX/bin/share-filvora` | Filvora Public Tunnel | **On-Demand Public Anonymous Quick Tunnel**: Kills any stale quick tunnels to prevent port collisions (`pkill -9 -f "cloudflared tunnel --url http://localhost:8000"`), spawns a background anonymous Cloudflare Quick Tunnel (`cloudflared tunnel --url http://localhost:8000`), polls `~/filvora-tunnel.log` for the edge handshake, and prints the live `https://*.trycloudflare.com` URL in an ASCII terminal card. Enables instant remote streaming for family/friends with zero VPN, zero client app installations, and **0.00% risk to personal domain**. |
+
+
 
 
 

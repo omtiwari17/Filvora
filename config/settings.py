@@ -57,6 +57,8 @@ else:
         'https://100.*',
         'http://*.ts.net',
         'https://*.ts.net',
+        'http://*.trycloudflare.com',
+        'https://*.trycloudflare.com',
     ]
 
 # Dedicated Branded CSRF Failure View with Token Auto-Healing
