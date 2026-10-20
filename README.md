@@ -165,7 +165,7 @@ python -m venv venv
 # Install dependencies
 pip install -r requirements.txt
 
-# Copy environment variables and insert your TMDB_API_KEY
+# Copy environment variables and insert TMDB_API_KEY
 Copy-Item .env.example .env
 
 # Run database migrations
