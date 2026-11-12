@@ -441,11 +441,44 @@ img.poster-fade.is-loaded {
     display: inline-flex !important;
 }
 
+/* Phase 6: Shimmer Skeleton Placeholders */
+@keyframes filvoraShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.skeleton-shimmer {
+    background: linear-gradient(
+        110deg,
+        rgba(39, 39, 42, 0.72) 25%,
+        rgba(63, 63, 70, 0.88) 42%,
+        rgba(39, 39, 42, 0.72) 60%
+    );
+    background-size: 200% 100%;
+    animation: filvoraShimmer 1.45s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.htmx-indicator-block {
+    display: none;
+}
+
+.htmx-request.htmx-indicator-block,
+.htmx-request .htmx-indicator-block {
+    display: block;
+}
+
+#episodes-loading-skeleton.htmx-request + #episodes-container {
+    opacity: 0.35;
+    pointer-events: none;
+    transition: opacity 150ms ease-out;
+}
+
 /* Respect OS reduced-motion preference */
 @media (prefers-reduced-motion: reduce) {
     .animate-ping,
     .animate-pulse,
-    .animate-pulse-slow {
+    .animate-pulse-slow,
+    .skeleton-shimmer {
         animation: none !important;
     }
     img.poster-fade {

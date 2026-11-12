@@ -715,6 +715,24 @@ class AdminDashboardTestCase(TestCase):
         self.assertIn('watchlist-list-release', html_l)
         self.assertIn('setWatchlistView(', html_l)
 
+    def test_phase6_view_transitions_and_shimmer_skeletons(self):
+        """Verifies Phase 6 polish: native @view-transition, search shimmer skeletons, and season episode skeleton."""
+        res_home = self.client.get('/')
+        self.assertEqual(res_home.status_code, 200)
+        html_home = res_home.content.decode('utf-8')
+        self.assertIn('@view-transition', html_home)
+        self.assertIn('id="search-loading-skeleton"', html_home)
+        self.assertIn('id="mobile-search-loading-skeleton"', html_home)
+        self.assertIn('hx-indicator="#search-loading-skeleton"', html_home)
+
+        res_series = self.client.get('/series/1399/')
+        self.assertEqual(res_series.status_code, 200)
+        html_series = res_series.content.decode('utf-8')
+        self.assertIn('id="episodes-loading-skeleton"', html_series)
+        self.assertIn('skeleton-shimmer', html_series)
+        if 'id="season-tabs-track"' in html_series:
+            self.assertIn('hx-indicator="#episodes-loading-skeleton"', html_series)
+
 
 
 

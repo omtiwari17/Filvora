@@ -177,6 +177,47 @@
         #video-container.pip-floating-mode #pip-floating-toolbar {
             display: flex !important;
         }
+        /* Phase 6: Shimmer Skeletons & Slide-Over Episode Drawer Fullscreen Layering */
+        @keyframes filvoraShimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .skeleton-shimmer {
+            background: linear-gradient(
+                110deg,
+                rgba(39, 39, 42, 0.72) 25%,
+                rgba(63, 63, 70, 0.88) 42%,
+                rgba(39, 39, 42, 0.72) 60%
+            );
+            background-size: 200% 100%;
+            animation: filvoraShimmer 1.45s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        .htmx-indicator-block { display: none; }
+        .htmx-request.htmx-indicator-block,
+        .htmx-request .htmx-indicator-block { display: block; }
+        #drawer-episodes-skeleton.htmx-request + #drawer-episodes-list {
+            opacity: 0.35;
+            pointer-events: none;
+            transition: opacity 150ms ease-out;
+        }
+        #player-episode-drawer-backdrop,
+        #player-episode-drawer {
+            z-index: 2147483647 !important;
+        }
+        .is-fullscreen #player-episode-drawer-backdrop,
+        :fullscreen #player-episode-drawer-backdrop,
+        :-webkit-full-screen #player-episode-drawer-backdrop,
+        :-moz-full-screen #player-episode-drawer-backdrop,
+        .is-fullscreen #player-episode-drawer,
+        :fullscreen #player-episode-drawer,
+        :-webkit-full-screen #player-episode-drawer,
+        :-moz-full-screen #player-episode-drawer {
+            z-index: 2147483647 !important;
+            position: fixed !important;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .skeleton-shimmer { animation: none !important; }
+        }
     </style>
 </head>
 <body id="player-wrapper" class="bg-black text-white h-[100dvh] w-screen overflow-hidden select-none relative">
@@ -309,6 +350,22 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                 </svg>
             </a>
+            {% endif %}
+
+            {% if media_type == 'tv' %}
+            <!-- Episodes Slide-Over Drawer Trigger (Works seamlessly inside Cinema Fullscreen) -->
+            <button type="button"
+                    id="episode-drawer-btn"
+                    onclick="toggleEpisodeDrawer()"
+                    title="Browse Episodes (E)"
+                    aria-expanded="false"
+                    aria-controls="player-episode-drawer"
+                    class="hidden sm:inline-flex bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 hover:border-brand-500/50 items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
+                <svg class="h-4 w-4 text-brand-500 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                <span>Episodes</span>
+            </button>
             {% endif %}
 
             <!-- My List Button (Desktop & Tablet only, on mobile accessible via More Sheet) -->
@@ -592,6 +649,21 @@
                 </button>
             </div>
 
+            {% if media_type == 'tv' %}
+            <!-- Mobile Episodes Drawer Shortcut -->
+            <button type="button"
+                    onclick="closeMobilePlayerSheet(); openEpisodeDrawer();"
+                    class="w-full px-4 py-3 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-white text-xs font-bold flex items-center justify-between transition active:scale-[0.99]">
+                <span class="flex items-center gap-2.5">
+                    <svg class="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
+                    <span>Browse All Episodes</span>
+                </span>
+                <span class="text-[11px] font-mono text-zinc-400">Season {{ season }}</span>
+            </button>
+            {% endif %}
+
             <!-- Sleep Timer Selector -->
             <div class="space-y-1.5">
                 <label class="text-[10px] font-black uppercase text-gray-400 tracking-wider flex items-center gap-1">
@@ -710,6 +782,80 @@
             </button>
         </div>
     </div>
+    {% endif %}
+
+    {% if media_type == 'tv' %}
+    <!-- Slide-Over Episode Drawer Backdrop (Fullscreen-Safe Top Layer) -->
+    <div id="player-episode-drawer-backdrop"
+         onclick="closeEpisodeDrawer()"
+         class="hidden fixed inset-0 bg-black/65 backdrop-blur-sm transition-opacity duration-200 cursor-pointer"></div>
+
+    <!-- In-Player Translucent Glass Slide-Over Episode Drawer -->
+    <aside id="player-episode-drawer"
+           role="dialog"
+           aria-modal="true"
+           aria-label="Series Episode Browser"
+           aria-hidden="true"
+           class="fixed top-0 right-0 bottom-0 w-full sm:w-[400px] max-w-[92vw] bg-zinc-950/92 backdrop-blur-2xl border-l border-white/10 shadow-[0_0_60px_rgba(0,0,0,0.95)] transform translate-x-full pointer-events-none transition-transform duration-300 ease-out flex flex-col"
+           style="padding-top: max(0.75rem, env(safe-area-inset-top, 0px)); padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));">
+        <!-- Drawer Header -->
+        <div class="px-4 sm:px-5 pb-3.5 border-b border-white/[0.08] flex items-center justify-between gap-3 shrink-0">
+            <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-brand-500 shadow-[0_0_8px_#e50914]"></span>
+                    <span class="text-[11px] font-mono uppercase tracking-wider text-zinc-400">Episode Switcher</span>
+                </div>
+                <h2 class="text-sm sm:text-base font-black text-white truncate mt-0.5">{{ media.name|default:title }}</h2>
+            </div>
+            <button type="button"
+                    onclick="closeEpisodeDrawer()"
+                    aria-label="Close Episodes Drawer"
+                    class="w-9 h-9 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-400 hover:text-white flex items-center justify-center shrink-0 transition active:scale-95 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        {% if drawer_seasons|length > 1 %}
+        <!-- Season Switcher Pills -->
+        <div id="drawer-seasons-track" class="px-4 sm:px-5 py-3 border-b border-white/[0.08] flex items-center gap-2 overflow-x-auto scrollbar-hide shrink-0">
+            {% for ds in drawer_seasons %}
+            <button type="button"
+                    hx-get="/watch/tv/{{ tmdb_id }}/episodes/{{ ds.season_number }}/?server={{ current_server }}&active_season={{ season }}&active_episode={{ episode }}"
+                    hx-target="#drawer-episodes-list"
+                    hx-swap="innerHTML"
+                    hx-indicator="#drawer-episodes-skeleton"
+                    onclick="setDrawerSeasonTab(this)"
+                    class="drawer-season-pill flex-none px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer {% if ds.season_number == drawer_active_season %}bg-brand-500 border-brand-500 text-white shadow-md shadow-brand-500/20{% else %}bg-zinc-900/90 border-white/[0.08] text-zinc-400 hover:text-white hover:bg-zinc-800{% endif %}">
+                Season {{ ds.season_number }}
+            </button>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Drawer Scroll Area -->
+        <div class="flex-1 overflow-y-auto px-4 sm:px-5 py-3.5 space-y-2.5">
+            <!-- HTMX Shimmer Skeleton for Season Switch inside Drawer -->
+            <div id="drawer-episodes-skeleton" aria-hidden="true" class="htmx-indicator-block space-y-2.5">
+                {% for _ in "1234" %}
+                <div class="flex items-start gap-3 p-2.5 rounded-2xl bg-zinc-900/75 border border-white/[0.08]">
+                    <div class="w-24 aspect-video rounded-xl skeleton-shimmer shrink-0"></div>
+                    <div class="flex-1 space-y-2 py-0.5">
+                        <div class="h-2.5 w-16 rounded-md skeleton-shimmer"></div>
+                        <div class="h-3 w-3/4 rounded-md skeleton-shimmer"></div>
+                        <div class="h-2.5 w-full rounded-md skeleton-shimmer"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Live Episodes List -->
+            <div id="drawer-episodes-list" class="space-y-2.5 transition-opacity duration-150">
+                {% include 'playback/partials/drawer_episodes.html' %}
+            </div>
+        </div>
+    </aside>
     {% endif %}
 
     <!-- Active Video Player Container -->
@@ -1741,6 +1887,64 @@
         }
 
         // ==========================================
+        // Phase 6: In-Player Slide-Over Episode Drawer
+        // ==========================================
+        function openEpisodeDrawer() {
+            const drawer = document.getElementById('player-episode-drawer');
+            const backdrop = document.getElementById('player-episode-drawer-backdrop');
+            if (!drawer) return;
+            closeAllPlayerDropdowns();
+            closeMobilePlayerSheet();
+            if (typeof closeBookmarkModal === 'function') closeBookmarkModal();
+            if (backdrop) backdrop.classList.remove('hidden');
+            drawer.classList.remove('translate-x-full', 'pointer-events-none');
+            drawer.classList.add('translate-x-0', 'pointer-events-auto');
+            drawer.setAttribute('aria-hidden', 'false');
+            const btn = document.getElementById('episode-drawer-btn');
+            if (btn) btn.setAttribute('aria-expanded', 'true');
+            const hotspot = document.getElementById('embed-fullscreen-hotspot');
+            if (hotspot) hotspot.style.pointerEvents = 'none';
+            clearTimeout(hideTimeout);
+        }
+
+        function closeEpisodeDrawer() {
+            const drawer = document.getElementById('player-episode-drawer');
+            const backdrop = document.getElementById('player-episode-drawer-backdrop');
+            if (!drawer) return;
+            drawer.classList.add('translate-x-full', 'pointer-events-none');
+            drawer.classList.remove('translate-x-0', 'pointer-events-auto');
+            drawer.setAttribute('aria-hidden', 'true');
+            if (backdrop) backdrop.classList.add('hidden');
+            const btn = document.getElementById('episode-drawer-btn');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+            const hotspot = document.getElementById('embed-fullscreen-hotspot');
+            if (hotspot && !isAutoplayActive) hotspot.style.pointerEvents = 'auto';
+            scheduleHide(1500);
+            focusPlayerIframe();
+        }
+
+        function toggleEpisodeDrawer() {
+            const drawer = document.getElementById('player-episode-drawer');
+            if (!drawer) return;
+            if (drawer.classList.contains('translate-x-full')) {
+                openEpisodeDrawer();
+            } else {
+                closeEpisodeDrawer();
+            }
+        }
+
+        function setDrawerSeasonTab(activeBtn) {
+            document.querySelectorAll('.drawer-season-pill').forEach((btn) => {
+                btn.classList.remove('bg-brand-500', 'border-brand-500', 'text-white', 'shadow-md', 'shadow-brand-500/20');
+                btn.classList.add('bg-zinc-900/90', 'border-white/[0.08]', 'text-zinc-400', 'hover:text-white', 'hover:bg-zinc-800');
+            });
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-zinc-900/90', 'border-white/[0.08]', 'text-zinc-400', 'hover:text-white', 'hover:bg-zinc-800');
+                activeBtn.classList.add('bg-brand-500', 'border-brand-500', 'text-white', 'shadow-md', 'shadow-brand-500/20');
+            }
+        }
+
+        // ==========================================
         // Sleep Timer Engine
         // ==========================================
         let sleepTimerMinutes = 0;
@@ -2122,6 +2326,8 @@
             if (srv && !srv.classList.contains('hidden')) return true;
             const sheet = document.getElementById('mobile-player-controls-sheet');
             if (sheet && !sheet.classList.contains('hidden')) return true;
+            const drawer = document.getElementById('player-episode-drawer');
+            if (drawer && !drawer.classList.contains('translate-x-full')) return true;
             return false;
         }
 
@@ -2514,6 +2720,13 @@
                     return;
                 }
 
+                // Episode Drawer shortcut (E key for TV series)
+                if (key === 'e' && document.getElementById('player-episode-drawer')) {
+                    e.preventDefault();
+                    toggleEpisodeDrawer();
+                    return;
+                }
+
                 // Bookmark shortcut (B key)
                 if (key === 'b') {
                     e.preventDefault();
@@ -2558,10 +2771,15 @@
                     return;
                 }
 
-                // Escape key to exit floating PiP, auto-switch HUD, theater mode, dialogs or fullscreen
+                // Escape key to exit floating PiP, episode drawer, auto-switch HUD, theater mode, dialogs or fullscreen
                 if (key === 'escape') {
                     if (autoSwitchPending) {
                         cancelAutoSwitch(false);
+                        return;
+                    }
+                    const epDrawer = document.getElementById('player-episode-drawer');
+                    if (epDrawer && !epDrawer.classList.contains('translate-x-full')) {
+                        closeEpisodeDrawer();
                         return;
                     }
                     if (isPipActive) {

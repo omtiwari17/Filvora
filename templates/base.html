@@ -92,6 +92,24 @@
         .\!hidden { display: none !important; }
         .rail-prev-btn, .rail-next-btn { pointer-events: auto !important; }
         .rail-prev-btn.is-hidden, .rail-next-btn.is-hidden, .rail-prev-btn.\!hidden, .rail-next-btn.\!hidden { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+        /* Phase 6: Progressive Cross-Document View Transitions */
+        @view-transition {
+            navigation: auto;
+        }
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+            animation-duration: 180ms;
+            animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            @view-transition {
+                navigation: none;
+            }
+        }
+        /* Phase 6: HTMX Shimmer Skeleton Indicators */
+        .htmx-indicator-block { display: none; }
+        .htmx-request.htmx-indicator-block,
+        .htmx-request .htmx-indicator-block { display: block; }
     </style>
     <script>
         window.navigateToCard = window.navigateToCard || function(event, url) {

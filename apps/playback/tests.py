@@ -260,6 +260,34 @@ class PlaybackTestCase(TestCase):
         self.assertIn('.is-fullscreen #autoplay-modal', content)
         self.assertIn('embed-fullscreen-hotspot', content)
 
+    def test_phase6_in_player_episode_drawer_and_partial_endpoint(self):
+        """Verifies Phase 6 in-player slide-over episode drawer, fullscreen layering, and HTMX episode partial."""
+        self.client.login(username='playbackuser', password='password123')
+
+        res_tv = self.client.get('/watch/tv/1399/1/2/?server=vidlink')
+        self.assertEqual(res_tv.status_code, 200)
+        html_tv = res_tv.content.decode('utf-8')
+        self.assertIn('id="episode-drawer-btn"', html_tv)
+        self.assertIn('id="player-episode-drawer"', html_tv)
+        self.assertIn('id="drawer-episodes-skeleton"', html_tv)
+        self.assertIn('id="drawer-episodes-list"', html_tv)
+        self.assertIn(':fullscreen #player-episode-drawer', html_tv)
+        self.assertIn('openEpisodeDrawer', html_tv)
+        self.assertIn('drawer_episodes', res_tv.context)
+
+        res_partial = self.client.get('/watch/tv/1399/episodes/1/?server=vidlink&active_season=1&active_episode=2')
+        self.assertEqual(res_partial.status_code, 200)
+        html_partial = res_partial.content.decode('utf-8')
+        self.assertIn('S1 E2', html_partial)
+        self.assertIn('Playing', html_partial)
+        self.assertIn('?server=vidlink', html_partial)
+
+        res_movie = self.client.get('/watch/movie/157336/?server=vidlink')
+        self.assertEqual(res_movie.status_code, 200)
+        html_movie = res_movie.content.decode('utf-8')
+        self.assertNotIn('id="player-episode-drawer"', html_movie)
+        self.assertNotIn('id="episode-drawer-btn"', html_movie)
+
 
 
 

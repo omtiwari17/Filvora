@@ -17,6 +17,24 @@ def format_time(seconds: float) -> str:
         return f"{hours}:{minutes:02d}:{remaining_seconds:02d}"
     return f"{minutes:02d}:{remaining_seconds:02d}"
 
+def _slice_drawer_episodes(episodes_list: list, current_ep: int, window_size: int = 100) -> list:
+    """Keeps drawer episode rendering responsive even for mega-seasons (>100 episodes)."""
+    if not episodes_list or len(episodes_list) <= window_size:
+        return episodes_list or []
+    idx = 0
+    for i, ep in enumerate(episodes_list):
+        if ep.get('episode_number') == current_ep:
+            idx = i
+            break
+    half = window_size // 2
+    start = max(0, idx - half)
+    end = start + window_size
+    if end > len(episodes_list):
+        end = len(episodes_list)
+        start = max(0, end - window_size)
+    return episodes_list[start:end]
+
+
 @login_required
 @ensure_csrf_cookie
 def watch(request, media_type, tmdb_id, season=None, episode=None):
@@ -45,6 +63,8 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
     next_provider = registry.get_next_provider(provider.id)
 
     previous_episode = None
+    drawer_seasons = []
+    drawer_episodes = []
     if media_type == 'movie':
         media = client.get_movie(tmdb_id)
         title = media.get('title', 'Unknown Movie')
@@ -70,6 +90,11 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
         current_season_data = client.get_tv_season(tmdb_id, s_num)
         episodes_in_season = current_season_data.get('episodes', [])
         total_eps_in_season = len(episodes_in_season) if episodes_in_season else 99
+        drawer_seasons = [s for s in media.get('seasons', []) if s.get('season_number', 0) > 0]
+        if not drawer_seasons:
+            total_s = media.get('number_of_seasons') or max(1, s_num or 1)
+            drawer_seasons = [{'season_number': i, 'name': f'Season {i}'} for i in range(1, total_s + 1)]
+        drawer_episodes = _slice_drawer_episodes(episodes_in_season, ep_num or 1)
 
         next_ep_title = ""
         next_ep_still = ""
@@ -179,6 +204,36 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
         'next_provider': next_provider,
         'previous_episode': previous_episode,
         'next_episode': next_episode,
+        'drawer_seasons': drawer_seasons,
+        'drawer_episodes': drawer_episodes,
+        'drawer_active_season': s_num or 1,
+    })
+
+
+@login_required
+def player_episodes(request, tmdb_id, season):
+    """HTMX partial returning episodes for the in-player slide-over drawer."""
+    client = TMDBClient()
+    season_data = client.get_tv_season(tmdb_id, season)
+    episodes_list = season_data.get('episodes', [])
+    try:
+        active_season = int(request.GET.get('active_season') or season)
+    except (ValueError, TypeError):
+        active_season = season
+    try:
+        active_episode = int(request.GET.get('active_episode') or 1)
+    except (ValueError, TypeError):
+        active_episode = 1
+    current_server = request.GET.get('server', '')
+    target_ep = active_episode if active_season == season else 1
+    drawer_episodes = _slice_drawer_episodes(episodes_list, target_ep)
+    return render(request, 'playback/partials/drawer_episodes.html', {
+        'tmdb_id': tmdb_id,
+        'drawer_active_season': season,
+        'drawer_episodes': drawer_episodes,
+        'season': active_season,
+        'episode': active_episode,
+        'current_server': current_server,
     })
 
 
