@@ -162,7 +162,7 @@
     {% if saved_items %}
     <div id="watchlist-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 sm:gap-6">
         {% for item in saved_items %}
-        <div class="watchlist-card flex flex-col group/card transform transition duration-300 hover:scale-105 md:hover:scale-110 hover:z-30 cursor-pointer" 
+        <div class="watchlist-card flex flex-col group/card transform transition-all duration-300 hover:-translate-y-1.5 hover:z-30 cursor-pointer" 
              onclick="navigateToCard(event, '{% if item.media_type == 'tv' %}/series/{{ item.id }}/{% else %}/movies/{{ item.id }}/{% endif %}');"
              data-card-url="{% if item.media_type == 'tv' %}/series/{{ item.id }}/{% else %}/movies/{{ item.id }}/{% endif %}"
              data-type="{{ item.media_type|default:'movie' }}"
@@ -171,9 +171,9 @@
              data-tmdb-vote="{{ item.vote_average|default:0 }}"
              data-release-date="{{ item.display_release_date|default:'' }}"
              data-index="{{ forloop.counter0 }}">
-            <div class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative group-hover/card:ring-brand-500/60 group-hover/card:shadow-2xl transition-all duration-300">
+            <div class="aspect-[2/3] block rounded-xl overflow-hidden bg-zinc-900 ring-1 ring-white/[0.08] card-surface-specular relative group-hover/card:ring-2 group-hover/card:ring-brand-500/75 group-hover/card:shadow-2xl group-hover/card:shadow-brand-500/20 transition-all duration-300">
                 {% if item.poster_path %}
-                <img src="https://image.tmdb.org/t/p/w500{{ item.poster_path }}" alt="{{ item.display_title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-105">
+                <img src="https://image.tmdb.org/t/p/w500{{ item.poster_path }}" alt="{{ item.display_title }}" loading="lazy" onload="this.classList.add('is-loaded')" onerror="this.classList.add('is-loaded')" class="poster-fade w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-105">
                 {% else %}
                 <div class="w-full h-full flex items-center justify-center text-center text-gray-500 p-3 text-xs font-medium">{{ item.display_title }}</div>
                 {% endif %}

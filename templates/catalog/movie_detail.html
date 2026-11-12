@@ -522,12 +522,12 @@
 
                 <div class="rail-track flex gap-4 overflow-x-auto py-6 px-2 -my-3 scrollbar-hide snap-x scroll-smooth">
                     {% for rec in recommendations %}
-                    <div class="flex-none w-36 sm:w-44 md:w-52 transform transition-all duration-300 hover:scale-105 md:hover:scale-110 hover:z-30 cursor-pointer snap-start group/card"
+                    <div class="flex-none w-36 sm:w-44 md:w-52 transform transition-all duration-300 hover:-translate-y-1.5 hover:z-30 cursor-pointer snap-start group/card"
                          onclick="navigateToCard(event, '/movies/{{ rec.id }}/');"
                          data-card-url="/movies/{{ rec.id }}/">
-                        <div class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative group-hover/card:ring-brand-500/60 group-hover/card:shadow-2xl transition-all duration-300">
+                        <div class="aspect-[2/3] block rounded-xl overflow-hidden bg-zinc-900 ring-1 ring-white/[0.08] card-surface-specular relative group-hover/card:ring-2 group-hover/card:ring-brand-500/75 group-hover/card:shadow-2xl group-hover/card:shadow-brand-500/20 transition-all duration-300">
                             {% if rec.poster_path %}
-                            <img src="https://image.tmdb.org/t/p/w500{{ rec.poster_path }}" alt="{{ rec.title }}" class="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-105">
+                            <img src="https://image.tmdb.org/t/p/w500{{ rec.poster_path }}" alt="{{ rec.title }}" loading="lazy" onload="this.classList.add('is-loaded')" onerror="this.classList.add('is-loaded')" class="poster-fade w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-105">
                             {% else %}
                             <div class="w-full h-full flex items-center justify-center p-2 text-center text-gray-500 text-xs">{{ rec.title }}</div>
                             {% endif %}

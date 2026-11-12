@@ -7,8 +7,23 @@ document.addEventListener("DOMContentLoaded", () => {
     initNavbar();
     initKeyboardShortcuts();
     initHorizontalRails();
+    initPosterFadeIn();
     initHtmxFeedback();
     initNetworkMonitor();
+});
+
+function initPosterFadeIn(root = document) {
+    root.querySelectorAll('img.poster-fade').forEach(img => {
+        if (img.complete) {
+            img.classList.add('is-loaded');
+        } else {
+            img.addEventListener('load', () => img.classList.add('is-loaded'), { once: true });
+            img.addEventListener('error', () => img.classList.add('is-loaded'), { once: true });
+        }
+    });
+}
+document.addEventListener('htmx:afterSwap', (e) => {
+    if (e.target) initPosterFadeIn(e.target);
 });
 
 // --- Navbar & Navigation ---

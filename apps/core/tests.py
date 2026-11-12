@@ -651,3 +651,12 @@ class AdminDashboardTestCase(TestCase):
         self.assertIn('Filvora v2.5', html)
         self.assertNotIn('Filvora v2.4', html)
 
+    def test_phase2_card_hover_stability_and_poster_fade(self):
+        """Verifies Phase 2 UI polish: single-axis hover lift, specular card surface, and poster-fade images."""
+        res = self.client.get('/')
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertIn('hover:-translate-y-1.5', html)
+        self.assertIn('card-surface-specular', html)
+        self.assertIn('poster-fade', html)
+
