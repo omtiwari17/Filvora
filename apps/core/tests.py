@@ -688,6 +688,33 @@ class AdminDashboardTestCase(TestCase):
             self.assertIn('id="hero-next-btn"', html)
             self.assertIn('id="hero-dots"', html)
 
+    def test_phase5_filter_chips_sort_pills_and_watchlist_view_toggle(self):
+        """Verifies Phase 5 UI polish: active filter chips, browse sort pills, and My List grid/list toggle."""
+        res_movies = self.client.get('/movies/?genre=28&sort=primary_release_date.asc')
+        self.assertEqual(res_movies.status_code, 200)
+        html_m = res_movies.content.decode('utf-8')
+        self.assertIn('id="browse-sort-pills"', html_m)
+        self.assertIn('id="active-filter-chips"', html_m)
+        self.assertIn('Sort: Release Date (Oldest)', html_m)
+
+        res_discover = self.client.get('/discover/?type=tv&rating=8.0&sort=primary_release_date.desc')
+        self.assertEqual(res_discover.status_code, 200)
+        html_d = res_discover.content.decode('utf-8')
+        self.assertIn('id="discover-sort-pills"', html_d)
+        self.assertIn('id="discover-active-chips"', html_d)
+        self.assertNotIn('Phase 04', html_d)
+
+        from apps.library.models import LibraryItem
+        LibraryItem.objects.create(user=self.regular_user, tmdb_id=157336, media_type='movie')
+        self.client.login(username='regular', password='password123')
+        res_lib = self.client.get('/library/')
+        self.assertEqual(res_lib.status_code, 200)
+        html_l = res_lib.content.decode('utf-8')
+        self.assertIn('id="watchlist-view-grid-btn"', html_l)
+        self.assertIn('id="watchlist-view-list-btn"', html_l)
+        self.assertIn('watchlist-list-release', html_l)
+        self.assertIn('setWatchlistView(', html_l)
+
 
 
 

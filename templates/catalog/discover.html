@@ -9,7 +9,7 @@
         <div>
             <div class="flex items-center gap-2.5">
                 <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-md">Discover</h1>
-                <span class="bg-brand-500/20 text-brand-500 border border-brand-500/40 text-xs font-black px-2.5 py-0.5 rounded-full">Phase 04</span>
+                <span class="bg-zinc-900 text-zinc-400 border border-white/[0.08] text-[11px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full">TMDB Engine</span>
             </div>
             <p class="text-xs sm:text-sm text-gray-400 mt-1">Explore titles by mood, genre, release era, and star ratings.</p>
         </div>
@@ -171,8 +171,14 @@
             <!-- Sort -->
             <div>
                 <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Sort Order</label>
+                <div id="discover-sort-pills" role="group" aria-label="Sort results" class="hidden xl:inline-flex w-full items-center justify-between gap-0.5 p-1 rounded-xl bg-gray-950 border border-white/[0.08]">
+                    <button type="button" onclick="this.form.sort.value='popularity.desc'; this.form.submit();" class="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition {% if not selected_sort or selected_sort == 'popularity.desc' %}bg-brand-500 text-white shadow-sm{% else %}text-gray-400 hover:text-white hover:bg-white/5{% endif %}">Pop</button>
+                    <button type="button" onclick="this.form.sort.value='vote_average.desc'; this.form.submit();" class="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition {% if selected_sort == 'vote_average.desc' %}bg-brand-500 text-white shadow-sm{% else %}text-gray-400 hover:text-white hover:bg-white/5{% endif %}">Top</button>
+                    <button type="button" onclick="this.form.sort.value='primary_release_date.desc'; this.form.submit();" class="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition {% if selected_sort == 'primary_release_date.desc' %}bg-brand-500 text-white shadow-sm{% else %}text-gray-400 hover:text-white hover:bg-white/5{% endif %}">New</button>
+                    <button type="button" onclick="this.form.sort.value='primary_release_date.asc'; this.form.submit();" class="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition {% if selected_sort == 'primary_release_date.asc' %}bg-brand-500 text-white shadow-sm{% else %}text-gray-400 hover:text-white hover:bg-white/5{% endif %}">Old</button>
+                </div>
                 <select name="sort" onchange="this.form.submit()" 
-                        class="w-full bg-gray-950 border border-gray-700/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                        class="xl:hidden w-full bg-gray-950 border border-gray-700/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
                     <option value="popularity.desc" {% if selected_sort == 'popularity.desc' %}selected{% endif %}>Popularity</option>
                     <option value="vote_average.desc" {% if selected_sort == 'vote_average.desc' %}selected{% endif %}>Top Rated</option>
                     <option value="primary_release_date.desc" {% if selected_sort == 'primary_release_date.desc' %}selected{% endif %}>Release Date (Newest)</option>
@@ -181,6 +187,60 @@
             </div>
         </div>
     </form>
+
+    <!-- Active Filter Chips Summary -->
+    {% if media_type == 'tv' or selected_mood or selected_genre or selected_language or selected_certification or selected_rating or selected_sort and selected_sort != 'popularity.desc' %}
+    <div id="discover-active-chips" class="flex flex-wrap items-center gap-2 mb-6 px-4 py-3 rounded-2xl bg-zinc-900/75 border border-white/[0.08]">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-gray-400 mr-1">Active Filters:</span>
+        {% if media_type == 'tv' %}
+        <a href="/discover/?type=movie{% if selected_mood %}&mood={{ selected_mood }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_language %}&language={{ selected_language }}{% endif %}{% if selected_certification %}&certification={{ selected_certification }}{% endif %}{% if selected_rating %}&rating={{ selected_rating }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}"
+           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-white border border-white/15 hover:bg-white/15 transition">
+            <span>Type: TV Series</span><span class="font-bold">&times;</span>
+        </a>
+        {% endif %}
+        {% if selected_mood %}
+        <a href="/discover/?type={{ media_type }}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_language %}&language={{ selected_language }}{% endif %}{% if selected_certification %}&certification={{ selected_certification }}{% endif %}{% if selected_rating %}&rating={{ selected_rating }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}"
+           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-500/15 text-brand-300 border border-brand-500/35 hover:bg-brand-500/25 transition">
+            <span>Mood: {{ selected_mood|cut:"_"|title }}</span><span class="font-bold">&times;</span>
+        </a>
+        {% endif %}
+        {% if selected_genre %}
+            {% for g in genres %}
+                {% if selected_genre == g.id|stringformat:'i' %}
+                <a href="/discover/?type={{ media_type }}{% if selected_mood %}&mood={{ selected_mood }}{% endif %}{% if selected_language %}&language={{ selected_language }}{% endif %}{% if selected_certification %}&certification={{ selected_certification }}{% endif %}{% if selected_rating %}&rating={{ selected_rating }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}"
+                   class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-500/15 text-brand-300 border border-brand-500/35 hover:bg-brand-500/25 transition">
+                    <span>Genre: {{ g.name }}</span><span class="font-bold">&times;</span>
+                </a>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+        {% if selected_language %}
+        <a href="/discover/?type={{ media_type }}{% if selected_mood %}&mood={{ selected_mood }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_certification %}&certification={{ selected_certification }}{% endif %}{% if selected_rating %}&rating={{ selected_rating }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}"
+           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-white border border-white/15 hover:bg-white/15 transition">
+            <span>Language: {{ selected_language|upper }}</span><span class="font-bold">&times;</span>
+        </a>
+        {% endif %}
+        {% if selected_certification %}
+        <a href="/discover/?type={{ media_type }}{% if selected_mood %}&mood={{ selected_mood }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_language %}&language={{ selected_language }}{% endif %}{% if selected_rating %}&rating={{ selected_rating }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}"
+           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-white border border-white/15 hover:bg-white/15 transition">
+            <span>Cert: {{ selected_certification }}</span><span class="font-bold">&times;</span>
+        </a>
+        {% endif %}
+        {% if selected_rating %}
+        <a href="/discover/?type={{ media_type }}{% if selected_mood %}&mood={{ selected_mood }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_language %}&language={{ selected_language }}{% endif %}{% if selected_certification %}&certification={{ selected_certification }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}"
+           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-500/15 text-yellow-300 border border-yellow-500/35 hover:bg-yellow-500/25 transition">
+            <span>Score: {{ selected_rating }}+</span><span class="font-bold">&times;</span>
+        </a>
+        {% endif %}
+        {% if selected_sort and selected_sort != 'popularity.desc' %}
+        <a href="/discover/?type={{ media_type }}{% if selected_mood %}&mood={{ selected_mood }}{% endif %}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_language %}&language={{ selected_language }}{% endif %}{% if selected_certification %}&certification={{ selected_certification }}{% endif %}{% if selected_rating %}&rating={{ selected_rating }}{% endif %}"
+           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-white border border-white/15 hover:bg-white/15 transition">
+            <span>Sort: {% if selected_sort == 'vote_average.desc' %}Top Rated{% elif selected_sort == 'primary_release_date.desc' %}Release Date (Newest){% elif selected_sort == 'primary_release_date.asc' %}Release Date (Oldest){% else %}{{ selected_sort }}{% endif %}</span><span class="font-bold">&times;</span>
+        </a>
+        {% endif %}
+        <a href="/discover/" class="ml-auto text-xs font-semibold text-gray-400 hover:text-white transition">Clear all</a>
+    </div>
+    {% endif %}
 
     <!-- Results Grid -->
     {% if results %}
