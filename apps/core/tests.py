@@ -641,12 +641,13 @@ class AdminDashboardTestCase(TestCase):
         self.assertIn(WatchProgress, admin.site._registry)
         self.assertIn(UserRating, admin.site._registry)
 
-
-
-
-
-
-
-
-
+    def test_phase1_navbar_active_state_and_version_sync(self):
+        """Verifies Phase 1 UI polish: SSR active nav pill, xl badge visibility, and v2.5 footer sync."""
+        res = self.client.get('/movies/')
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertIn('href="/movies/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full border transition-all duration-200 bg-white/10 text-white font-semibold border-white/15"', html)
+        self.assertIn('hidden xl:inline-block', html)
+        self.assertIn('Filvora v2.5', html)
+        self.assertNotIn('Filvora v2.4', html)
 

@@ -373,3 +373,26 @@ nav.fixed.top-0 {
     }
 }
 
+/* Accessible keyboard focus indicators */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+[onclick]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(229, 9, 20, 0.7), 0 0 0 4px rgba(3, 7, 18, 0.9);
+}
+
+
+/* Respect OS reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .animate-ping,
+    .animate-pulse,
+    .animate-pulse-slow {
+        animation: none !important;
+    }
+    *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+

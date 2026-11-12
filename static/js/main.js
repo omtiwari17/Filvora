@@ -16,12 +16,12 @@ function initNavbar() {
     const navbar = document.querySelector('nav');
     if (navbar) {
         const handleScroll = () => {
-            if (window.scrollY > 40) {
-                navbar.classList.add('bg-gray-950/95', 'backdrop-blur-xl', 'border-b', 'border-gray-800/80', 'shadow-2xl');
-                navbar.classList.remove('bg-gradient-to-b', 'from-black/90', 'to-transparent');
+            if (window.scrollY > 36) {
+                navbar.classList.add('bg-zinc-950/90', 'backdrop-blur-xl', 'border-b', 'border-white/[0.08]', 'shadow-2xl');
+                navbar.classList.remove('bg-gradient-to-b', 'from-black/90', 'via-black/50', 'to-transparent');
             } else {
-                navbar.classList.remove('bg-gray-950/95', 'backdrop-blur-xl', 'border-b', 'border-gray-800/80', 'shadow-2xl');
-                navbar.classList.add('bg-gradient-to-b', 'from-black/90', 'to-transparent');
+                navbar.classList.remove('bg-zinc-950/90', 'backdrop-blur-xl', 'border-b', 'border-white/[0.08]', 'shadow-2xl');
+                navbar.classList.add('bg-gradient-to-b', 'from-black/90', 'via-black/50', 'to-transparent');
             }
         };
         window.addEventListener('scroll', handleScroll, { passive: true });
@@ -42,8 +42,8 @@ function initNavbar() {
     document.querySelectorAll('.nav-link').forEach(link => {
         const href = link.getAttribute('href');
         if (href === currentPath || (href !== '/' && currentPath.startsWith(href))) {
-            link.classList.add('text-white', 'font-bold', 'bg-white/10', 'border-white/20');
-            link.classList.remove('text-gray-300');
+            link.classList.add('text-white', 'font-semibold', 'bg-white/10', 'border-white/15');
+            link.classList.remove('text-gray-300', 'border-transparent');
         }
     });
 }

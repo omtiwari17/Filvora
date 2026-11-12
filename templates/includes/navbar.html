@@ -5,18 +5,18 @@
         <a href="/" class="flex items-center gap-1.5 sm:gap-2 group shrink-0" title="Filvora Home">
             <img src="{% static 'icons/favicon.svg' %}" alt="Filvora Logo" class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl shadow-md shadow-brand-500/20 group-hover:scale-105 group-hover:shadow-brand-500/40 transition-transform duration-200">
             <span class="text-lg sm:text-2xl lg:text-3xl font-black bg-gradient-to-r from-brand-500 via-rose-500 to-amber-500 bg-clip-text text-transparent tracking-tighter drop-shadow-sm group-hover:opacity-90 transition">FILVORA</span>
-            <span class="hidden sm:inline-block bg-gradient-to-r from-red-600 to-rose-500 text-[9px] sm:text-[10px] font-black text-white px-1 sm:px-1.5 py-0.5 rounded shadow-sm ring-1 ring-white/20 tracking-wider">v2.5</span>
+            <span class="hidden xl:inline-block bg-gradient-to-r from-red-600 to-rose-500 text-[9px] sm:text-[10px] font-black text-white px-1 sm:px-1.5 py-0.5 rounded shadow-sm ring-1 ring-white/20 tracking-wider">v2.5</span>
         </a>
         
         <!-- Desktop Navigation Links (Responsive: Compact on md (tablets/iPad), spacious on lg+) -->
         <div class="hidden md:flex items-center gap-0.5 lg:gap-1 text-xs lg:text-sm font-medium">
-            <a href="/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Home</a>
-            <a href="/discover/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Discover</a>
-            <a href="/movies/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Movies</a>
-            <a href="/series/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Series</a>
-            <a href="/genres/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Genres</a>
-            <a href="/recommendations/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">Recommended</a>
-            <a href="/library/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-200">My List</a>
+            <a href="/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full border transition-all duration-200 {% if request.path == '/' %}bg-white/10 text-white font-semibold border-white/15{% else %}border-transparent text-gray-300 hover:text-white hover:bg-white/5{% endif %}">Home</a>
+            <a href="/discover/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full border transition-all duration-200 {% if '/discover/' in request.path %}bg-white/10 text-white font-semibold border-white/15{% else %}border-transparent text-gray-300 hover:text-white hover:bg-white/5{% endif %}">Discover</a>
+            <a href="/movies/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full border transition-all duration-200 {% if '/movies/' in request.path %}bg-white/10 text-white font-semibold border-white/15{% else %}border-transparent text-gray-300 hover:text-white hover:bg-white/5{% endif %}">Movies</a>
+            <a href="/series/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full border transition-all duration-200 {% if '/series/' in request.path %}bg-white/10 text-white font-semibold border-white/15{% else %}border-transparent text-gray-300 hover:text-white hover:bg-white/5{% endif %}">Series</a>
+            <a href="/genres/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full border transition-all duration-200 {% if '/genres/' in request.path %}bg-white/10 text-white font-semibold border-white/15{% else %}border-transparent text-gray-300 hover:text-white hover:bg-white/5{% endif %}">Genres</a>
+            <a href="/recommendations/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full border transition-all duration-200 {% if '/recommendations/' in request.path %}bg-white/10 text-white font-semibold border-white/15{% else %}border-transparent text-gray-300 hover:text-white hover:bg-white/5{% endif %}">Recommended</a>
+            <a href="/library/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full border transition-all duration-200 {% if '/library/' in request.path %}bg-white/10 text-white font-semibold border-white/15{% else %}border-transparent text-gray-300 hover:text-white hover:bg-white/5{% endif %}">My List</a>
         </div>
     </div>
     
