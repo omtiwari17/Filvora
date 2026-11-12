@@ -42,7 +42,9 @@ class HomeView(TemplateView):
         if not any(m.get('id') in [1744462, 1222222] or 'grand theft auto vi' in (m.get('title') or '').lower() for m in upcoming_releases):
             upcoming_releases.insert(0, gta)
 
-        context['hero_movie'] = trending_movies[0] if trending_movies else (popular_movies[0] if popular_movies else None)
+        hero_pool = trending_movies if trending_movies else (popular_movies or [])
+        context['hero_movie'] = hero_pool[0] if hero_pool else None
+        context['hero_slides'] = hero_pool[:5]
         context['trending_movies'] = trending_movies
         context['upcoming_releases'] = upcoming_releases
         context['popular_movies'] = popular_movies

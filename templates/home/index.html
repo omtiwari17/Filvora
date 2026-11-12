@@ -1,117 +1,150 @@
 {% extends 'base.html' %}
 
 {% block content %}
-{% if hero_movie %}
-<!-- Cinematic Hero Billboard (v3.0) -->
-<section class="relative min-h-[78vh] sm:min-h-[84vh] lg:min-h-[88vh] w-full flex items-end justify-start overflow-hidden pt-28 sm:pt-36 md:pt-44 pb-6 sm:pb-8 md:pb-10">
-    <!-- Background Image & Atmospheric Gradients -->
-    <div class="absolute inset-0 z-0">
-        {% if hero_movie.backdrop_path %}
-        <img src="{% if hero_movie.backdrop_path|slice:':8' == '/static/' or hero_movie.backdrop_path|slice:':4' == 'http' %}{{ hero_movie.backdrop_path }}{% else %}https://image.tmdb.org/t/p/original{{ hero_movie.backdrop_path }}{% endif %}" alt="{{ hero_movie.title }} Backdrop" class="w-full h-full object-cover scale-105 transform animate-pulse-slow">
-        {% else %}
-        <div class="w-full h-full bg-gray-900"></div>
-        {% endif %}
-        <!-- Cinematic Atmospheric Blending Gradients -->
-        <div class="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-950/85 to-transparent"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/45 to-transparent"></div>
-    </div>
-    
-    <!-- Hero Content Box (Shifted gracefully to lower portion with ample top breathing space) -->
-    <div class="relative z-10 px-4 sm:px-8 md:px-12 lg:px-16 max-w-3xl space-y-3.5 sm:space-y-4 md:space-y-5 pb-1">
-        <!-- Spotlight Badges -->
-        <div class="flex items-center gap-2.5">
-            <span class="bg-brand-500/20 text-brand-500 border border-brand-500/40 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
-                <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-ping"></span>
-                Filvora Spotlight
-            </span>
-            <span class="bg-black/60 backdrop-blur-md border border-gray-700/80 text-gray-300 text-xs font-semibold px-2.5 py-1 rounded-full">
-                Full HD • Multi-Server
-            </span>
-        </div>
-
-        <h1 class="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black drop-shadow-2xl text-white tracking-tight leading-tight sm:leading-none">{{ hero_movie.title }}</h1>
-        
-        <!-- Metadata Row -->
-        <div class="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-gray-300 drop-shadow">
-            {% if hero_movie.vote_average %}
-            <span class="flex items-center gap-1 bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 font-black px-2 py-0.5 rounded shadow">
-                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                </svg>
-                {{ hero_movie.vote_average|floatformat:1 }}
-            </span>
-            <span>•</span>
-            {% endif %}
-            {% if hero_movie.release_date %}
-            <span class="font-medium">{{ hero_movie.release_date|slice:":4" }}</span>
-            <span>•</span>
-            {% endif %}
-            <span class="border border-gray-600/80 bg-black/60 px-2 py-0.5 rounded text-[10px] font-bold text-gray-300">{{ hero_movie.age_rating|default:'PG-13' }}</span>
-            <span>•</span>
-            <span class="border border-gray-600/80 bg-black/60 px-2 py-0.5 rounded text-[10px] font-bold text-gray-300">HD 1080p</span>
-        </div>
-
-        <p class="text-sm sm:text-base md:text-lg text-gray-200 line-clamp-3 drop-shadow-md leading-relaxed">
-            {{ hero_movie.overview }}
-        </p>
-
-        <!-- CTA Actions Row (Single Clean Line on Mobile, Expanded on Desktop) -->
-        <div class="flex items-center gap-2 sm:gap-4 pt-2">
-            <!-- Play Button (Hero Primary Action) -->
-            <a href="/watch/movie/{{ hero_movie.id }}/" class="flex-1 sm:flex-none bg-white hover:bg-gray-200 text-black px-4 sm:px-9 py-2.5 sm:py-3.5 rounded-full font-black text-sm sm:text-lg flex items-center justify-center gap-2 transition transform hover:scale-105 active:scale-95 shadow-xl shadow-white/20 shrink-0">
-                <svg class="h-4 w-4 sm:h-5 sm:w-5 fill-black translate-x-0.5" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                </svg>
-                <span>Play Now</span>
-            </a>
-
-            <!-- Trailer Button -->
-            <button type="button" 
-                    onclick="openTrailerFor('movie', '{{ hero_movie.id }}', '{{ hero_movie.display_title|default:hero_movie.title|escapejs }}')" 
-                    class="bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-700/90 hover:border-brand-500/80 px-3 sm:px-6 py-2.5 sm:py-3.5 rounded-full font-bold text-xs sm:text-base flex items-center gap-1.5 sm:gap-2 transition backdrop-blur-md shadow-lg transform hover:scale-105 active:scale-95 group shrink-0">
-                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-brand-500 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Trailer</span>
-            </button>
-
-            <!-- Watchlist Button -->
-            {% if hero_movie.id in user_saved_ids %}
-            <button hx-post="/library/toggle/" 
-                    hx-vals='{"tmdb_id": "{{ hero_movie.id }}", "media_type": "movie"}' 
-                    hx-swap="outerHTML"
-                    title="In My List"
-                    class="bg-brand-500 hover:bg-red-600 text-white w-10 h-10 sm:w-auto sm:px-6 sm:py-3.5 rounded-full font-bold text-xs sm:text-base flex items-center justify-center gap-2 transition shadow-lg shadow-brand-500/30 transform hover:scale-105 active:scale-95 shrink-0">
-                <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                </svg>
-                <span class="hidden sm:inline">In My List</span>
-            </button>
+{% if hero_slides or hero_movie %}
+<!-- Cinematic Multi-Spotlight Hero Carousel (Phase 4) -->
+<section id="hero-spotlight" class="relative min-h-[76vh] sm:min-h-[82vh] lg:min-h-[86vh] w-full overflow-hidden group/hero">
+    {% for slide in hero_slides %}
+    <div class="hero-slide absolute inset-0 transition-opacity duration-700 ease-out flex items-end justify-start pt-28 sm:pt-36 md:pt-44 pb-12 sm:pb-10 md:pb-12 {% if forloop.first %}opacity-100 z-10 pointer-events-auto is-active{% else %}opacity-0 z-0 pointer-events-none{% endif %}"
+         data-slide-index="{{ forloop.counter0 }}"
+         aria-hidden="{% if forloop.first %}false{% else %}true{% endif %}">
+        <!-- Background Image & Atmospheric Gradients -->
+        <div class="absolute inset-0 z-0">
+            {% if slide.backdrop_path %}
+            <img src="{% if slide.backdrop_path|slice:':8' == '/static/' or slide.backdrop_path|slice:':4' == 'http' %}{{ slide.backdrop_path }}{% else %}https://image.tmdb.org/t/p/original{{ slide.backdrop_path }}{% endif %}" alt="{{ slide.title }} Backdrop" class="w-full h-full object-cover object-top md:object-[center_20%]">
             {% else %}
-            <button hx-post="/library/toggle/" 
-                    hx-vals='{"tmdb_id": "{{ hero_movie.id }}", "media_type": "movie"}' 
-                    hx-swap="outerHTML"
-                    title="Add to My List"
-                    class="bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-700 w-10 h-10 sm:w-auto sm:px-6 sm:py-3.5 rounded-full font-bold text-xs sm:text-base flex items-center justify-center gap-2 transition backdrop-blur-md shadow-lg transform hover:scale-105 active:scale-95 shrink-0">
-                <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
-                </svg>
-                <span class="hidden sm:inline">Add to My List</span>
-            </button>
+            <div class="w-full h-full bg-zinc-900"></div>
             {% endif %}
+            <!-- Cinematic Atmospheric Blending Gradients -->
+            <div class="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-950/85 to-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/50 to-black/25"></div>
+        </div>
 
-            <!-- More Info Button -->
-            <a href="/movies/{{ hero_movie.id }}/" 
-               title="Movie Details"
-               class="bg-gray-900/80 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700 w-10 h-10 sm:w-auto sm:px-5 sm:py-3.5 rounded-full font-bold text-xs sm:text-base flex items-center justify-center gap-2 transition backdrop-blur-md shadow-lg transform hover:scale-105 active:scale-95 shrink-0">
-                <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span class="hidden sm:inline">Details</span>
-            </a>
+        <!-- Hero Content Box -->
+        <div class="relative z-10 px-4 sm:px-8 md:px-12 lg:px-16 max-w-3xl space-y-3 sm:space-y-4 pb-1">
+            <!-- Calm Spotlight Pill -->
+            <div class="flex items-center gap-2">
+                <span class="bg-brand-500/15 text-brand-400 border border-brand-500/35 text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider inline-flex items-center gap-2 shadow-sm backdrop-blur-md">
+                    <span class="w-1.5 h-1.5 rounded-full bg-brand-500 shadow-[0_0_8px_#e50914]"></span>
+                    <span>Filvora Spotlight</span>
+                </span>
+            </div>
+
+            <h1 class="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black drop-shadow-2xl text-white tracking-tight leading-tight sm:leading-none">
+                <a href="/movies/{{ slide.id }}/" class="hover:text-zinc-200 transition-colors">{{ slide.title }}</a>
+            </h1>
+
+            <!-- Consolidated Metadata Row -->
+            <div class="flex flex-wrap items-center gap-2.5 text-xs sm:text-sm text-gray-300 drop-shadow">
+                {% if slide.vote_average %}
+                <span class="flex items-center gap-1 bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 font-black px-2 py-0.5 rounded shadow">
+                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    {{ slide.vote_average|floatformat:1 }}
+                </span>
+                <span class="text-gray-500">•</span>
+                {% endif %}
+                {% if slide.release_date %}
+                <span class="font-semibold text-gray-200">{{ slide.release_date|slice:":4" }}</span>
+                <span class="text-gray-500">•</span>
+                {% endif %}
+                <span class="border border-white/15 bg-black/60 px-2 py-0.5 rounded text-[10px] font-bold text-gray-300">{{ slide.age_rating|default:'PG-13' }}</span>
+                <span class="border border-white/15 bg-black/60 px-2 py-0.5 rounded text-[10px] font-bold text-gray-300">HD</span>
+            </div>
+
+            <p class="text-sm sm:text-base md:text-lg text-gray-200 line-clamp-2 sm:line-clamp-3 drop-shadow-md leading-relaxed max-w-2xl">
+                {{ slide.overview }}
+            </p>
+
+            <!-- CTA Actions Row -->
+            <div class="flex items-center gap-2 sm:gap-3.5 pt-1.5">
+                <!-- Play Button -->
+                <a href="/watch/movie/{{ slide.id }}/" class="flex-1 sm:flex-none bg-white hover:bg-gray-200 text-black px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-full font-black text-sm sm:text-base flex items-center justify-center gap-2 transition transform hover:scale-105 active:scale-95 shadow-xl shadow-white/20 shrink-0">
+                    <svg class="h-4 w-4 sm:h-5 sm:w-5 fill-black translate-x-0.5" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <span>Play Now</span>
+                </a>
+
+                <!-- Trailer Button -->
+                <button type="button" 
+                        onclick="openTrailerFor('movie', '{{ slide.id }}', '{{ slide.display_title|default:slide.title|escapejs }}')" 
+                        class="bg-zinc-900/80 hover:bg-zinc-800 text-white border border-white/15 hover:border-brand-500/80 px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-full font-bold text-xs sm:text-base flex items-center gap-1.5 sm:gap-2 transition backdrop-blur-md shadow-lg transform hover:scale-105 active:scale-95 group shrink-0">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-brand-500 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Trailer</span>
+                </button>
+
+                <!-- Watchlist Button -->
+                {% if slide.id in user_saved_ids %}
+                <button hx-post="/library/toggle/" 
+                        hx-vals='{"tmdb_id": "{{ slide.id }}", "media_type": "movie"}' 
+                        hx-swap="outerHTML"
+                        title="In My List"
+                        class="bg-brand-500 hover:bg-red-600 text-white w-10 h-10 sm:w-auto sm:px-6 sm:py-3.5 rounded-full font-bold text-xs sm:text-base flex items-center justify-center gap-2 transition shadow-lg shadow-brand-500/30 transform hover:scale-105 active:scale-95 shrink-0">
+                    <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span class="hidden sm:inline">In My List</span>
+                </button>
+                {% else %}
+                <button hx-post="/library/toggle/" 
+                        hx-vals='{"tmdb_id": "{{ slide.id }}", "media_type": "movie"}' 
+                        hx-swap="outerHTML"
+                        title="Add to My List"
+                        class="bg-zinc-900/80 hover:bg-zinc-800 text-white border border-white/15 w-10 h-10 sm:w-auto sm:px-6 sm:py-3.5 rounded-full font-bold text-xs sm:text-base flex items-center justify-center gap-2 transition backdrop-blur-md shadow-lg transform hover:scale-105 active:scale-95 shrink-0">
+                    <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span class="hidden sm:inline">Add to My List</span>
+                </button>
+                {% endif %}
+
+                <!-- More Info Button (Desktop/Tablet; mobile taps title) -->
+                <a href="/movies/{{ slide.id }}/" 
+                   title="Movie Details"
+                   class="hidden sm:flex bg-zinc-900/80 hover:bg-zinc-800 text-gray-300 hover:text-white border border-white/15 w-10 h-10 sm:w-auto sm:px-5 sm:py-3.5 rounded-full font-bold text-xs sm:text-base items-center justify-center gap-2 transition backdrop-blur-md shadow-lg transform hover:scale-105 active:scale-95 shrink-0">
+                    <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Details</span>
+                </a>
+            </div>
         </div>
     </div>
+    {% endfor %}
+
+    {% if hero_slides|length > 1 %}
+    <!-- Non-overlapping Spotlight Carousel Controls -->
+    <div class="absolute bottom-3 sm:bottom-8 right-4 sm:right-10 md:right-14 z-20 flex items-center gap-2 bg-zinc-950/75 backdrop-blur-xl border border-white/10 rounded-full px-2.5 py-1.5 shadow-xl">
+        <button id="hero-prev-btn"
+                type="button"
+                onclick="heroStepSlide(-1)"
+                aria-label="Previous spotlight title"
+                class="w-7 h-7 rounded-full hover:bg-white/10 text-gray-300 hover:text-white flex items-center justify-center transition active:scale-90">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <div id="hero-dots" class="flex items-center gap-1.5 px-1">
+            {% for slide in hero_slides %}
+            <button type="button"
+                    onclick="heroGoToSlide({{ forloop.counter0 }})"
+                    aria-label="Go to spotlight {{ forloop.counter }}"
+                    data-dot-index="{{ forloop.counter0 }}"
+                    class="hero-dot h-1.5 rounded-full transition-all duration-300 {% if forloop.first %}w-6 bg-white{% else %}w-2 bg-white/30 hover:bg-white/60{% endif %}"></button>
+            {% endfor %}
+        </div>
+        <button id="hero-next-btn"
+                type="button"
+                onclick="heroStepSlide(1)"
+                aria-label="Next spotlight title"
+                class="w-7 h-7 rounded-full hover:bg-white/10 text-gray-300 hover:text-white flex items-center justify-center transition active:scale-90">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+        </button>
+    </div>
+    {% endif %}
 </section>
 {% else %}
 <!-- Cinematic Offline / Empty Catalog Billboard -->

@@ -670,6 +670,24 @@ class AdminDashboardTestCase(TestCase):
         self.assertIn('id="sheet-watched-btn"', html)
         self.assertIn('openCardQuickSheet(this)', html)
 
+    def test_phase4_hero_spotlight_carousel_and_calm_hierarchy(self):
+        """Verifies Phase 4 UI polish: multi-spotlight hero slides, calm status dot, and carousel controls."""
+        res = self.client.get('/')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('hero_slides', res.context)
+        self.assertGreaterEqual(len(res.context['hero_slides']), 1)
+        self.assertLessEqual(len(res.context['hero_slides']), 5)
+        html = res.content.decode('utf-8')
+        self.assertIn('id="hero-spotlight"', html)
+        self.assertIn('class="hero-slide', html)
+        hero_chunk = html.split('id="hero-spotlight"', 1)[1].split('</section>', 1)[0]
+        self.assertNotIn('animate-pulse-slow', hero_chunk)
+        self.assertNotIn('animate-ping', hero_chunk)
+        if len(res.context['hero_slides']) > 1:
+            self.assertIn('id="hero-prev-btn"', html)
+            self.assertIn('id="hero-next-btn"', html)
+            self.assertIn('id="hero-dots"', html)
+
 
 
 
