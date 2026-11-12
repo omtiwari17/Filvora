@@ -713,6 +713,8 @@ class AdminDashboardTestCase(TestCase):
         self.assertIn('id="watchlist-view-grid-btn"', html_l)
         self.assertIn('id="watchlist-view-list-btn"', html_l)
         self.assertIn('watchlist-list-release', html_l)
+        self.assertIn('watchlist-list-actions', html_l)
+        self.assertIn('?v=2.6', html_l)
         self.assertIn('setWatchlistView(', html_l)
 
     def test_phase6_view_transitions_and_shimmer_skeletons(self):

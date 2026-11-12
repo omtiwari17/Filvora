@@ -441,6 +441,14 @@ img.poster-fade.is-loaded {
     display: inline-flex !important;
 }
 
+#watchlist-grid.is-list-view .watchlist-hover-overlay {
+    display: none !important;
+}
+
+#watchlist-grid.is-list-view .watchlist-list-actions {
+    display: flex !important;
+}
+
 /* Phase 6: Shimmer Skeleton Placeholders */
 @keyframes filvoraShimmer {
     0% { background-position: 200% 0; }

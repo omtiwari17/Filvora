@@ -8,7 +8,7 @@
  * and CSRF tokens that must ALWAYS come live from the network.
  */
 
-const CACHE_NAME = 'filvora-static-v5';
+const CACHE_NAME = 'filvora-static-v6';
 const STATIC_ASSETS = [
     '/static/css/main.css',
     '/static/js/main.js',
@@ -75,7 +75,21 @@ self.addEventListener('fetch', (event) => {
         return; // Hand over to native browser network stack
     }
 
-    // Static Assets: Cache-first with network fallback
+    // App CSS/JS: Network-first so UI updates appear immediately, falling back to cache offline
+    if (url.pathname.startsWith('/static/css/') || url.pathname.startsWith('/static/js/')) {
+        event.respondWith(
+            fetch(event.request).then((response) => {
+                if (response && response.status === 200) {
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then((c) => c.put(event.request, copy));
+                }
+                return response;
+            }).catch(() => caches.match(event.request))
+        );
+        return;
+    }
+
+    // Immutable Static Assets (icons, vendor bundles, manifest): Cache-first with network fallback
     event.respondWith(
         caches.match(event.request).then((cached) => {
             if (cached) return cached;

@@ -126,7 +126,7 @@
     </script>
 
     <!-- Custom CSS (Loaded Early for Fast Dark Mode & Layout Baseline) -->
-    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=2.6">
 
     <!-- Google Fonts (Optional Web Font with Instant System Fallback) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -332,22 +332,25 @@
     {% include 'components/mobile_card_sheet.html' %}
 
     <!-- Custom JS -->
-    <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/main.js' %}?v=2.6"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // Purge any stale legacy HTML caches that could cause unauthenticated snapshots
+                // Purge legacy static/html caches so browsers immediately receive fresh JS/CSS
                 if ('caches' in window) {
                     caches.keys().then((keys) => {
                         keys.forEach((key) => {
-                            if (key.includes('shell') || key.includes('v2') || key.includes('v3') || key.includes('v4')) {
+                            if (key.includes('shell') || key.includes('v2') || key.includes('v3') || key.includes('v4') || key.includes('v5')) {
                                 caches.delete(key);
                             }
                         });
                     });
                 }
                 navigator.serviceWorker.register('/static/sw.js')
-                    .then((reg) => console.log('PWA ServiceWorker active (Static v5)'))
+                    .then((reg) => {
+                        if (typeof reg.update === 'function') reg.update();
+                        console.log('PWA ServiceWorker active (Static v6)');
+                    })
                     .catch((err) => console.log('PWA ServiceWorker registration failed: ', err));
             });
         }

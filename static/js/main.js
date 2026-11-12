@@ -1243,6 +1243,9 @@ function heroGoToSlide(index) {
         slide.classList.toggle('opacity-0', !active);
         slide.classList.toggle('z-0', !active);
         slide.classList.toggle('pointer-events-none', !active);
+        slide.style.opacity = active ? '1' : '0';
+        slide.style.zIndex = active ? '10' : '0';
+        slide.style.pointerEvents = active ? 'auto' : 'none';
         slide.setAttribute('aria-hidden', active ? 'false' : 'true');
     });
 
@@ -1252,6 +1255,7 @@ function heroGoToSlide(index) {
         dot.classList.toggle('bg-white', active);
         dot.classList.toggle('w-2', !active);
         dot.classList.toggle('bg-white/30', !active);
+        dot.style.width = active ? '1.5rem' : '0.5rem';
     });
 }
 window.heroGoToSlide = heroGoToSlide;
