@@ -714,7 +714,7 @@ class AdminDashboardTestCase(TestCase):
         self.assertIn('id="watchlist-view-list-btn"', html_l)
         self.assertIn('watchlist-list-release', html_l)
         self.assertIn('watchlist-list-actions', html_l)
-        self.assertIn('?v=2.6', html_l)
+        self.assertIn('?v=2.7', html_l)
         self.assertIn('setWatchlistView(', html_l)
 
     def test_phase6_view_transitions_and_shimmer_skeletons(self):
@@ -760,6 +760,26 @@ class AdminDashboardTestCase(TestCase):
         self.assertIn('class="hidden xl:hidden fixed top-0 left-0 right-0 z-[60]', html)
         self.assertIn('Sign In', html)
         self.assertIn('Sign Up', html)
+
+    def test_horizontal_rail_smooth_drag_and_anti_snap_assets(self):
+        """Horizontal rails disable scroll-smooth/snap interference and support left/right mouse drag without ghost drags."""
+        import os
+        from django.conf import settings
+        css_path = os.path.join(settings.BASE_DIR, 'static', 'css', 'main.css')
+        js_path = os.path.join(settings.BASE_DIR, 'static', 'js', 'main.js')
+        with open(css_path, 'r', encoding='utf-8') as f:
+            css = f.read()
+        with open(js_path, 'r', encoding='utf-8') as f:
+            js = f.read()
+
+        self.assertIn('scroll-behavior: auto !important;', css)
+        self.assertIn('scroll-snap-type: none !important;', css)
+        self.assertIn('.rail-track.is-dragging > *', css)
+        self.assertIn("track.addEventListener('dragstart'", js)
+        self.assertIn("track.addEventListener('contextmenu'", js)
+        self.assertIn('e.button !== 0 && e.button !== 2', js)
+        self.assertIn('requestAnimationFrame(step)', js)
+
 
 
 

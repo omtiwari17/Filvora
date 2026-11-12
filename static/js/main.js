@@ -310,7 +310,7 @@ function initHtmxFeedback() {
     });
 }
 
-// --- Horizontal Rails (Navigation & Grab-to-Scroll) ---
+// --- Horizontal Rails (Navigation, Smooth Momentum & Left/Right-Click Grab-to-Scroll) ---
 function initHorizontalRails() {
     const rails = document.querySelectorAll('.rail-container');
 
@@ -320,6 +320,16 @@ function initHorizontalRails() {
         const nextBtn = container.querySelector('.rail-next-btn');
 
         if (!track) return;
+
+        let momentumRaf = null;
+        let dragRaf = null;
+
+        const cancelMomentum = () => {
+            if (momentumRaf !== null) {
+                cancelAnimationFrame(momentumRaf);
+                momentumRaf = null;
+            }
+        };
 
         const updateArrows = () => {
             const tolerance = 20;
@@ -351,6 +361,7 @@ function initHorizontalRails() {
             prevBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                cancelMomentum();
                 if (track.scrollLeft <= 20) {
                     updateArrows();
                     return;
@@ -366,6 +377,7 @@ function initHorizontalRails() {
             nextBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                cancelMomentum();
                 const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
                 if (track.scrollLeft >= maxScroll - 20) {
                     updateArrows();
@@ -379,62 +391,169 @@ function initHorizontalRails() {
         }
 
         track.addEventListener('scroll', updateArrows, { passive: true });
+        track.addEventListener('scrollend', updateArrows, { passive: true });
         window.addEventListener('resize', updateArrows, { passive: true });
+
+        // Shift + mouse wheel scrolls horizontally smoothly without hijacking normal page scroll
+        track.addEventListener('wheel', (e) => {
+            if (e.shiftKey && e.deltaY !== 0) {
+                e.preventDefault();
+                cancelMomentum();
+                track.scrollLeft += e.deltaY;
+            }
+        }, { passive: false });
+
+        // Cancel momentum coasting immediately on touch contact
+        track.addEventListener('touchstart', cancelMomentum, { passive: true });
+
+        // Disable native browser ghost-image dragging on posters and links inside the rail
+        track.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+        });
 
         updateArrows();
         setTimeout(updateArrows, 100);
         setTimeout(updateArrows, 300);
         setTimeout(updateArrows, 1000);
 
-        // --- Mouse Drag-To-Scroll ---
+        // --- Smooth Mouse Drag-To-Scroll (Supports Left-Click & Right-Click Hold-and-Drag) ---
         let isDown = false;
+        let dragButton = -1;
         let startX = 0;
         let scrollStart = 0;
+        let targetScrollLeft = 0;
         let isDragging = false;
-        let dragDistance = 0;
+        let maxDragDistance = 0;
+        let lastClientX = 0;
+        let lastMoveTime = 0;
+        let velocityPxPerFrame = 0;
+        let suppressClickUntil = 0;
+        let suppressContextMenuUntil = 0;
 
-        track.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return;
-            isDown = true;
-            isDragging = false;
-            dragDistance = 0;
-            startX = e.pageX - track.offsetLeft;
-            scrollStart = track.scrollLeft;
-        });
-
-        const stopDrag = () => {
-            if (!isDown) return;
-            isDown = false;
-            track.classList.remove('is-dragging');
-            if (isDragging) {
-                setTimeout(() => {
-                    isDragging = false;
-                }, 100);
-            }
+        const applyPendingDragScroll = () => {
+            dragRaf = null;
+            track.scrollLeft = targetScrollLeft;
         };
 
-        track.addEventListener('mouseleave', stopDrag);
-        track.addEventListener('mouseup', stopDrag);
+        const startMomentum = (initialVelocity) => {
+            cancelMomentum();
+            let v = Math.max(-45, Math.min(45, initialVelocity));
+            if (Math.abs(v) < 1.2) return;
 
-        track.addEventListener('mousemove', (e) => {
+            const step = () => {
+                const prev = track.scrollLeft;
+                track.scrollLeft = prev + v;
+                v *= 0.92;
+                // Stop when velocity settles or scroll hits boundary
+                if (Math.abs(v) < 0.35 || track.scrollLeft === prev) {
+                    momentumRaf = null;
+                    updateArrows();
+                    return;
+                }
+                momentumRaf = requestAnimationFrame(step);
+            };
+            momentumRaf = requestAnimationFrame(step);
+        };
+
+        const onWindowMouseMove = (e) => {
             if (!isDown) return;
-            const x = e.pageX - track.offsetLeft;
-            const walk = (x - startX) * 1.5;
-            dragDistance = Math.abs(walk);
 
-            if (dragDistance > 6) {
+            const now = performance.now();
+            const rawDelta = e.clientX - startX;
+            const absDelta = Math.abs(rawDelta);
+            if (absDelta > maxDragDistance) maxDragDistance = absDelta;
+
+            if (!isDragging && maxDragDistance > 5) {
                 isDragging = true;
                 track.classList.add('is-dragging');
             }
 
             if (isDragging) {
                 e.preventDefault();
-                track.scrollLeft = scrollStart - walk;
+                const dt = Math.max(1, now - lastMoveTime);
+                const dx = e.clientX - lastClientX;
+                const instantVelocity = (-dx * 1.15) * (16.67 / dt);
+                velocityPxPerFrame = (velocityPxPerFrame * 0.4) + (instantVelocity * 0.6);
+
+                targetScrollLeft = scrollStart - rawDelta * 1.15;
+                if (dragRaf === null) {
+                    dragRaf = requestAnimationFrame(applyPendingDragScroll);
+                }
             }
+
+            lastClientX = e.clientX;
+            lastMoveTime = now;
+        };
+
+        const stopDrag = () => {
+            if (!isDown) return;
+            isDown = false;
+            window.removeEventListener('mousemove', onWindowMouseMove);
+            window.removeEventListener('mouseup', stopDrag);
+            window.removeEventListener('blur', stopDrag);
+
+            if (dragRaf !== null) {
+                cancelAnimationFrame(dragRaf);
+                dragRaf = null;
+                if (isDragging) {
+                    track.scrollLeft = targetScrollLeft;
+                }
+            }
+
+            const wasDragging = isDragging || maxDragDistance > 5;
+            const releasedButton = dragButton;
+            isDragging = false;
+            dragButton = -1;
+            track.classList.remove('is-dragging');
+
+            if (wasDragging) {
+                suppressClickUntil = performance.now() + 200;
+                if (releasedButton === 2) {
+                    suppressContextMenuUntil = performance.now() + 400;
+                }
+                const staleMs = performance.now() - lastMoveTime;
+                if (staleMs < 80 && Math.abs(velocityPxPerFrame) > 1.2) {
+                    startMomentum(velocityPxPerFrame);
+                }
+            }
+            velocityPxPerFrame = 0;
+        };
+
+        track.addEventListener('mousedown', (e) => {
+            // Allow Left-Click (0) and Right-Click (2) drag; ignore middle-click (1) used for new-tab shortcuts
+            if (e.button !== 0 && e.button !== 2) return;
+            // For left-click, do not hijack clicks on interactive buttons/inputs inside cards
+            if (e.button === 0 && e.target.closest('button, input, select, textarea, .quick-rate-popover, .quick-rate-wrapper')) {
+                return;
+            }
+            cancelMomentum();
+            isDown = true;
+            dragButton = e.button;
+            isDragging = false;
+            maxDragDistance = 0;
+            startX = e.clientX;
+            lastClientX = e.clientX;
+            lastMoveTime = performance.now();
+            velocityPxPerFrame = 0;
+            scrollStart = track.scrollLeft;
+            targetScrollLeft = scrollStart;
+
+            window.addEventListener('mousemove', onWindowMouseMove);
+            window.addEventListener('mouseup', stopDrag);
+            window.addEventListener('blur', stopDrag);
         });
 
+        // Suppress accidental click navigation right after a drag gesture
         track.addEventListener('click', (e) => {
-            if (isDragging || dragDistance > 6) {
+            if (isDragging || maxDragDistance > 5 || performance.now() < suppressClickUntil) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, true);
+
+        // Suppress context menu ONLY if user dragged with right-click; normal right-clicks stay enabled
+        track.addEventListener('contextmenu', (e) => {
+            if (isDragging || performance.now() < suppressContextMenuUntil) {
                 e.preventDefault();
                 e.stopPropagation();
             }

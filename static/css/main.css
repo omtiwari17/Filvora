@@ -176,11 +176,16 @@ button, a, input, select {
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Horizontal Rail Drag Cursor & Anti-Clipping Headroom */
+/* Horizontal Rail Drag Cursor, Zero-Snap Instant Tracking & Anti-Clipping Headroom */
 .rail-track {
     cursor: grab;
     -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
+    /* Override Tailwind scroll-smooth & snap-x so wheel, trackpad, touch & drag never stutter or snap back;
+       arrow buttons still animate smoothly via explicit track.scrollBy({ behavior: 'smooth' }). */
+    scroll-behavior: auto !important;
+    scroll-snap-type: none !important;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
     padding-top: 1.5rem !important; /* 24px top headroom prevents hover scale clipping */
     padding-bottom: 1.5rem !important;
     padding-left: 0.5rem !important;
@@ -189,13 +194,22 @@ button, a, input, select {
     margin-bottom: -0.75rem;
 }
 
+.rail-track img,
+.rail-track a {
+    -webkit-user-drag: none;
+    user-drag: none;
+}
+
 .rail-track.is-dragging {
     cursor: grabbing !important;
     user-select: none !important;
+    -webkit-user-select: none !important;
 }
 
+.rail-track.is-dragging > *,
 .rail-track.is-dragging a,
-.rail-track.is-dragging button {
+.rail-track.is-dragging button,
+.rail-track.is-dragging img {
     pointer-events: none !important;
 }
 
