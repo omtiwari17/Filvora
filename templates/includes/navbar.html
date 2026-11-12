@@ -1,15 +1,15 @@
 {% load static %}
-<nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-gradient-to-b from-black/90 via-black/50 to-transparent px-3 sm:px-5 lg:px-8 py-2.5 sm:py-3.5 flex items-center justify-between">
-    <div class="flex items-center gap-2 sm:gap-4 lg:gap-8 min-w-0">
+<nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-gradient-to-b from-black/90 via-black/50 to-transparent px-3 sm:px-5 lg:px-6 2xl:px-8 py-2.5 sm:py-3.5 flex items-center justify-between gap-2 sm:gap-3 lg:gap-4">
+    <div class="flex items-center gap-2 sm:gap-3 lg:gap-4 2xl:gap-7 min-w-0 flex-1">
         <!-- Logo & v2.5 Badge -->
         <a href="/" class="flex items-center gap-1.5 sm:gap-2 group shrink-0" title="Filvora Home">
             <img src="{% static 'icons/favicon.svg' %}" alt="Filvora Logo" class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl shadow-md shadow-brand-500/20 group-hover:scale-105 group-hover:shadow-brand-500/40 transition-transform duration-200">
-            <span class="text-lg sm:text-2xl lg:text-3xl font-black bg-gradient-to-r from-brand-500 via-rose-500 to-amber-500 bg-clip-text text-transparent tracking-tighter drop-shadow-sm group-hover:opacity-90 transition">FILVORA</span>
+            <span class="text-lg sm:text-xl lg:text-xl xl:text-2xl 2xl:text-3xl font-black bg-gradient-to-r from-brand-500 via-rose-500 to-amber-500 bg-clip-text text-transparent tracking-tighter drop-shadow-sm group-hover:opacity-90 transition">FILVORA</span>
             <span class="hidden xl:inline-block bg-gradient-to-r from-red-600 to-rose-500 text-[9px] sm:text-[10px] font-black text-white px-1 sm:px-1.5 py-0.5 rounded shadow-sm ring-1 ring-white/20 tracking-wider">v2.5</span>
         </a>
         
-        <!-- Desktop Navigation Links (Responsive: Compact on md (tablets/iPad), spacious on lg+) -->
-        <div class="hidden md:flex items-center gap-0.5 lg:gap-1 text-xs lg:text-sm font-medium">
+        <!-- Desktop Navigation Links (Bounded flex container prevents ever overlapping right-side controls) -->
+        <div class="hidden md:flex items-center gap-0.5 xl:gap-1 text-xs xl:text-[13px] 2xl:text-sm font-medium min-w-0 flex-1 overflow-x-auto no-scrollbar">
             <a href="/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full border transition-all duration-200 {% if request.path == '/' %}bg-white/10 text-white font-semibold border-white/15{% else %}border-transparent text-gray-300 hover:text-white hover:bg-white/5{% endif %}">Home</a>
             <a href="/discover/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full border transition-all duration-200 {% if '/discover/' in request.path %}bg-white/10 text-white font-semibold border-white/15{% else %}border-transparent text-gray-300 hover:text-white hover:bg-white/5{% endif %}">Discover</a>
             <a href="/movies/" class="nav-link whitespace-nowrap px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full border transition-all duration-200 {% if '/movies/' in request.path %}bg-white/10 text-white font-semibold border-white/15{% else %}border-transparent text-gray-300 hover:text-white hover:bg-white/5{% endif %}">Movies</a>
@@ -21,29 +21,29 @@
     </div>
     
     <!-- Right Actions -->
-    <div class="flex items-center gap-1 sm:gap-2.5 lg:gap-4 shrink-0">
-        <!-- Mobile & Tablet Search Trigger Button (Active on <1024px, hidden on lg+) -->
+    <div class="flex items-center gap-1.5 sm:gap-2 xl:gap-2.5 2xl:gap-3.5 shrink-0">
+        <!-- Mobile, Tablet & Compact-Laptop Search Trigger Button (Active on <1280px, hidden on xl+) -->
         <button type="button" 
                 onclick="openMobileSearch()" 
                 title="Search" 
                 aria-label="Open Search"
-                class="lg:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-900/90 hover:bg-gray-800 border border-gray-700/80 flex items-center justify-center text-gray-300 hover:text-white transition active:scale-95 shadow-sm">
+                class="xl:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-900/90 hover:bg-gray-800 border border-gray-700/80 flex items-center justify-center text-gray-300 hover:text-white transition active:scale-95 shadow-sm">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
         </button>
 
-        <!-- Desktop Live Instant Search Bar (Visible on lg+, hidden on mobile & tablets) -->
-        <div class="hidden lg:block relative" id="navbar-search-container">
+        <!-- Desktop Live Instant Search Bar (Visible on xl+, hidden on <1280px to prevent auth/nav overlap) -->
+        <div class="hidden xl:block relative" id="navbar-search-container">
             <form action="/search/" method="get" class="relative flex items-center">
-                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                 </div>
                 <input type="text"
                        name="q"
-                       placeholder="Search movies, series, cast..."
+                       placeholder="Search titles, cast..."
                        autocomplete="off"
                        hx-get="/search/suggest/"
                        hx-trigger="keyup changed delay:250ms, search"
@@ -51,7 +51,7 @@
                        hx-swap="innerHTML"
                        hx-indicator="#search-loading-skeleton"
                        onfocus="document.getElementById('search-results-dropdown').classList.remove('hidden');"
-                       class="bg-gray-900/90 border border-gray-700/80 focus:border-brand-500 rounded-full pl-10 pr-10 py-1.5 lg:py-2 text-xs lg:text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 w-44 xl:w-64 transition-all duration-300 focus:w-60 xl:focus:w-80 shadow-inner">
+                       class="bg-gray-900/90 border border-gray-700/80 focus:border-brand-500 rounded-full pl-9 pr-8 py-1.5 2xl:py-2 text-xs 2xl:text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 w-40 2xl:w-64 transition-all duration-300 focus:w-48 2xl:focus:w-80 shadow-inner">
                 <!-- Keyboard Shortcut Hint Badge -->
                 <div class="flex absolute inset-y-0 right-0 pr-3 items-center pointer-events-none">
                     <span class="text-[10px] text-gray-400 bg-gray-800 border border-gray-700 px-1.5 py-0.5 rounded font-mono font-bold">/</span>
@@ -95,7 +95,7 @@
                     id="vibe-dropdown-btn"
                     onclick="toggleVibeDropdown(event)"
                     title="Quick Vibe Randomizer"
-                    class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-2 rounded-full bg-gray-900/90 hover:bg-gray-800 border border-gray-700/80 hover:border-amber-500/50 text-gray-300 hover:text-white text-xs font-bold transition shadow-sm group">
+                    class="flex items-center gap-1 sm:gap-1.5 px-2 xl:px-2.5 2xl:px-3 py-1.5 2xl:py-2 rounded-full bg-gray-900/90 hover:bg-gray-800 border border-gray-700/80 hover:border-amber-500/50 text-gray-300 hover:text-white text-xs font-bold transition shadow-sm group">
                 <svg class="w-3.5 h-3.5 text-amber-400 fill-amber-400 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
                     <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
                 </svg>
@@ -150,7 +150,7 @@
         </div>
 
         <!-- Shortcuts Modal Trigger Button -->
-        <button onclick="toggleShortcutsModal()" title="Keyboard Shortcuts (?)" class="hidden lg:flex items-center justify-center w-8 h-8 rounded-full bg-gray-900/80 border border-gray-700/80 text-gray-300 hover:text-white hover:border-gray-500 transition shadow-sm">
+        <button onclick="toggleShortcutsModal()" title="Keyboard Shortcuts (?)" class="hidden xl:flex items-center justify-center w-8 h-8 rounded-full bg-gray-900/80 border border-gray-700/80 text-gray-300 hover:text-white hover:border-gray-500 transition shadow-sm">
             <span class="text-xs font-mono font-bold">?</span>
         </button>
         
@@ -261,16 +261,16 @@
             </div>
         </div>
         {% else %}
-        <!-- Auth Buttons (Never Wrap, Always Fully Visible) -->
-        <div class="flex items-center gap-1 sm:gap-2 lg:gap-3 text-xs lg:text-sm font-semibold shrink-0 whitespace-nowrap">
-            <button type="button" onclick="openInstallModal()" title="Install Filvora App" class="hidden sm:inline-flex items-center gap-1.5 text-gray-300 hover:text-white px-2 sm:px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition whitespace-nowrap text-xs font-medium">
-                <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <!-- Auth Buttons (Never Wrap, Compact below 2xl to guarantee zero nav overlap) -->
+        <div class="flex items-center gap-1 sm:gap-1.5 2xl:gap-3 text-xs 2xl:text-sm font-semibold shrink-0 whitespace-nowrap">
+            <button type="button" onclick="openInstallModal()" title="Install Filvora App" aria-label="Install Filvora App" class="hidden sm:inline-flex items-center justify-center gap-1.5 text-gray-300 hover:text-white w-8 h-8 2xl:w-auto 2xl:h-auto 2xl:px-2.5 2xl:py-1.5 rounded-full 2xl:rounded-lg bg-gray-900/80 2xl:bg-transparent border border-gray-700/80 2xl:border-transparent hover:bg-white/10 transition whitespace-nowrap text-xs font-medium shrink-0">
+                <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
-                <span>Install</span>
+                <span class="hidden 2xl:inline">Install</span>
             </button>
-            <a href="/accounts/login/" class="text-gray-300 hover:text-white px-1.5 sm:px-2.5 lg:px-3 py-1.5 rounded-lg hover:bg-white/5 transition whitespace-nowrap font-medium text-xs sm:text-sm">Sign In</a>
-            <a href="/accounts/register/" class="bg-brand-500 hover:bg-red-600 text-white px-2.5 sm:px-3.5 lg:px-4 py-1.5 sm:py-2 rounded-full transition shadow-lg shadow-brand-500/30 hover:scale-105 active:scale-95 transform whitespace-nowrap font-bold text-xs sm:text-sm">Sign Up</a>
+            <a href="/accounts/login/" class="text-gray-300 hover:text-white px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg hover:bg-white/5 transition whitespace-nowrap font-medium text-xs xl:text-[13px] 2xl:text-sm">Sign In</a>
+            <a href="/accounts/register/" class="bg-brand-500 hover:bg-red-600 text-white px-2.5 xl:px-3.5 2xl:px-4 py-1.5 2xl:py-2 rounded-full transition shadow-lg shadow-brand-500/30 hover:scale-105 active:scale-95 transform whitespace-nowrap font-bold text-xs xl:text-[13px] 2xl:text-sm">Sign Up</a>
         </div>
         {% endif %}
     </div>
@@ -281,12 +281,12 @@
      onclick="closeAllNavbarDropdowns()" 
      class="hidden fixed inset-0 z-40 bg-transparent cursor-default pointer-events-auto"></div>
 
-<!-- Mobile & Tablet Search Backdrop (Active on <1024px, hidden on lg+) -->
-<div id="mobile-search-backdrop" onclick="closeMobileSearch()" class="hidden fixed inset-0 z-[55] bg-black/80 backdrop-blur-sm lg:hidden transition-opacity"></div>
+<!-- Mobile, Tablet & Compact-Laptop Search Backdrop (Active on <1280px, hidden on xl+) -->
+<div id="mobile-search-backdrop" onclick="closeMobileSearch()" class="hidden fixed inset-0 z-[55] bg-black/80 backdrop-blur-sm xl:hidden transition-opacity"></div>
 
-<!-- Mobile & Tablet Full-Width Search Overlay (Active on <1024px, hidden on lg+) -->
+<!-- Mobile, Tablet & Compact-Laptop Full-Width Search Overlay (Active on <1280px, hidden on xl+) -->
 <div id="mobile-search-overlay" 
-     class="hidden lg:hidden fixed top-0 left-0 right-0 z-[60] bg-gray-950/98 backdrop-blur-2xl px-3 py-2.5 sm:px-6 sm:py-3.5 border-b border-gray-800 shadow-2xl transition-all duration-200"
+     class="hidden xl:hidden fixed top-0 left-0 right-0 z-[60] bg-gray-950/98 backdrop-blur-2xl px-3 py-2.5 sm:px-6 sm:py-3.5 border-b border-gray-800 shadow-2xl transition-all duration-200"
      style="padding-top: max(0.625rem, env(safe-area-inset-top, 0px));">
     <div class="flex items-center gap-2 max-w-2xl mx-auto">
         <!-- Back Button -->

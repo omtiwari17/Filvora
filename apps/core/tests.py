@@ -749,6 +749,19 @@ class AdminDashboardTestCase(TestCase):
         self.assertEqual([m['id'] for m in upcoming], [999001, 999002])
         self.assertFalse(any(m.get('id') in [1744462, 1222222] for m in upcoming))
 
+    def test_logged_out_navbar_prevents_overlap(self):
+        """Logged-out navbar uses bounded flex containers and synced xl breakpoints for search vs auth actions."""
+        self.client.logout()
+        res = self.client.get('/')
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertIn('min-w-0 flex-1 overflow-x-auto no-scrollbar', html)
+        self.assertIn('class="hidden xl:block relative" id="navbar-search-container"', html)
+        self.assertIn('class="hidden xl:hidden fixed top-0 left-0 right-0 z-[60]', html)
+        self.assertIn('Sign In', html)
+        self.assertIn('Sign Up', html)
+
+
 
 
 

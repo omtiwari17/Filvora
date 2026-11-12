@@ -112,14 +112,12 @@ function initKeyboardShortcuts() {
         // Press '/' to search
         if (e.key === '/' && !isInput) {
             e.preventDefault();
-            if (window.innerWidth < 1024) {
+            const searchInput = document.querySelector('#navbar-search-container input[name="q"]');
+            if (!searchInput || searchInput.offsetParent === null) {
                 openMobileSearch();
             } else {
-                const searchInput = document.querySelector('#navbar-search-container input[name="q"]') || document.querySelector('input[name="q"]');
-                if (searchInput) {
-                    searchInput.focus();
-                    searchInput.select();
-                }
+                searchInput.focus();
+                searchInput.select();
             }
         }
 
