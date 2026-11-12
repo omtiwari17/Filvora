@@ -735,6 +735,21 @@ class AdminDashboardTestCase(TestCase):
         if 'id="season-tabs-track"' in html_series:
             self.assertIn('hx-indicator="#episodes-loading-skeleton"', html_series)
 
+    def test_home_upcoming_does_not_force_gta_vi(self):
+        """HomeView should not forcibly prepend the released GTA VI special into Upcoming Blockbusters."""
+        from unittest.mock import patch
+        mock_upcoming = [
+            {"id": 999001, "title": "Future Release One", "release_date": "2027-05-01", "media_type": "movie"},
+            {"id": 999002, "title": "Future Release Two", "release_date": "2027-06-15", "media_type": "movie"},
+        ]
+        with patch('apps.tmdb.client.TMDBClient.get_movies_catalog', return_value=mock_upcoming):
+            res = self.client.get('/')
+        self.assertEqual(res.status_code, 200)
+        upcoming = res.context['upcoming_releases']
+        self.assertEqual([m['id'] for m in upcoming], [999001, 999002])
+        self.assertFalse(any(m.get('id') in [1744462, 1222222] for m in upcoming))
+
+
 
 
 

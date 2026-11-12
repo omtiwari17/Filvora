@@ -37,11 +37,6 @@ class HomeView(TemplateView):
             scifi_movies = f_scifi.result()
             animation_movies = f_animation.result()
             upcoming_releases = f_upcoming.result()
-        
-        gta = client._get_gta_vi_special()
-        if not any(m.get('id') in [1744462, 1222222] or 'grand theft auto vi' in (m.get('title') or '').lower() for m in upcoming_releases):
-            upcoming_releases.insert(0, gta)
-
         hero_pool = trending_movies if trending_movies else (popular_movies or [])
         context['hero_movie'] = hero_pool[0] if hero_pool else None
         context['hero_slides'] = hero_pool[:5]
