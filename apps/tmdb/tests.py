@@ -176,6 +176,15 @@ class TMDBTestCase(TestCase):
         results = self.client.search_multi('')
         self.assertEqual(results, [])
 
+    def test_discover_tv_maps_primary_release_date_sort_to_first_air_date(self):
+        from unittest.mock import patch
+        with patch.object(self.client, '_fetch_paginated_24', return_value=[]) as mock_fetch:
+            self.client.discover_content(media_type='tv', sort_by='primary_release_date.asc')
+            mock_fetch.assert_called_once()
+            endpoint, params = mock_fetch.call_args[0]
+            self.assertEqual(endpoint, '/discover/tv')
+            self.assertEqual(params['sort_by'], 'first_air_date.asc')
+
 
 
 

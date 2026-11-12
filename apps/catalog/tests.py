@@ -362,4 +362,28 @@ class CatalogViewsTestCase(TestCase):
         # 4. Verify navigateToCard explicitly guards against clicks from rail-next-btn and rail-prev-btn
         self.assertIn('.rail-next-btn, .rail-prev-btn', html)
 
+    def test_browse_and_discover_release_date_sort_options(self):
+        """Verifies movies, series, and discover views include newest and oldest release date sort options."""
+        res_movies = self.client.get('/movies/?sort=primary_release_date.asc')
+        self.assertEqual(res_movies.status_code, 200)
+        html_movies = res_movies.content.decode('utf-8')
+        self.assertIn('value="primary_release_date.desc"', html_movies)
+        self.assertIn('value="primary_release_date.asc"', html_movies)
+        self.assertIn('Release Date (Newest)', html_movies)
+        self.assertIn('Release Date (Oldest)', html_movies)
+
+        res_series = self.client.get('/series/?sort=first_air_date.asc')
+        self.assertEqual(res_series.status_code, 200)
+        html_series = res_series.content.decode('utf-8')
+        self.assertIn('value="first_air_date.desc"', html_series)
+        self.assertIn('value="first_air_date.asc"', html_series)
+        self.assertIn('Release Date (Newest)', html_series)
+        self.assertIn('Release Date (Oldest)', html_series)
+
+        res_discover = self.client.get('/discover/?type=tv&sort=primary_release_date.asc')
+        self.assertEqual(res_discover.status_code, 200)
+        html_discover = res_discover.content.decode('utf-8')
+        self.assertIn('value="primary_release_date.desc"', html_discover)
+        self.assertIn('value="primary_release_date.asc"', html_discover)
+
 

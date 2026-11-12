@@ -119,6 +119,8 @@
                     onchange="applyWatchlistFilters()" 
                     class="bg-gray-950/90 border border-gray-700/80 text-gray-300 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-brand-500 cursor-pointer">
                 <option value="default">Recently Added</option>
+                <option value="release_desc">Release Date (Newest)</option>
+                <option value="release_asc">Release Date (Oldest)</option>
                 <option value="title_asc">Title (A - Z)</option>
                 <option value="title_desc">Title (Z - A)</option>
                 <option value="tmdb_rating">TMDB Score (High - Low)</option>
@@ -167,6 +169,7 @@
              data-title="{{ item.display_title|lower }}"
              data-user-rating="{{ item.rating_score|default:0 }}"
              data-tmdb-vote="{{ item.vote_average|default:0 }}"
+             data-release-date="{{ item.display_release_date|default:'' }}"
              data-index="{{ forloop.counter0 }}">
             <div class="aspect-[2/3] block rounded-xl overflow-hidden shadow-lg bg-gray-900 ring-1 ring-gray-800 relative group-hover/card:ring-brand-500/60 group-hover/card:shadow-2xl transition-all duration-300">
                 {% if item.poster_path %}
@@ -579,21 +582,26 @@ function applyWatchlistFilters() {
     });
 
     // 4. Sorting
-    if (sortVal !== 'default') {
-        cards.sort((a, b) => {
-            if (sortVal === 'title_asc') {
-                return (a.getAttribute('data-title') || '').localeCompare(b.getAttribute('data-title') || '');
-            } else if (sortVal === 'title_desc') {
-                return (b.getAttribute('data-title') || '').localeCompare(a.getAttribute('data-title') || '');
-            } else if (sortVal === 'tmdb_rating') {
-                return parseFloat(b.getAttribute('data-tmdb-vote') || 0) - parseFloat(a.getAttribute('data-tmdb-vote') || 0);
-            } else if (sortVal === 'user_rating') {
-                return parseInt(b.getAttribute('data-user-rating') || 0, 10) - parseInt(a.getAttribute('data-user-rating') || 0, 10);
-            }
-            return parseInt(a.getAttribute('data-index') || 0, 10) - parseInt(b.getAttribute('data-index') || 0, 10);
-        });
-        cards.forEach(card => grid.appendChild(card));
-    }
+    cards.sort((a, b) => {
+        if (sortVal === 'title_asc') {
+            return (a.getAttribute('data-title') || '').localeCompare(b.getAttribute('data-title') || '');
+        } else if (sortVal === 'title_desc') {
+            return (b.getAttribute('data-title') || '').localeCompare(a.getAttribute('data-title') || '');
+        } else if (sortVal === 'tmdb_rating') {
+            return parseFloat(b.getAttribute('data-tmdb-vote') || 0) - parseFloat(a.getAttribute('data-tmdb-vote') || 0);
+        } else if (sortVal === 'user_rating') {
+            return parseInt(b.getAttribute('data-user-rating') || 0, 10) - parseInt(a.getAttribute('data-user-rating') || 0, 10);
+        } else if (sortVal === 'release_desc' || sortVal === 'release_asc') {
+            const da = a.getAttribute('data-release-date') || '';
+            const db = b.getAttribute('data-release-date') || '';
+            if (!da && !db) return 0;
+            if (!da) return 1;
+            if (!db) return -1;
+            return sortVal === 'release_desc' ? db.localeCompare(da) : da.localeCompare(db);
+        }
+        return parseInt(a.getAttribute('data-index') || 0, 10) - parseInt(b.getAttribute('data-index') || 0, 10);
+    });
+    cards.forEach(card => grid.appendChild(card));
 
     // Toggle No Results View & Update Count Badge
     const noResults = document.getElementById('watchlist-no-results');

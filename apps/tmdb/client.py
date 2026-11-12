@@ -1079,6 +1079,8 @@ class TMDBClient:
         import datetime
         today_str = datetime.date.today().isoformat()
         sort_by = sort_by or "popularity.desc"
+        if media_type == 'tv' and sort_by.startswith('primary_release_date.'):
+            sort_by = sort_by.replace('primary_release_date.', 'first_air_date.', 1)
 
         # Adaptive vote thresholds for accuracy and high-quality titles
         if date_gte and date_gte >= today_str:

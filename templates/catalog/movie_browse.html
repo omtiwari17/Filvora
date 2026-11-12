@@ -21,7 +21,8 @@
                     class="bg-gray-900/90 border border-gray-800 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-brand-500 shadow-md">
                 <option value="popularity.desc" {% if selected_sort == 'popularity.desc' %}selected{% endif %}>Most Popular</option>
                 <option value="vote_average.desc" {% if selected_sort == 'vote_average.desc' %}selected{% endif %}>Highest Rated</option>
-                <option value="primary_release_date.desc" {% if selected_sort == 'primary_release_date.desc' %}selected{% endif %}>Newest Releases</option>
+                <option value="primary_release_date.desc" {% if selected_sort == 'primary_release_date.desc' %}selected{% endif %}>Release Date (Newest)</option>
+                <option value="primary_release_date.asc" {% if selected_sort == 'primary_release_date.asc' %}selected{% endif %}>Release Date (Oldest)</option>
             </select>
         </form>
     </div>

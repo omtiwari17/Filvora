@@ -328,5 +328,19 @@ class LibraryTestCase(TestCase):
         self.assertEqual(len(res.context['favorite_people']), 0)
         self.assertFalse(FavoritePerson.objects.filter(user=self.user, profile=p2, person_id=10297).exists())
 
+    def test_watchlist_release_date_sort_options(self):
+        """Verifies My List renders release date sort options and data-release-date attributes."""
+        from apps.library.models import LibraryItem
+        self.client.login(username='libuser', password='password123')
+        LibraryItem.objects.create(user=self.user, tmdb_id=550, media_type='movie')
+
+        res = self.client.get('/library/')
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertIn('<option value="release_desc">Release Date (Newest)</option>', html)
+        self.assertIn('<option value="release_asc">Release Date (Oldest)</option>', html)
+        self.assertIn('data-release-date="', html)
+        self.assertIn("sortVal === 'release_desc' || sortVal === 'release_asc'", html)
+
 
 

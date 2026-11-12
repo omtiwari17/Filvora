@@ -27,12 +27,14 @@ def my_list(request):
             data = client.get_movie(item.tmdb_id)
             data['media_type'] = 'movie'
             data['display_title'] = data.get('title', '')
+            data['display_release_date'] = data.get('release_date') or ''
             data['rating_score'] = user_ratings.get((item.tmdb_id, 'movie'), 0)
             saved_items.append(data)
         elif item.media_type == 'tv':
             data = client.get_tv(item.tmdb_id)
             data['media_type'] = 'tv'
             data['display_title'] = data.get('name', '')
+            data['display_release_date'] = data.get('first_air_date') or ''
             data['rating_score'] = user_ratings.get((item.tmdb_id, 'tv'), 0)
             saved_items.append(data)
             

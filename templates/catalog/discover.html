@@ -175,7 +175,8 @@
                         class="w-full bg-gray-950 border border-gray-700/80 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-brand-500">
                     <option value="popularity.desc" {% if selected_sort == 'popularity.desc' %}selected{% endif %}>Popularity</option>
                     <option value="vote_average.desc" {% if selected_sort == 'vote_average.desc' %}selected{% endif %}>Top Rated</option>
-                    <option value="primary_release_date.desc" {% if selected_sort == 'primary_release_date.desc' %}selected{% endif %}>Newest First</option>
+                    <option value="primary_release_date.desc" {% if selected_sort == 'primary_release_date.desc' %}selected{% endif %}>Release Date (Newest)</option>
+                    <option value="primary_release_date.asc" {% if selected_sort == 'primary_release_date.asc' %}selected{% endif %}>Release Date (Oldest)</option>
                 </select>
             </div>
         </div>
