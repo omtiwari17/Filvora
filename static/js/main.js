@@ -126,6 +126,7 @@ function initKeyboardShortcuts() {
         if (e.key === 'Escape') {
             closeAllNavbarDropdowns();
             closeMobileSearch();
+            closeCardQuickSheet();
             const shortcutsModal = document.getElementById('shortcuts-modal');
             if (shortcutsModal) shortcutsModal.classList.add('hidden');
         }
@@ -963,3 +964,259 @@ function navigateToCard(event, url) {
     }
 }
 window.navigateToCard = navigateToCard;
+
+// --- Phase 3: Mobile & Tablet Card Quick-Action Bottom Sheet ---
+let __activeSheetCard = null;
+let __activeSheetTrigger = null;
+
+function renderMobileSheetState(isSaved, isWatched, score) {
+    const wlBtn = document.getElementById('sheet-watchlist-btn');
+    const wlLabel = document.getElementById('sheet-watchlist-label');
+    const wlBadge = document.getElementById('sheet-watchlist-badge');
+    const wlIcon = document.getElementById('sheet-watchlist-icon');
+    if (wlBtn && wlLabel && wlBadge && wlIcon) {
+        if (isSaved) {
+            wlBtn.className = 'w-full min-h-[46px] px-4 py-2.5 rounded-2xl bg-brand-500/15 hover:bg-brand-500/25 border border-brand-500/40 text-white font-semibold text-sm flex items-center justify-between active:scale-[0.98] transition';
+            wlLabel.textContent = 'In My List';
+            wlBadge.textContent = 'Saved';
+            wlBadge.className = 'text-[11px] font-mono uppercase tracking-wider text-brand-400';
+            wlIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>';
+        } else {
+            wlBtn.className = 'w-full min-h-[46px] px-4 py-2.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-gray-100 font-semibold text-sm flex items-center justify-between active:scale-[0.98] transition';
+            wlLabel.textContent = 'Add to My List';
+            wlBadge.textContent = '';
+            wlIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>';
+        }
+    }
+
+    const wBtn = document.getElementById('sheet-watched-btn');
+    const wLabel = document.getElementById('sheet-watched-label');
+    const wBadge = document.getElementById('sheet-watched-badge');
+    const wIcon = document.getElementById('sheet-watched-icon');
+    if (wBtn && wLabel && wBadge && wIcon) {
+        if (isWatched) {
+            wBtn.className = 'w-full min-h-[46px] px-4 py-2.5 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-white font-semibold text-sm flex items-center justify-between active:scale-[0.98] transition';
+            wLabel.textContent = 'Watched';
+            wBadge.textContent = 'Seen';
+            wBadge.className = 'text-[11px] font-mono uppercase tracking-wider text-emerald-400';
+            wIcon.setAttribute('fill', 'currentColor');
+        } else {
+            wBtn.className = 'w-full min-h-[46px] px-4 py-2.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-gray-100 font-semibold text-sm flex items-center justify-between active:scale-[0.98] transition';
+            wLabel.textContent = 'Mark as Watched';
+            wBadge.textContent = '';
+            wIcon.setAttribute('fill', 'none');
+        }
+    }
+
+    const numericScore = parseInt(score || 0, 10);
+    document.querySelectorAll('#sheet-stars-row .sheet-star-btn').forEach(btn => {
+        const starVal = parseInt(btn.getAttribute('data-star') || 0, 10);
+        if (starVal <= numericScore) {
+            btn.classList.remove('text-gray-500', 'border-white/[0.06]');
+            btn.classList.add('text-yellow-400', 'bg-yellow-500/15', 'border-yellow-500/40');
+        } else {
+            btn.classList.add('text-gray-500', 'border-white/[0.06]');
+            btn.classList.remove('text-yellow-400', 'bg-yellow-500/15', 'border-yellow-500/40');
+        }
+    });
+    const clearBtn = document.getElementById('sheet-clear-rating-btn');
+    if (clearBtn) {
+        clearBtn.classList.toggle('hidden', numericScore <= 0);
+    }
+}
+
+function openCardQuickSheet(triggerEl) {
+    const sheet = document.getElementById('mobile-card-sheet');
+    const backdrop = document.getElementById('mobile-card-sheet-backdrop');
+    if (!sheet || !backdrop || !triggerEl) return;
+
+    __activeSheetTrigger = triggerEl;
+    __activeSheetCard = triggerEl.closest('.group\\/card');
+
+    const tmdbId = triggerEl.getAttribute('data-tmdb-id');
+    const mediaType = triggerEl.getAttribute('data-media-type') || 'movie';
+    const title = triggerEl.getAttribute('data-title') || '';
+    const year = triggerEl.getAttribute('data-year') || '';
+    const poster = triggerEl.getAttribute('data-poster') || '';
+    const watchUrl = triggerEl.getAttribute('data-watch-url') || '#';
+    const detailUrl = triggerEl.getAttribute('data-detail-url') || '#';
+
+    sheet.setAttribute('data-tmdb-id', tmdbId);
+    sheet.setAttribute('data-media-type', mediaType);
+
+    document.getElementById('sheet-title').textContent = title;
+    const typeLabel = mediaType === 'tv' ? 'TV Series' : 'Movie';
+    document.getElementById('sheet-meta').textContent = year ? `${year} • ${typeLabel}` : typeLabel;
+    document.getElementById('sheet-watch-link').href = watchUrl;
+    document.getElementById('sheet-detail-link').href = detailUrl;
+
+    const posterImg = document.getElementById('sheet-poster');
+    const posterFallback = document.getElementById('sheet-poster-fallback');
+    if (poster) {
+        posterImg.src = poster;
+        posterImg.alt = title;
+        posterImg.classList.remove('hidden');
+        posterFallback.classList.add('hidden');
+    } else {
+        posterImg.classList.add('hidden');
+        posterFallback.textContent = title;
+        posterFallback.classList.remove('hidden');
+    }
+
+    // Read current live state from the underlying card DOM
+    let isSaved = false;
+    let isWatched = false;
+    let score = 0;
+    if (__activeSheetCard) {
+        const wlCardBtn = __activeSheetCard.querySelector('button[hx-post="/library/toggle/"]');
+        if (wlCardBtn) {
+            const t = (wlCardBtn.getAttribute('title') || '').toLowerCase();
+            isSaved = t.includes('saved') || t.includes('in my list');
+        }
+        const watchBtn = __activeSheetCard.querySelector(`#card-watch-btn-${mediaType}-${tmdbId}`);
+        if (watchBtn) {
+            isWatched = (watchBtn.getAttribute('title') || '').toLowerCase().includes('unmark');
+        }
+        const pop = __activeSheetCard.querySelector('.quick-rate-popover');
+        if (pop) {
+            score = parseInt(pop.getAttribute('data-score') || 0, 10);
+        }
+    }
+
+    sheet.setAttribute('data-saved', isSaved ? '1' : '0');
+    sheet.setAttribute('data-watched', isWatched ? '1' : '0');
+    sheet.setAttribute('data-score', String(score));
+    renderMobileSheetState(isSaved, isWatched, score);
+
+    backdrop.classList.remove('hidden');
+    sheet.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        backdrop.classList.remove('opacity-0');
+        sheet.classList.remove('translate-y-full');
+    });
+    document.body.style.overflow = 'hidden';
+}
+window.openCardQuickSheet = openCardQuickSheet;
+
+function closeCardQuickSheet() {
+    const sheet = document.getElementById('mobile-card-sheet');
+    const backdrop = document.getElementById('mobile-card-sheet-backdrop');
+    if (!sheet || !backdrop || sheet.classList.contains('hidden')) return;
+
+    backdrop.classList.add('opacity-0');
+    sheet.classList.add('translate-y-full');
+    setTimeout(() => {
+        backdrop.classList.add('hidden');
+        sheet.classList.add('hidden');
+    }, 200);
+    document.body.style.overflow = '';
+}
+window.closeCardQuickSheet = closeCardQuickSheet;
+
+function toggleSheetWatchlist() {
+    const sheet = document.getElementById('mobile-card-sheet');
+    if (!sheet) return;
+    const tmdbId = sheet.getAttribute('data-tmdb-id');
+    const mediaType = sheet.getAttribute('data-media-type') || 'movie';
+    const token = getCookie('csrftoken');
+
+    const body = new URLSearchParams({ tmdb_id: tmdbId, media_type: mediaType, variant: 'card' });
+    fetch('/library/toggle/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': token || '' },
+        body
+    }).then(async (res) => {
+        if (res.redirected && res.url.includes('/accounts/login/')) {
+            window.location.href = res.url;
+            return;
+        }
+        if (!res.ok) return;
+        const html = await res.text();
+        const isSaved = html.includes('In My List') || html.includes('Saved in My List') || html.includes('M5 13l4 4L19 7');
+        sheet.setAttribute('data-saved', isSaved ? '1' : '0');
+        renderMobileSheetState(isSaved, sheet.getAttribute('data-watched') === '1', sheet.getAttribute('data-score'));
+
+        // Sync matching card buttons on the page
+        document.querySelectorAll('button[hx-post="/library/toggle/"]').forEach(btn => {
+            const vals = btn.getAttribute('hx-vals') || '';
+            if (vals.includes(`"${tmdbId}"`) && vals.includes(`"${mediaType}"`) && vals.includes('"card"')) {
+                const tpl = document.createElement('template');
+                tpl.innerHTML = html.trim();
+                const newBtn = tpl.content.firstChild;
+                if (newBtn && btn.parentNode) {
+                    btn.parentNode.replaceChild(newBtn, btn);
+                    if (window.htmx) htmx.process(newBtn);
+                }
+            }
+        });
+        if (typeof showToast === 'function') {
+            showToast(isSaved ? 'Added to My List' : 'Removed from My List', isSaved ? 'success' : 'info');
+        }
+    });
+}
+window.toggleSheetWatchlist = toggleSheetWatchlist;
+
+function toggleSheetWatched() {
+    const sheet = document.getElementById('mobile-card-sheet');
+    if (!sheet) return;
+    const tmdbId = sheet.getAttribute('data-tmdb-id');
+    const mediaType = sheet.getAttribute('data-media-type') || 'movie';
+    const token = getCookie('csrftoken');
+
+    const body = new URLSearchParams({ tmdb_id: tmdbId, media_type: mediaType });
+    fetch('/progress/mark-watched/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': token || '' },
+        body
+    }).then(async (res) => {
+        if (res.redirected && res.url.includes('/accounts/login/')) {
+            window.location.href = res.url;
+            return;
+        }
+        if (!res.ok) return;
+        const data = await res.json();
+        const isWatched = !!data.is_watched;
+        sheet.setAttribute('data-watched', isWatched ? '1' : '0');
+        renderMobileSheetState(sheet.getAttribute('data-saved') === '1', isWatched, sheet.getAttribute('data-score'));
+        setCardWatchedState(tmdbId, mediaType, isWatched);
+        if (typeof showToast === 'function') {
+            showToast(isWatched ? 'Marked as Watched' : 'Removed watched status', isWatched ? 'success' : 'info');
+        }
+    });
+}
+window.toggleSheetWatched = toggleSheetWatched;
+
+function submitSheetRating(score) {
+    const sheet = document.getElementById('mobile-card-sheet');
+    if (!sheet) return;
+    const tmdbId = sheet.getAttribute('data-tmdb-id');
+    const mediaType = sheet.getAttribute('data-media-type') || 'movie';
+    const token = getCookie('csrftoken');
+    const isRemoval = !score || score <= 0;
+    const url = isRemoval ? '/progress/rate/remove/' : '/progress/rate/';
+    const body = isRemoval
+        ? new URLSearchParams({ tmdb_id: tmdbId, media_type: mediaType })
+        : new URLSearchParams({ tmdb_id: tmdbId, media_type: mediaType, score: String(score) });
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': token || '' },
+        body
+    }).then(async (res) => {
+        if (res.redirected && res.url.includes('/accounts/login/')) {
+            window.location.href = res.url;
+            return;
+        }
+        if (!res.ok) return;
+        const finalScore = isRemoval ? 0 : score;
+        sheet.setAttribute('data-score', String(finalScore));
+        renderMobileSheetState(sheet.getAttribute('data-saved') === '1', sheet.getAttribute('data-watched') === '1', finalScore);
+        document.querySelectorAll(`#card-rate-${mediaType}-${tmdbId}`).forEach(container => {
+            setCardRatingState(container, finalScore);
+        });
+        if (typeof showToast === 'function') {
+            showToast(finalScore > 0 ? `Rated ${finalScore}/5 stars` : 'Rating removed', finalScore > 0 ? 'success' : 'info');
+        }
+    });
+}
+window.submitSheetRating = submitSheetRating;

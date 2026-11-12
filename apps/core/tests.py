@@ -660,3 +660,22 @@ class AdminDashboardTestCase(TestCase):
         self.assertIn('card-surface-specular', html)
         self.assertIn('poster-fade', html)
 
+    def test_phase3_mobile_card_quick_sheet(self):
+        """Verifies Phase 3 UI polish: shared mobile quick-action bottom sheet and card triggers."""
+        res = self.client.get('/')
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertIn('id="mobile-card-sheet"', html)
+        self.assertIn('id="sheet-watchlist-btn"', html)
+        self.assertIn('id="sheet-watched-btn"', html)
+        self.assertIn('openCardQuickSheet(this)', html)
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,105 @@
+<!-- Mobile & Tablet Card Quick-Action Bottom Sheet (Phase 3) -->
+<div id="mobile-card-sheet-backdrop"
+     onclick="closeCardQuickSheet()"
+     class="hidden fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm opacity-0 transition-opacity duration-200"></div>
+
+<div id="mobile-card-sheet"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="sheet-title"
+     class="hidden fixed bottom-0 left-0 right-0 z-[85] sm:max-w-md sm:mx-auto sm:bottom-4 bg-zinc-950/95 backdrop-blur-2xl border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl p-4 transform translate-y-full transition-transform duration-200"
+     style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));">
+    <!-- Handle Pill -->
+    <div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-3.5"></div>
+
+    <!-- Sheet Header -->
+    <div class="flex items-center gap-3.5 pb-3.5 border-b border-white/[0.08]">
+        <div class="w-12 aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 ring-1 ring-white/10 shrink-0">
+            <img id="sheet-poster" src="" alt="" class="w-full h-full object-cover hidden">
+            <div id="sheet-poster-fallback" class="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-500 p-1 text-center"></div>
+        </div>
+        <div class="min-w-0 flex-1">
+            <h3 id="sheet-title" class="text-sm font-bold text-white truncate"></h3>
+            <p id="sheet-meta" class="text-xs text-gray-400 mt-0.5"></p>
+        </div>
+        <button type="button"
+                onclick="closeCardQuickSheet()"
+                aria-label="Close quick actions"
+                class="w-9 h-9 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-gray-400 hover:text-white flex items-center justify-center shrink-0 transition">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Star Rating Row -->
+    <div class="py-3 border-b border-white/[0.08] flex items-center justify-between gap-2">
+        <span class="text-xs font-semibold text-gray-400">Your Rating</span>
+        <div id="sheet-stars-row" class="flex items-center gap-1">
+            <button type="button" onclick="submitSheetRating(1)" data-star="1" aria-label="Rate 1 star" class="sheet-star-btn w-9 h-9 rounded-xl bg-zinc-900/90 border border-white/[0.06] flex items-center justify-center text-gray-500 transition active:scale-90">
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            </button>
+            <button type="button" onclick="submitSheetRating(2)" data-star="2" aria-label="Rate 2 stars" class="sheet-star-btn w-9 h-9 rounded-xl bg-zinc-900/90 border border-white/[0.06] flex items-center justify-center text-gray-500 transition active:scale-90">
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            </button>
+            <button type="button" onclick="submitSheetRating(3)" data-star="3" aria-label="Rate 3 stars" class="sheet-star-btn w-9 h-9 rounded-xl bg-zinc-900/90 border border-white/[0.06] flex items-center justify-center text-gray-500 transition active:scale-90">
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            </button>
+            <button type="button" onclick="submitSheetRating(4)" data-star="4" aria-label="Rate 4 stars" class="sheet-star-btn w-9 h-9 rounded-xl bg-zinc-900/90 border border-white/[0.06] flex items-center justify-center text-gray-500 transition active:scale-90">
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            </button>
+            <button type="button" onclick="submitSheetRating(5)" data-star="5" aria-label="Rate 5 stars" class="sheet-star-btn w-9 h-9 rounded-xl bg-zinc-900/90 border border-white/[0.06] flex items-center justify-center text-gray-500 transition active:scale-90">
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            </button>
+            <button id="sheet-clear-rating-btn" type="button" onclick="submitSheetRating(0)" aria-label="Remove rating" class="hidden w-9 h-9 rounded-xl bg-zinc-900/90 border border-white/[0.06] text-gray-400 hover:text-red-400 flex items-center justify-center transition active:scale-90">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Action Rows -->
+    <div class="pt-3 space-y-2">
+        <a id="sheet-watch-link" href="#"
+           class="w-full min-h-[46px] px-4 py-2.5 rounded-2xl bg-brand-500 hover:bg-red-600 text-white font-bold text-sm flex items-center justify-between shadow-lg shadow-brand-500/20 active:scale-[0.98] transition">
+            <span class="flex items-center gap-3">
+                <svg class="w-5 h-5 fill-white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <span>Play Now</span>
+            </span>
+            <svg class="w-4 h-4 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+
+        <button id="sheet-watchlist-btn" type="button" onclick="toggleSheetWatchlist()"
+                class="w-full min-h-[46px] px-4 py-2.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-gray-100 font-semibold text-sm flex items-center justify-between active:scale-[0.98] transition">
+            <span class="flex items-center gap-3">
+                <svg id="sheet-watchlist-icon" class="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                <span id="sheet-watchlist-label">Add to My List</span>
+            </span>
+            <span id="sheet-watchlist-badge" class="text-[11px] font-mono uppercase tracking-wider text-gray-400"></span>
+        </button>
+
+        <button id="sheet-watched-btn" type="button" onclick="toggleSheetWatched()"
+                class="w-full min-h-[46px] px-4 py-2.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-gray-100 font-semibold text-sm flex items-center justify-between active:scale-[0.98] transition">
+            <span class="flex items-center gap-3">
+                <svg id="sheet-watched-icon" class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                <span id="sheet-watched-label">Mark as Watched</span>
+            </span>
+            <span id="sheet-watched-badge" class="text-[11px] font-mono uppercase tracking-wider text-gray-400"></span>
+        </button>
+
+        <a id="sheet-detail-link" href="#"
+           class="w-full min-h-[46px] px-4 py-2.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-gray-200 font-semibold text-sm flex items-center justify-between active:scale-[0.98] transition">
+            <span class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>View Details & Cast</span>
+            </span>
+            <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+    </div>
+</div>

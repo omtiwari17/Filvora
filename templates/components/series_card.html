@@ -36,7 +36,23 @@
             </span>
         </div>
 
-
+        <!-- Mobile Quick-Actions Sheet Trigger (Touch Parity) -->
+        <button type="button"
+                onclick="event.preventDefault(); event.stopPropagation(); openCardQuickSheet(this);"
+                aria-label="Quick actions for {{ series.name }}"
+                data-tmdb-id="{{ series.id }}"
+                data-media-type="tv"
+                data-title="{{ series.name }}"
+                data-year="{{ series.first_air_date|slice:':4' }}"
+                data-poster="{% if series.poster_path %}{% if series.poster_path|slice:':8' == '/static/' or series.poster_path|slice:':4' == 'http' %}{{ series.poster_path }}{% else %}https://image.tmdb.org/t/p/w500{{ series.poster_path }}{% endif %}{% endif %}"
+                data-watch-url="/watch/tv/{{ series.id }}/1/1/"
+                data-detail-url="/series/{{ series.id }}/"
+                class="sm:hidden absolute bottom-2 right-2 z-20 w-7 h-7 rounded-full bg-black/80 backdrop-blur-md border border-white/15 text-gray-200 hover:text-white flex items-center justify-center shadow-lg active:scale-90 transition">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/>
+            </svg>
+        </button>
+        
         <!-- Hover Overlay with Actions -->
         <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-black/30 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-2.5 sm:p-3">
             <!-- Top Badges Row -->
