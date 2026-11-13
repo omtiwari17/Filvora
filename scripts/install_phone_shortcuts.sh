@@ -4,6 +4,12 @@
 
 PREFIX_BIN="${PREFIX:-/data/data/com.termux/files/usr}/bin"
 
+# Optimize Git network resilience on mobile/broadband (avoids Connection reset by peer)
+git config --global http.version HTTP/1.1 2>/dev/null
+git config --global http.postBuffer 524288000 2>/dev/null
+git config --global http.lowSpeedLimit 1000 2>/dev/null
+git config --global http.lowSpeedTime 15 2>/dev/null
+
 # 1. Install 'status' command (Dual-App & Fleet Aware)
 cat << 'EOF' > "$PREFIX_BIN/status"
 #!/data/data/com.termux/files/usr/bin/sh
@@ -96,10 +102,19 @@ update_filvora() {
         rm -f .git/index.lock
     fi
     echo "==> 1. Pulling latest code from GitHub..."
-    GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 pull --ff-only
-    if [ $? -ne 0 ]; then
-        echo "⚠️ Git pull fast-forward failed or timed out. Retrying standard pull..."
-        GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 pull --no-edit
+    PULL_SUCCESS=0
+    for attempt in 1 2 3; do
+        GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat git -c http.version=HTTP/1.1 -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 pull --ff-only
+        if [ $? -eq 0 ]; then
+            PULL_SUCCESS=1
+            break
+        fi
+        echo "⚠️ Attempt $attempt failed (connection reset or timeout). Retrying in 2s..."
+        sleep 2
+    done
+    if [ $PULL_SUCCESS -eq 0 ]; then
+        echo "⚠️ Pulling with fallback options..."
+        GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat git -c http.version=HTTP/1.1 -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 pull --no-edit
     fi
     echo "==> 2. Applying Django database migrations..."
     python manage.py migrate
@@ -140,10 +155,19 @@ update_billing() {
         rm -f .git/index.lock
     fi
     echo "==> 1. Pulling latest code from GitHub..."
-    GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 pull --ff-only
-    if [ $? -ne 0 ]; then
-        echo "⚠️ Git pull fast-forward failed or timed out. Retrying standard pull..."
-        GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 pull --no-edit
+    PULL_SUCCESS=0
+    for attempt in 1 2 3; do
+        GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat git -c http.version=HTTP/1.1 -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 pull --ff-only
+        if [ $? -eq 0 ]; then
+            PULL_SUCCESS=1
+            break
+        fi
+        echo "⚠️ Attempt $attempt failed (connection reset or timeout). Retrying in 2s..."
+        sleep 2
+    done
+    if [ $PULL_SUCCESS -eq 0 ]; then
+        echo "⚠️ Pulling with fallback options..."
+        GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat git -c http.version=HTTP/1.1 -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 pull --no-edit
     fi
     echo "==> 2. Applying Django database migrations..."
     python manage.py migrate
