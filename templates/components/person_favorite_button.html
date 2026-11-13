@@ -1,3 +1,4 @@
+{% if user.is_authenticated %}
 <button id="person-fav-btn-{{ person.id }}"
         hx-post="/library/person/toggle/"
         hx-vals='{"person_id": "{{ person.id }}", "name": "{{ person.name|escapejs }}", "profile_path": "{{ person.profile_path|default:""|escapejs }}", "known_for_department": "{{ person.known_for_department|default:"Acting"|escapejs }}"}'
@@ -17,3 +18,4 @@
     <span>Favorite {% if person.known_for_department == 'Directing' %}Director{% elif person.known_for_department == 'Writing' %}Writer{% else %}Actor{% endif %}</span>
     {% endif %}
 </button>
+{% endif %}

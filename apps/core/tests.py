@@ -750,7 +750,7 @@ class AdminDashboardTestCase(TestCase):
         self.assertFalse(any(m.get('id') in [1744462, 1222222] for m in upcoming))
 
     def test_logged_out_navbar_prevents_overlap(self):
-        """Logged-out navbar uses bounded flex containers and synced xl breakpoints for search vs auth actions."""
+        """Logged-out navbar hides account links (Recommended, My List), uses bounded flex containers, and syncs xl search breakpoints."""
         self.client.logout()
         res = self.client.get('/')
         self.assertEqual(res.status_code, 200)
@@ -758,8 +758,20 @@ class AdminDashboardTestCase(TestCase):
         self.assertIn('min-w-0 flex-1 overflow-x-auto no-scrollbar', html)
         self.assertIn('class="hidden xl:block relative" id="navbar-search-container"', html)
         self.assertIn('class="hidden xl:hidden fixed top-0 left-0 right-0 z-[60]', html)
-        self.assertIn('Sign In', html)
-        self.assertIn('Sign Up', html)
+        nav_html = html.split('<nav', 1)[1].split('</nav>', 1)[0]
+        self.assertNotIn('href="/library/"', nav_html)
+        self.assertNotIn('href="/recommendations/"', nav_html)
+        self.assertIn('Sign In', nav_html)
+        self.assertIn('Sign Up', nav_html)
+
+        # Logged-in users still see Recommended and My List in the top navbar
+        self.client.login(username='regular', password='password123')
+        res_auth = self.client.get('/')
+        self.assertEqual(res_auth.status_code, 200)
+        html_auth = res_auth.content.decode('utf-8')
+        nav_html_auth = html_auth.split('<nav', 1)[1].split('</nav>', 1)[0]
+        self.assertIn('href="/library/"', nav_html_auth)
+        self.assertIn('href="/recommendations/"', nav_html_auth)
 
     def test_horizontal_rail_smooth_drag_and_anti_snap_assets(self):
         """Horizontal rails disable scroll-smooth/snap interference and support left/right mouse drag without ghost drags."""

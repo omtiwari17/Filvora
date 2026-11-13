@@ -10,9 +10,89 @@ class PlaybackTestCase(TestCase):
         self.client = Client()
         self.user = User.objects.create_user(username='playbackuser', password='password123')
 
-    def test_watch_requires_login(self):
-        response = self.client.get('/watch/movie/157336/')
-        self.assertEqual(response.status_code, 302)
+    def test_watch_allows_guest_and_temporary_session_progress(self):
+        """Unauthenticated guests can stream movies & series, resume temporarily in session, without saving forever or showing account-only tools."""
+        # 1. Guest can open movie & TV series watch views directly
+        res_movie = self.client.get('/watch/movie/157336/')
+        self.assertEqual(res_movie.status_code, 200)
+        movie_html = res_movie.content.decode('utf-8')
+        self.assertNotIn('id="bookmark-modal"', movie_html)
+        self.assertNotIn('hx-post="/library/toggle/"', movie_html)
+
+        res_tv = self.client.get('/watch/tv/1399/1/2/')
+        self.assertEqual(res_tv.status_code, 200)
+        self.assertIsNotNone(res_tv.context['next_episode'])
+
+        # 2. Save temporary guest playback progress (should NOT write WatchProgress DB row)
+        save_resp = self.client.post(
+            '/progress/save/',
+            data=json.dumps({
+                'tmdb_id': 157336,
+                'media_type': 'movie',
+                'position': 240,
+                'duration': 7200,
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(save_resp.status_code, 200)
+        self.assertTrue(save_resp.json().get('temporary'))
+        self.assertEqual(WatchProgress.objects.count(), 0)
+
+        # 3. Reopening player resumes at saved temporary position & Home Continue Watching displays Temporary Session
+        res_resume = self.client.get('/watch/movie/157336/')
+        self.assertEqual(res_resume.status_code, 200)
+        self.assertEqual(res_resume.context['resume_position'], 240.0)
+
+        res_home = self.client.get('/')
+        self.assertEqual(res_home.status_code, 200)
+        self.assertTrue(res_home.context['is_guest_continue_watching'])
+        self.assertEqual([c['tmdb_id'] for c in res_home.context['continue_watching']], [157336])
+        self.assertContains(res_home, 'Temporary Session')
+
+        # 4. Completing or removing clears temporary session entry (not kept permanently in history)
+        comp_resp = self.client.post(
+            '/progress/save/',
+            data=json.dumps({
+                'tmdb_id': 157336,
+                'media_type': 'movie',
+                'position': 6900,
+                'duration': 7200,
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(comp_resp.status_code, 200)
+        self.assertTrue(comp_resp.json().get('completed'))
+        res_home_after = self.client.get('/')
+        self.assertEqual(res_home_after.context['continue_watching'], [])
+        self.assertEqual(WatchProgress.objects.count(), 0)
+
+        # 5. Guest server preference & manual removal work temporarily in session without DB rows
+        srv_resp = self.client.post(
+            '/watch/server-success/',
+            data=json.dumps({'tmdb_id': 157336, 'media_type': 'movie', 'provider_id': 'autoembed'}),
+            content_type='application/json'
+        )
+        self.assertEqual(srv_resp.status_code, 200)
+        self.assertEqual(PlaybackServerPreference.objects.count(), 0)
+        self.assertEqual(self.client.get('/watch/movie/157336/').context['current_server'], 'autoembed')
+
+        self.client.post(
+            '/progress/save/',
+            data=json.dumps({'tmdb_id': 157336, 'media_type': 'movie', 'position': 180, 'duration': 7200}),
+            content_type='application/json'
+        )
+        rm_resp = self.client.post(
+            '/progress/remove/',
+            data=json.dumps({'tmdb_id': 157336, 'media_type': 'movie'}),
+            content_type='application/json'
+        )
+        self.assertEqual(rm_resp.status_code, 200)
+        self.assertEqual(self.client.get('/').context['continue_watching'], [])
+
+        # 6. Permanent/account endpoints stay strictly login-gated for guests
+        self.assertEqual(self.client.get('/library/').status_code, 302)
+        self.assertEqual(self.client.get('/history/').status_code, 302)
+        self.assertEqual(self.client.get('/watch/diagnostics/').status_code, 302)
 
     def test_watch_movie_authenticated(self):
         self.client.login(username='playbackuser', password='password123')

@@ -80,8 +80,9 @@
                 </a>
             </div>
 
-            <!-- Bottom Action Row: 4 Dedicated In-Card Actions -->
+            <!-- Bottom Action Row: Account Actions when logged in + Info Link -->
             <div class="flex items-center justify-between gap-1 z-20 pt-1 border-t border-gray-800/80">
+                {% if user.is_authenticated %}
                 <!-- 1. My List Toggle -->
                 {% if series.id in user_saved_ids %}
                 <button hx-post="/library/toggle/" 
@@ -118,12 +119,13 @@
                 {% with current_rating=user_tv_ratings|get_item:series.id %}
                 {% include 'components/card_rating_button.html' with tmdb_id=series.id media_type='tv' current_rating=current_rating %}
                 {% endwith %}
+                {% endif %}
 
                 <!-- 4. Info Details Link -->
                 <a href="/series/{{ series.id }}/" 
                    onclick="event.stopPropagation();"
                    title="View Series Details"
-                   class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/70 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/80 flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0">
+                   class="{% if not user.is_authenticated %}ml-auto {% endif %}w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/70 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/80 flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0">
                     <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>

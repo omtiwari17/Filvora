@@ -146,6 +146,7 @@
                     </button>
                     {% endif %}
                     
+                    {% if user.is_authenticated %}
                     <button hx-post="/library/toggle/" 
                             hx-vals='{"tmdb_id": "{{ series.id }}", "media_type": "tv"}' 
                             hx-swap="outerHTML"
@@ -162,6 +163,7 @@
                         <span>Add to My List</span>
                         {% endif %}
                     </button>
+                    {% endif %}
 
                     <!-- Mark as Watched Toggle -->
                     {% if user.is_authenticated %}

@@ -87,8 +87,9 @@ class HomeView(TemplateView):
         context['my_list_preview'] = my_list_preview
         context['custom_collections'] = custom_collections
 
-        # Continue watching for logged in user (deduplicated by media_type + tmdb_id)
+        # Continue watching: persistent profile progress when signed in, or temporary session progress for guests
         continue_watching = []
+        raw_cw_entries = []
         profile = None
         if self.request.user.is_authenticated:
             from apps.accounts.utils import get_active_profile
@@ -99,55 +100,71 @@ class HomeView(TemplateView):
                 completed=False,
                 position_seconds__gt=5
             ).order_by('-updated_at')
-            
+
             seen = set()
-            unique_progress = []
             for p in progress_items:
                 key = (p.media_type, p.tmdb_id)
                 if key not in seen:
                     seen.add(key)
-                    unique_progress.append(p)
-                if len(unique_progress) >= 10:
-                    break
-
-            if unique_progress and not client.is_offline():
-                with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(unique_progress), 6)) as ex:
-                    def _fetch_cw_item(p):
-                        summary = client.get_content_summary(p.tmdb_id, p.media_type)
-                        data = dict(summary) if summary else {}
-                        if p.media_type == 'movie':
-                            data['display_title'] = data.get('title', f"Movie {p.tmdb_id}")
-                            data['sub_label'] = "Movie"
-                            data['watch_url'] = f"/watch/movie/{p.tmdb_id}/"
-                        else:
-                            s_num = p.season or 1
-                            ep_num = p.episode or 1
-                            series_name = data.get('name', f"Series {p.tmdb_id}")
-                            data['display_title'] = series_name
-                            data['sub_label'] = f"S{s_num}:E{ep_num}"
-                            data['watch_url'] = f"/watch/tv/{p.tmdb_id}/{s_num}/{ep_num}/"
-                        data['id'] = p.tmdb_id
-                        data['tmdb_id'] = p.tmdb_id
-                        data['media_type'] = p.media_type
-                        data['progress_percentage'] = p.progress_percentage
-                        data['position_seconds'] = p.position_seconds
-                        return data
-                    continue_watching = list(ex.map(_fetch_cw_item, unique_progress))
-            elif unique_progress and client.is_offline():
-                for p in unique_progress:
-                    continue_watching.append({
-                        'id': p.tmdb_id,
+                    raw_cw_entries.append({
                         'tmdb_id': p.tmdb_id,
-                        'display_title': f"{p.media_type.capitalize()} #{p.tmdb_id}",
-                        'sub_label': "Movie" if p.media_type == 'movie' else f"S{p.season or 1}:E{p.episode or 1}",
                         'media_type': p.media_type,
-                        'watch_url': f"/watch/{p.media_type}/{p.tmdb_id}/" if p.media_type == 'movie' else f"/watch/tv/{p.tmdb_id}/{p.season or 1}/{p.episode or 1}/",
+                        'season': p.season,
+                        'episode': p.episode,
                         'progress_percentage': p.progress_percentage,
                         'position_seconds': p.position_seconds,
-                        'poster_path': None
                     })
-                
+                if len(raw_cw_entries) >= 10:
+                    break
+        else:
+            from apps.watch.guest_session import get_guest_progress_map
+            raw_cw_entries = list(get_guest_progress_map(self.request).values())
+
+        if raw_cw_entries and not client.is_offline():
+            with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(raw_cw_entries), 6)) as ex:
+                def _fetch_cw_item(entry):
+                    tid = entry['tmdb_id']
+                    mtype = entry['media_type']
+                    summary = client.get_content_summary(tid, mtype)
+                    data = dict(summary) if summary else {}
+                    if mtype == 'movie':
+                        data['display_title'] = data.get('title', f"Movie {tid}")
+                        data['sub_label'] = "Movie"
+                        data['watch_url'] = f"/watch/movie/{tid}/"
+                    else:
+                        s_num = entry.get('season') or 1
+                        ep_num = entry.get('episode') or 1
+                        series_name = data.get('name', f"Series {tid}")
+                        data['display_title'] = series_name
+                        data['sub_label'] = f"S{s_num}:E{ep_num}"
+                        data['watch_url'] = f"/watch/tv/{tid}/{s_num}/{ep_num}/"
+                    data['id'] = tid
+                    data['tmdb_id'] = tid
+                    data['media_type'] = mtype
+                    data['progress_percentage'] = entry['progress_percentage']
+                    data['position_seconds'] = entry['position_seconds']
+                    return data
+                continue_watching = list(ex.map(_fetch_cw_item, raw_cw_entries))
+        elif raw_cw_entries and client.is_offline():
+            for entry in raw_cw_entries:
+                tid = entry['tmdb_id']
+                mtype = entry['media_type']
+                s_num = entry.get('season') or 1
+                ep_num = entry.get('episode') or 1
+                continue_watching.append({
+                    'id': tid,
+                    'tmdb_id': tid,
+                    'display_title': f"{mtype.capitalize()} #{tid}",
+                    'sub_label': "Movie" if mtype == 'movie' else f"S{s_num}:E{ep_num}",
+                    'media_type': mtype,
+                    'watch_url': f"/watch/{mtype}/{tid}/" if mtype == 'movie' else f"/watch/tv/{tid}/{s_num}/{ep_num}/",
+                    'progress_percentage': entry['progress_percentage'],
+                    'position_seconds': entry['position_seconds'],
+                    'poster_path': None
+                })
+
         context['continue_watching'] = continue_watching
+        context['is_guest_continue_watching'] = bool(continue_watching) and not self.request.user.is_authenticated
 
         # Personalized recommendations & Dynamic Contextual Rails
         if not client.is_offline():

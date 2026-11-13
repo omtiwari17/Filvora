@@ -4,12 +4,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from .models import WatchProgress, UserRating
+from .guest_session import upsert_guest_progress, remove_guest_progress
 from apps.accounts.utils import get_active_profile
 
 
 
 @csrf_exempt
-@login_required
 def save_progress(request):
     if request.method != 'POST':
         return HttpResponseBadRequest("POST required")
@@ -36,6 +36,24 @@ def save_progress(request):
         # Ignore negligible positions (< 15s) that occur during page load or failed streams
         if position_seconds < 15 and not completed:
             return JsonResponse({'status': 'ignored', 'message': 'Position below threshold'})
+
+        if not request.user.is_authenticated:
+            pct = upsert_guest_progress(
+                request,
+                tmdb_id=tmdb_id,
+                media_type=media_type,
+                position_seconds=position_seconds,
+                duration_seconds=duration_seconds,
+                season=season,
+                episode=episode,
+                completed=completed,
+            )
+            return JsonResponse({
+                'status': 'ok',
+                'completed': completed,
+                'progress_percentage': pct,
+                'temporary': True,
+            })
 
         profile = get_active_profile(request)
 
@@ -180,7 +198,6 @@ def history_view(request):
     })
 
 @csrf_exempt
-@login_required
 def remove_progress(request):
     if request.method != 'POST':
         return HttpResponseBadRequest("POST required")
@@ -191,14 +208,24 @@ def remove_progress(request):
         else:
             data = request.POST
 
-        tmdb_id = int(data.get('tmdb_id'))
-        media_type = data.get('media_type', 'movie')
-        profile = get_active_profile(request)
         progress_id = data.get('progress_id')
         tmdb_id = data.get('tmdb_id')
         media_type = data.get('media_type', 'movie')
         season = data.get('season')
         episode = data.get('episode')
+
+        if not request.user.is_authenticated:
+            if not tmdb_id:
+                return JsonResponse({'status': 'error', 'message': 'tmdb_id required'}, status=400)
+            remove_guest_progress(request, int(tmdb_id), media_type=media_type, season=season, episode=episode)
+            if request.headers.get('HX-Request'):
+                from django.http import HttpResponse
+                response = HttpResponse("", status=200)
+                response['HX-Trigger'] = 'historyRemoved'
+                return response
+            return JsonResponse({'status': 'ok', 'message': 'Removed temporary playback progress'})
+
+        profile = get_active_profile(request)
 
         if progress_id:
             try:

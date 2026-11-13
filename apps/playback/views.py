@@ -5,6 +5,11 @@ from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.contrib.auth.decorators import login_required
 from apps.tmdb.client import TMDBClient
 from apps.watch.models import WatchProgress
+from apps.watch.guest_session import (
+    get_guest_resume_item,
+    get_guest_server_pref,
+    set_guest_server_pref,
+)
 from apps.playback.models import PlaybackServerPreference
 from apps.playback.providers import registry, get_provider
 
@@ -35,7 +40,6 @@ def _slice_drawer_episodes(episodes_list: list, current_ep: int, window_size: in
     return episodes_list[start:end]
 
 
-@login_required
 @ensure_csrf_cookie
 def watch(request, media_type, tmdb_id, season=None, episode=None):
     client = TMDBClient()
@@ -43,20 +47,26 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
     s_num = season if season is not None else (1 if media_type == 'tv' else None)
     ep_num = episode if episode is not None else (1 if media_type == 'tv' else None)
 
-    # If no server specified, check user's saved preferred server for this title & active profile
-    if not server_id and request.user.is_authenticated:
+    profile = None
+    if request.user.is_authenticated:
         from apps.accounts.utils import get_active_profile
         profile = get_active_profile(request)
-        pref = PlaybackServerPreference.objects.filter(
-            user=request.user,
-            profile=profile,
-            tmdb_id=tmdb_id,
-            media_type=media_type,
-            season=s_num,
-            episode=ep_num
-        ).first()
-        if pref:
-            server_id = pref.provider_id
+
+    # If no server specified, check saved profile preference (or temporary guest session preference)
+    if not server_id:
+        if request.user.is_authenticated:
+            pref = PlaybackServerPreference.objects.filter(
+                user=request.user,
+                profile=profile,
+                tmdb_id=tmdb_id,
+                media_type=media_type,
+                season=s_num,
+                episode=ep_num
+            ).first()
+            if pref:
+                server_id = pref.provider_id
+        else:
+            server_id = get_guest_server_pref(request, tmdb_id, media_type, season=s_num, episode=ep_num)
 
     provider = get_provider(server_id)
     ordered_providers = registry.get_ordered_providers(preferred_id=provider.id)
@@ -137,23 +147,28 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
         else:
             next_episode = None
     
-    # Check if user has saved watch progress to resume for active profile
+    # Check if user has saved watch progress (or temporary guest session progress) to resume
     resume_position = 0
     resume_formatted = ""
-    from apps.accounts.utils import get_active_profile
-    profile = get_active_profile(request)
-    progress = WatchProgress.objects.filter(
-        user=request.user,
-        profile=profile,
-        tmdb_id=tmdb_id,
-        media_type=media_type,
-        season=s_num if media_type == 'tv' else None,
-        episode=ep_num if media_type == 'tv' else None
-    ).first()
-    
-    if progress and not progress.completed and progress.position_seconds >= 30:
-        resume_position = round(progress.position_seconds, 1)
-        resume_formatted = format_time(progress.position_seconds)
+    if request.user.is_authenticated:
+        progress = WatchProgress.objects.filter(
+            user=request.user,
+            profile=profile,
+            tmdb_id=tmdb_id,
+            media_type=media_type,
+            season=s_num if media_type == 'tv' else None,
+            episode=ep_num if media_type == 'tv' else None
+        ).first()
+
+        if progress and not progress.completed and progress.position_seconds >= 30:
+            resume_position = round(progress.position_seconds, 1)
+            resume_formatted = format_time(progress.position_seconds)
+    else:
+        guest_entry = get_guest_resume_item(request, tmdb_id, media_type, season=s_num, episode=ep_num)
+        if guest_entry:
+            pos = float(guest_entry.get('position_seconds') or 0)
+            resume_position = round(pos, 1)
+            resume_formatted = format_time(pos)
 
     # Direct timestamp requested via query param (e.g. ?t=3420 from bookmarks or server switch)
     requested_t = request.GET.get('t')
@@ -174,16 +189,18 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
         except (ValueError, TypeError):
             pass
 
-    # Fetch existing saved scene bookmarks for this specific title
-    from apps.library.models import SceneBookmark
-    saved_bookmarks = SceneBookmark.objects.filter(
-        user=request.user,
-        profile=profile,
-        tmdb_id=tmdb_id,
-        media_type=media_type,
-        season=s_num if media_type == 'tv' else None,
-        episode=ep_num if media_type == 'tv' else None
-    ).order_by('position_seconds')
+    # Fetch existing saved scene bookmarks for authenticated user profile only
+    saved_bookmarks = []
+    if request.user.is_authenticated:
+        from apps.library.models import SceneBookmark
+        saved_bookmarks = SceneBookmark.objects.filter(
+            user=request.user,
+            profile=profile,
+            tmdb_id=tmdb_id,
+            media_type=media_type,
+            season=s_num if media_type == 'tv' else None,
+            episode=ep_num if media_type == 'tv' else None
+        ).order_by('position_seconds')
 
     return render(request, 'playback/watch.html', {
         'media': media,
@@ -210,7 +227,6 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
     })
 
 
-@login_required
 def player_episodes(request, tmdb_id, season):
     """HTMX partial returning episodes for the in-player slide-over drawer."""
     client = TMDBClient()
@@ -238,9 +254,8 @@ def player_episodes(request, tmdb_id, season):
 
 
 @csrf_exempt
-@login_required
 def report_server_success(request):
-    """Saves the working server provider for this user profile & title for future instant load."""
+    """Saves working server provider persistently for accounts or temporarily in session for guests."""
     if request.method != 'POST':
         return HttpResponseBadRequest("POST required")
 
@@ -257,17 +272,20 @@ def report_server_success(request):
         episode = int(data.get('episode')) if data.get('episode') else None
 
         if provider_id:
-            from apps.accounts.utils import get_active_profile
-            profile = get_active_profile(request)
-            PlaybackServerPreference.objects.update_or_create(
-                user=request.user,
-                profile=profile,
-                tmdb_id=tmdb_id,
-                media_type=media_type,
-                season=season,
-                episode=episode,
-                defaults={'provider_id': provider_id}
-            )
+            if request.user.is_authenticated:
+                from apps.accounts.utils import get_active_profile
+                profile = get_active_profile(request)
+                PlaybackServerPreference.objects.update_or_create(
+                    user=request.user,
+                    profile=profile,
+                    tmdb_id=tmdb_id,
+                    media_type=media_type,
+                    season=season,
+                    episode=episode,
+                    defaults={'provider_id': provider_id}
+                )
+            else:
+                set_guest_server_pref(request, tmdb_id, media_type, provider_id, season=season, episode=episode)
 
         return JsonResponse({'status': 'ok', 'saved_provider': provider_id})
     except (ValueError, TypeError, KeyError) as e:

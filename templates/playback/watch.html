@@ -368,6 +368,7 @@
             </button>
             {% endif %}
 
+            {% if user.is_authenticated %}
             <!-- My List Button (Desktop & Tablet only, on mobile accessible via More Sheet) -->
             <button hx-post="/library/toggle/" 
                     hx-vals='{"tmdb_id": "{{ tmdb_id }}", "media_type": "{{ media_type }}"}' 
@@ -392,6 +393,7 @@
                 <span id="saved-bookmarks-count-badge" class="w-4 h-4 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-black flex items-center justify-center border border-amber-500/30">{{ saved_bookmarks|length }}</span>
                 {% endif %}
             </button>
+            {% endif %}
 
             <!-- Sleep Timer Dropdown (Desktop & Tablet only, on mobile accessible via More Sheet) -->
             <div class="relative hidden sm:inline-block text-left" id="sleep-timer-container">
@@ -490,6 +492,7 @@
         </div>
     </div>
 
+    {% if user.is_authenticated %}
     <!-- Bookmark Scene Modal -->
     <div id="bookmark-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md transition-opacity">
         <div class="bg-gray-950 border border-gray-800 rounded-3xl p-5 sm:p-7 max-w-md w-full max-h-[90dvh] overflow-y-auto shadow-2xl space-y-5 relative animate-in fade-in zoom-in-95 duration-200">
@@ -572,6 +575,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- Sleep Timer Sweet Dreams Overlay -->
     <div id="sleep-timer-overlay" class="hidden fixed inset-0 z-[120] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center text-center p-6 space-y-5 animate-in fade-in duration-500">
@@ -616,7 +620,8 @@
             </div>
 
             <!-- Quick Actions Grid (Watchlist, Bookmark, Fullscreen) -->
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid {% if user.is_authenticated %}grid-cols-3{% else %}grid-cols-1{% endif %} gap-2">
+                {% if user.is_authenticated %}
                 <!-- Toggle Watchlist -->
                 <button hx-post="/library/toggle/" 
                         hx-vals='{"tmdb_id": "{{ tmdb_id }}", "media_type": "{{ media_type }}"}' 
@@ -637,6 +642,7 @@
                     </svg>
                     <span class="text-[11px] font-bold">Bookmark</span>
                 </button>
+                {% endif %}
 
                 <!-- Fullscreen -->
                 <button type="button" 

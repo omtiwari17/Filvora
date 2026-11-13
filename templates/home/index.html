@@ -78,7 +78,8 @@
                     <span>Trailer</span>
                 </button>
 
-                <!-- Watchlist Button -->
+                <!-- Watchlist Button (Authenticated users only) -->
+                {% if user.is_authenticated %}
                 {% if slide.id in user_saved_ids %}
                 <button hx-post="/library/toggle/" 
                         hx-vals='{"tmdb_id": "{{ slide.id }}", "media_type": "movie"}' 
@@ -101,6 +102,7 @@
                     </svg>
                     <span class="hidden sm:inline">Add to My List</span>
                 </button>
+                {% endif %}
                 {% endif %}
 
                 <!-- More Info Button (Desktop/Tablet; mobile taps title) -->
@@ -217,10 +219,17 @@
     <!-- 1. Continue Watching Rail -->
     <section class="relative group/rail rail-container">
         <div class="flex items-center justify-between mb-3 px-1">
-            <h2 class="text-xl md:text-2xl font-black text-white drop-shadow-md flex items-center gap-2.5">
+            <h2 class="text-xl md:text-2xl font-black text-white drop-shadow-md flex items-center gap-2.5 flex-wrap">
                 <span>Continue Watching</span>
+                {% if is_guest_continue_watching %}
+                <span class="text-[11px] bg-zinc-800/90 text-zinc-300 border border-white/10 px-2.5 py-0.5 rounded-full font-semibold">Temporary Session</span>
+                {% else %}
                 <span class="text-[11px] bg-brand-500/20 text-brand-500 border border-brand-500/40 px-2.5 py-0.5 rounded-full font-bold">In Progress</span>
+                {% endif %}
             </h2>
+            {% if is_guest_continue_watching %}
+            <a href="/accounts/login/" class="text-xs font-semibold text-zinc-400 hover:text-white transition hidden sm:inline-block">Sign in to save permanently &rarr;</a>
+            {% endif %}
         </div>
 
         <button type="button" class="rail-prev-btn is-hidden !hidden absolute left-0 top-0 bottom-10 z-40 w-12 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent text-white opacity-0 md:opacity-75 hover:!opacity-100 transition-all duration-200 hidden md:flex items-center justify-start pl-1 cursor-pointer rounded-l-2xl focus:outline-none" aria-label="Scroll left">
