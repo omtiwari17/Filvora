@@ -386,4 +386,35 @@ class CatalogViewsTestCase(TestCase):
         self.assertIn('value="primary_release_date.desc"', html_discover)
         self.assertIn('value="primary_release_date.asc"', html_discover)
 
+    def test_guest_card_and_detail_account_actions_prompt_login(self):
+        """Verifies account buttons on cards and detail views stay visible to guests and invoke promptAuthModal."""
+        self.client.logout()
+
+        # 1. Movie catalog cards render all action buttons with promptAuthModal triggers
+        res_movies = self.client.get('/movies/')
+        self.assertEqual(res_movies.status_code, 200)
+        html_movies = res_movies.content.decode('utf-8')
+        self.assertIn('promptAuthModal', html_movies)
+        self.assertIn('id="auth-prompt-modal"', html_movies)
+        self.assertIn('Sign In to Continue', html_movies)
+        self.assertIn('/accounts/login/?next=', html_movies)
+
+        # 2. Movie detail view hero action buttons prompt login when unauthenticated
+        res_detail = self.client.get('/movies/157336/')
+        self.assertEqual(res_detail.status_code, 200)
+        html_detail = res_detail.content.decode('utf-8')
+        self.assertIn("promptAuthModal('Add to My List'", html_detail)
+        self.assertIn("promptAuthModal('Mark as Watched'", html_detail)
+        self.assertIn("promptAuthModal('Rate Titles'", html_detail)
+        self.assertIn('id="auth-prompt-modal"', html_detail)
+
+        # 3. Authenticated users still have active HTMX endpoints
+        self.client.login(username='cataloguser', password='password123')
+        res_auth = self.client.get('/movies/157336/')
+        self.assertEqual(res_auth.status_code, 200)
+        html_auth = res_auth.content.decode('utf-8')
+        self.assertIn('hx-post="/library/toggle/"', html_auth)
+        self.assertIn('/progress/mark-watched/', html_auth)
+
+
 

@@ -175,21 +175,48 @@
                         <span>Add to My List</span>
                         {% endif %}
                     </button>
+                    {% else %}
+                    <button type="button" 
+                            onclick="promptAuthModal('Add to My List', 'Sign in to save {{ movie.title|escapejs }} to your watchlist.');"
+                            class="bg-gray-900/90 hover:bg-gray-800 text-white border border-gray-700 px-5 sm:px-6 py-3 rounded-full font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-lg backdrop-blur-md transform hover:scale-105 active:scale-95 cursor-pointer">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Add to My List</span>
+                    </button>
                     {% endif %}
 
                     <!-- Mark as Watched Toggle -->
                     {% if user.is_authenticated %}
                     {% include 'components/detail_watch_button.html' with tmdb_id=movie.id media_type='movie' is_watched=is_watched %}
+                    {% else %}
+                    <button type="button"
+                            onclick="promptAuthModal('Mark as Watched', 'Sign in to track what you have watched and build your watch history.');"
+                            class="bg-gray-900/90 hover:bg-emerald-950/40 hover:border-emerald-500/60 text-gray-300 hover:text-emerald-400 border border-gray-700/80 px-5 sm:px-6 py-3 rounded-full font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-lg backdrop-blur-md transform hover:scale-105 active:scale-95 cursor-pointer">
+                        <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                        <span>Mark as Watched</span>
+                    </button>
                     {% endif %}
                 </div>
 
                 <!-- User Rating -->
-                {% if user.is_authenticated %}
                 <div class="flex items-center gap-3 pt-3">
                     <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Your Rating</span>
+                    {% if user.is_authenticated %}
                     {% include 'components/rating_stars.html' with tmdb_id=movie.id media_type='movie' rating_score=user_rating star_range=star_range %}
+                    {% else %}
+                    <div class="flex items-center gap-1 cursor-pointer" onclick="promptAuthModal('Rate Titles', 'Sign in to rate titles with stars and get personalized recommendations.');" title="Sign in to rate">
+                        {% for i in "12345" %}
+                        <svg class="w-5 h-5 text-gray-600 hover:text-yellow-400 transition" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
 
                 <!-- Overview -->
                 <div class="pt-4 max-w-3xl">
@@ -469,13 +496,42 @@
                                     {% with current_rating=user_movie_ratings|get_item:part.id|default:part.user_rating %}
                                     {% include 'components/card_rating_button.html' with tmdb_id=part.id media_type='movie' current_rating=current_rating %}
                                     {% endwith %}
+                                    {% else %}
+                                    <!-- Guest Action Prompts -->
+                                    <button type="button"
+                                            onclick="event.preventDefault(); event.stopPropagation(); promptAuthModal('Add to My List', 'Sign in to save {{ part.title|escapejs }} to your watchlist.');"
+                                            title="Add to My List"
+                                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-900/90 hover:bg-gray-800 text-white border border-gray-700/80 flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0 cursor-pointer">
+                                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                    </button>
+
+                                    <button type="button"
+                                            onclick="event.preventDefault(); event.stopPropagation(); promptAuthModal('Mark as Watched', 'Sign in to track what you have watched and build your watch history.');"
+                                            title="Mark as Watched"
+                                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-900/90 hover:bg-emerald-950/40 hover:border-emerald-500/60 text-gray-400 hover:text-emerald-400 border border-gray-700/80 flex items-center justify-center shadow-lg transition-all duration-200 transform hover:scale-110 active:scale-95 shrink-0 cursor-pointer">
+                                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                        </svg>
+                                    </button>
+
+                                    <button type="button"
+                                            onclick="event.preventDefault(); event.stopPropagation(); promptAuthModal('Rate Titles', 'Sign in to rate titles with stars.');"
+                                            title="Rate with stars"
+                                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-900/90 hover:bg-yellow-950/40 hover:border-yellow-500/60 text-gray-400 hover:text-yellow-400 border border-gray-700/80 flex items-center justify-center shadow-lg transition-all duration-200 transform hover:scale-110 active:scale-95 shrink-0 cursor-pointer">
+                                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                    </button>
                                     {% endif %}
 
                                     <!-- 4. Info Details Link -->
                                     <a href="/movies/{{ part.id }}/" 
                                        onclick="event.stopPropagation();"
                                        title="View Details"
-                                       class="{% if not user.is_authenticated %}ml-auto {% endif %}w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/70 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/80 flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0">
+                                       class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/70 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/80 flex items-center justify-center shadow-lg transition-transform hover:scale-110 shrink-0">
                                         <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
@@ -580,7 +636,7 @@
                                             </svg>
                                         </a>
 
-                                        <!-- Add to Watchlist Button (Authenticated users only) -->
+                                        <!-- Add to Watchlist Button -->
                                         {% if user.is_authenticated %}
                                         {% if rec.id in user_saved_ids %}
                                         <button hx-post="/library/toggle/" 
@@ -605,6 +661,15 @@
                                             </svg>
                                         </button>
                                         {% endif %}
+                                        {% else %}
+                                        <button type="button" 
+                                                onclick="event.preventDefault(); event.stopPropagation(); promptAuthModal('Add to My List', 'Sign in to save this title to your watchlist.');" 
+                                                title="Add to My List" 
+                                                class="w-8 h-8 rounded-full bg-gray-900/80 hover:bg-gray-800 text-white border border-gray-600/80 flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 cursor-pointer">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                        </button>
                                         {% endif %}
 
                                         <!-- More Info Button -->

@@ -32,8 +32,8 @@
         </button>
     </div>
 
-    <!-- Star Rating Row (Authenticated users only) -->
-    <div class="py-3 border-b border-white/[0.08] flex items-center justify-between gap-2 {% if not user.is_authenticated %}hidden{% endif %}">
+    <!-- Star Rating Row -->
+    <div class="py-3 border-b border-white/[0.08] flex items-center justify-between gap-2">
         <span class="text-xs font-semibold text-gray-400">Your Rating</span>
         <div id="sheet-stars-row" class="flex items-center gap-1">
             <button type="button" onclick="submitSheetRating(1)" data-star="1" aria-label="Rate 1 star" class="sheet-star-btn w-9 h-9 rounded-xl bg-zinc-900/90 border border-white/[0.06] flex items-center justify-center text-gray-500 transition active:scale-90">
@@ -69,7 +69,7 @@
         </a>
 
         <button id="sheet-watchlist-btn" type="button" onclick="toggleSheetWatchlist()"
-                class="w-full min-h-[46px] px-4 py-2.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-gray-100 font-semibold text-sm flex items-center justify-between active:scale-[0.98] transition {% if not user.is_authenticated %}hidden{% endif %}">
+                class="w-full min-h-[46px] px-4 py-2.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-gray-100 font-semibold text-sm flex items-center justify-between active:scale-[0.98] transition">
             <span class="flex items-center gap-3">
                 <svg id="sheet-watchlist-icon" class="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -80,7 +80,7 @@
         </button>
 
         <button id="sheet-watched-btn" type="button" onclick="toggleSheetWatched()"
-                class="w-full min-h-[46px] px-4 py-2.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-gray-100 font-semibold text-sm flex items-center justify-between active:scale-[0.98] transition {% if not user.is_authenticated %}hidden{% endif %}">
+                class="w-full min-h-[46px] px-4 py-2.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-gray-100 font-semibold text-sm flex items-center justify-between active:scale-[0.98] transition">
             <span class="flex items-center gap-3">
                 <svg id="sheet-watched-icon" class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>

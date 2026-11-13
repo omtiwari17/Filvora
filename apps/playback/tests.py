@@ -368,6 +368,28 @@ class PlaybackTestCase(TestCase):
         self.assertNotIn('id="player-episode-drawer"', html_movie)
         self.assertNotIn('id="episode-drawer-btn"', html_movie)
 
+    def test_watch_guest_account_actions_prompt_modal(self):
+        """Verifies player watchlist and bookmark buttons stay visible to guests and invoke promptAuthModal."""
+        self.client.logout()
+
+        # 1. Unauthenticated guest watch view renders buttons with promptAuthModal triggers
+        res = self.client.get('/watch/movie/157336/')
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertIn("promptAuthModal('Add to My List'", html)
+        self.assertIn("promptAuthModal('Scene Bookmarks'", html)
+        self.assertIn('id="auth-prompt-modal"', html)
+        self.assertIn('Sign In to Continue', html)
+
+        # 2. Authenticated user has active HTMX watchlist button and opens bookmark modal
+        self.client.login(username='playbackuser', password='password123')
+        res_auth = self.client.get('/watch/movie/157336/')
+        self.assertEqual(res_auth.status_code, 200)
+        html_auth = res_auth.content.decode('utf-8')
+        self.assertIn('hx-post="/library/toggle/"', html_auth)
+        self.assertIn('openBookmarkModal()', html_auth)
+
+
 
 
 

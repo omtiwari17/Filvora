@@ -340,6 +340,12 @@
     <!-- Mobile & Tablet Card Quick-Action Bottom Sheet -->
     {% include 'components/mobile_card_sheet.html' %}
 
+    <!-- Universal Auth Required Prompt Modal -->
+    {% include 'components/auth_prompt_modal.html' %}
+
+    <script>
+        window.__isUserAuthenticated = {% if user.is_authenticated %}true{% else %}false{% endif %};
+    </script>
     <!-- Custom JS -->
     <script src="{% static 'js/main.js' %}?v=2.7"></script>
     <script>

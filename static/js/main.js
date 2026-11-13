@@ -1232,6 +1232,15 @@ function closeCardQuickSheet() {
 window.closeCardQuickSheet = closeCardQuickSheet;
 
 function toggleSheetWatchlist() {
+    if (window.__isUserAuthenticated === false) {
+        closeCardQuickSheet();
+        if (typeof promptAuthModal === 'function') {
+            promptAuthModal('Add to My List', 'Sign in to save this title to your watchlist.');
+        } else {
+            window.location.href = '/accounts/login/?next=' + encodeURIComponent(window.location.pathname + window.location.search);
+        }
+        return;
+    }
     const sheet = document.getElementById('mobile-card-sheet');
     if (!sheet) return;
     const tmdbId = sheet.getAttribute('data-tmdb-id');
@@ -1245,7 +1254,11 @@ function toggleSheetWatchlist() {
         body
     }).then(async (res) => {
         if (res.redirected && res.url.includes('/accounts/login/')) {
-            window.location.href = res.url;
+            if (typeof promptAuthModal === 'function') {
+                promptAuthModal('Add to My List', 'Sign in to save this title to your watchlist.');
+            } else {
+                window.location.href = res.url;
+            }
             return;
         }
         if (!res.ok) return;
@@ -1275,6 +1288,15 @@ function toggleSheetWatchlist() {
 window.toggleSheetWatchlist = toggleSheetWatchlist;
 
 function toggleSheetWatched() {
+    if (window.__isUserAuthenticated === false) {
+        closeCardQuickSheet();
+        if (typeof promptAuthModal === 'function') {
+            promptAuthModal('Mark as Watched', 'Sign in to track what you have watched.');
+        } else {
+            window.location.href = '/accounts/login/?next=' + encodeURIComponent(window.location.pathname + window.location.search);
+        }
+        return;
+    }
     const sheet = document.getElementById('mobile-card-sheet');
     if (!sheet) return;
     const tmdbId = sheet.getAttribute('data-tmdb-id');
@@ -1288,7 +1310,11 @@ function toggleSheetWatched() {
         body
     }).then(async (res) => {
         if (res.redirected && res.url.includes('/accounts/login/')) {
-            window.location.href = res.url;
+            if (typeof promptAuthModal === 'function') {
+                promptAuthModal('Mark as Watched', 'Sign in to track what you have watched.');
+            } else {
+                window.location.href = res.url;
+            }
             return;
         }
         if (!res.ok) return;
@@ -1305,6 +1331,15 @@ function toggleSheetWatched() {
 window.toggleSheetWatched = toggleSheetWatched;
 
 function submitSheetRating(score) {
+    if (window.__isUserAuthenticated === false) {
+        closeCardQuickSheet();
+        if (typeof promptAuthModal === 'function') {
+            promptAuthModal('Rate Titles', 'Sign in to rate titles with stars.');
+        } else {
+            window.location.href = '/accounts/login/?next=' + encodeURIComponent(window.location.pathname + window.location.search);
+        }
+        return;
+    }
     const sheet = document.getElementById('mobile-card-sheet');
     if (!sheet) return;
     const tmdbId = sheet.getAttribute('data-tmdb-id');
@@ -1322,7 +1357,11 @@ function submitSheetRating(score) {
         body
     }).then(async (res) => {
         if (res.redirected && res.url.includes('/accounts/login/')) {
-            window.location.href = res.url;
+            if (typeof promptAuthModal === 'function') {
+                promptAuthModal('Rate Titles', 'Sign in to rate titles with stars.');
+            } else {
+                window.location.href = res.url;
+            }
             return;
         }
         if (!res.ok) return;

@@ -78,7 +78,7 @@
                     <span>Trailer</span>
                 </button>
 
-                <!-- Watchlist Button (Authenticated users only) -->
+                <!-- Watchlist Button -->
                 {% if user.is_authenticated %}
                 {% if slide.id in user_saved_ids %}
                 <button hx-post="/library/toggle/" 
@@ -103,6 +103,16 @@
                     <span class="hidden sm:inline">Add to My List</span>
                 </button>
                 {% endif %}
+                {% else %}
+                <button type="button"
+                        onclick="promptAuthModal('Add to My List', 'Sign in to save {{ slide.title|escapejs }} to your personal watchlist.');"
+                        title="Add to My List"
+                        class="bg-zinc-900/80 hover:bg-zinc-800 text-white border border-white/15 w-10 h-10 sm:w-auto sm:px-6 sm:py-3.5 rounded-full font-bold text-xs sm:text-base flex items-center justify-center gap-2 transition backdrop-blur-md shadow-lg transform hover:scale-105 active:scale-95 shrink-0 cursor-pointer">
+                    <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span class="hidden sm:inline">Add to My List</span>
+                </button>
                 {% endif %}
 
                 <!-- More Info Button (Desktop/Tablet; mobile taps title) -->

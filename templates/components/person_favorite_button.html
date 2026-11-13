@@ -18,4 +18,15 @@
     <span>Favorite {% if person.known_for_department == 'Directing' %}Director{% elif person.known_for_department == 'Writing' %}Writer{% else %}Actor{% endif %}</span>
     {% endif %}
 </button>
+{% else %}
+<button id="person-fav-btn-{{ person.id }}"
+        type="button"
+        onclick="promptAuthModal('Favorite Artist', 'Sign in to save {{ person.name|escapejs }} to your favorite artists in My Library.');"
+        title="Add to Favorites"
+        class="bg-gray-900/90 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700/80 hover:border-gray-600 shadow-lg px-4 py-2 rounded-full font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition backdrop-blur-md transform hover:scale-105 active:scale-95 cursor-pointer">
+    <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+    </svg>
+    <span>Favorite {% if person.known_for_department == 'Directing' %}Director{% elif person.known_for_department == 'Writing' %}Writer{% else %}Actor{% endif %}</span>
+</button>
 {% endif %}

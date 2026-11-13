@@ -393,6 +393,27 @@
                 <span id="saved-bookmarks-count-badge" class="w-4 h-4 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-black flex items-center justify-center border border-amber-500/30">{{ saved_bookmarks|length }}</span>
                 {% endif %}
             </button>
+            {% else %}
+            <!-- Guest Action Prompts -->
+            <button type="button" 
+                    onclick="promptAuthModal('Add to My List', 'Sign in to save this title to your watchlist.');"
+                    class="hidden sm:inline-flex bg-gray-900/90 hover:bg-gray-800 text-white px-3.5 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer"
+                    title="Add to My List">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>My List</span>
+            </button>
+
+            <button type="button"
+                    onclick="promptAuthModal('Scene Bookmarks', 'Sign in to bookmark exact timestamps and capture favorite cinema scenes.');" 
+                    title="Bookmark Scene (B)" 
+                    class="bg-gray-900/90 hover:bg-gray-800 text-white p-2 sm:px-3.5 sm:py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
+                <svg class="h-4 w-4 text-amber-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                <span class="hidden sm:inline">Bookmark</span>
+            </button>
             {% endif %}
 
             <!-- Sleep Timer Dropdown (Desktop & Tablet only, on mobile accessible via More Sheet) -->
@@ -620,7 +641,7 @@
             </div>
 
             <!-- Quick Actions Grid (Watchlist, Bookmark, Fullscreen) -->
-            <div class="grid {% if user.is_authenticated %}grid-cols-3{% else %}grid-cols-1{% endif %} gap-2">
+            <div class="grid grid-cols-3 gap-2">
                 {% if user.is_authenticated %}
                 <!-- Toggle Watchlist -->
                 <button hx-post="/library/toggle/" 
@@ -637,6 +658,25 @@
                 <button type="button" 
                         onclick="closeMobilePlayerSheet(); openBookmarkModal();" 
                         class="flex flex-col items-center justify-center p-3 rounded-2xl bg-gray-900/90 border border-gray-800 hover:border-amber-500/50 text-white transition active:scale-95 text-center">
+                    <svg class="w-5 h-5 text-amber-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-[11px] font-bold">Bookmark</span>
+                </button>
+                {% else %}
+                <!-- Guest Prompts -->
+                <button type="button" 
+                        onclick="closeMobilePlayerSheet(); promptAuthModal('Add to My List', 'Sign in to save this title to your watchlist.');" 
+                        class="flex flex-col items-center justify-center p-3 rounded-2xl bg-gray-900/90 border border-gray-800 hover:border-brand-500/50 text-white transition active:scale-95 text-center cursor-pointer">
+                    <svg class="w-5 h-5 text-brand-500 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                    <span class="text-[11px] font-bold">Watchlist</span>
+                </button>
+
+                <button type="button" 
+                        onclick="closeMobilePlayerSheet(); promptAuthModal('Scene Bookmarks', 'Sign in to bookmark exact timestamps and capture favorite cinema scenes.');" 
+                        class="flex flex-col items-center justify-center p-3 rounded-2xl bg-gray-900/90 border border-gray-800 hover:border-amber-500/50 text-white transition active:scale-95 text-center cursor-pointer">
                     <svg class="w-5 h-5 text-amber-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -3052,5 +3092,8 @@
             });
         });
     </script>
+
+    <!-- Universal Auth Required Prompt Modal -->
+    {% include 'components/auth_prompt_modal.html' %}
 </body>
 </html>

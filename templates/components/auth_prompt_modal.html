@@ -1,0 +1,116 @@
+<!-- Universal Auth / Sign-In Required Modal -->
+<div id="auth-prompt-modal"
+     class="fixed inset-0 z-[120] bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4 transition-all duration-300"
+     onclick="if (event.target === this) closeAuthPromptModal();"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="auth-prompt-title">
+    <div class="relative bg-zinc-950/95 border border-white/[0.08] rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl shadow-brand-500/10 space-y-5 text-center transform transition-all scale-100 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
+         onclick="event.stopPropagation();">
+        
+        <!-- Close Button -->
+        <button type="button" 
+                onclick="closeAuthPromptModal()" 
+                title="Close"
+                class="absolute top-4 right-4 p-2 text-zinc-400 hover:text-white rounded-full bg-zinc-900/80 hover:bg-zinc-800 transition active:scale-90 cursor-pointer">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+
+        <!-- Brand Halo & Feature Icon -->
+        <div class="relative mx-auto w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+            <div class="absolute inset-0 rounded-2xl bg-gradient-to-tr from-brand-500/30 via-rose-500/20 to-amber-500/20 blur-xl"></div>
+            <div class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center shadow-xl">
+                <svg id="auth-prompt-icon" class="w-7 h-7 sm:w-8 sm:h-8 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Title & Subtitle -->
+        <div class="space-y-1.5">
+            <div class="text-[11px] font-mono uppercase tracking-wider text-brand-400 font-semibold" id="auth-prompt-eyebrow">Account Required</div>
+            <h3 class="text-xl sm:text-2xl font-black text-zinc-100 tracking-tight" id="auth-prompt-title">Sign In to Continue</h3>
+            <p class="text-xs text-zinc-400 leading-relaxed max-w-xs mx-auto" id="auth-prompt-desc">
+                Sign in or create a free account to save your personal watchlist, track watch history, rate titles, and bookmark scenes.
+            </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-2.5 pt-2">
+            <a id="auth-prompt-login-btn" href="/accounts/login/"
+               class="w-full min-h-[44px] px-5 py-2.5 rounded-2xl bg-brand-500 hover:bg-red-600 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-500/25 transition-all duration-150 active:scale-[0.98]">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                </svg>
+                <span>Sign In</span>
+            </a>
+            <a id="auth-prompt-register-btn" href="/accounts/register/"
+               class="w-full min-h-[44px] px-5 py-2.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-zinc-200 hover:text-white font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.98]">
+                <span>Create Free Account</span>
+            </a>
+            <button type="button" onclick="closeAuthPromptModal()"
+                    class="w-full py-1.5 text-xs text-zinc-500 hover:text-zinc-400 transition cursor-pointer">
+                Continue as Guest
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        window.promptAuthModal = function(featureTitle, featureDesc) {
+            const modal = document.getElementById('auth-prompt-modal');
+            const currentPath = window.location.pathname + window.location.search;
+            const nextParam = encodeURIComponent(currentPath);
+
+            if (!modal) {
+                window.location.href = '/accounts/login/?next=' + nextParam;
+                return;
+            }
+
+            const titleEl = document.getElementById('auth-prompt-title');
+            const descEl = document.getElementById('auth-prompt-desc');
+            const loginBtn = document.getElementById('auth-prompt-login-btn');
+            const regBtn = document.getElementById('auth-prompt-register-btn');
+
+            if (featureTitle && titleEl) {
+                titleEl.textContent = 'Sign In to ' + featureTitle;
+            }
+            if (featureDesc && descEl) {
+                descEl.textContent = featureDesc;
+            }
+            if (loginBtn) {
+                loginBtn.href = '/accounts/login/?next=' + nextParam;
+            }
+            if (regBtn) {
+                regBtn.href = '/accounts/register/?next=' + nextParam;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeAuthPromptModal = function() {
+            const modal = document.getElementById('auth-prompt-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.body.style.overflow = '';
+            }
+        };
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                window.closeAuthPromptModal();
+            }
+        });
+
+        document.addEventListener('promptAuth', function(e) {
+            const detail = (e && e.detail) || {};
+            window.promptAuthModal(detail.title, detail.desc);
+        });
+    })();
+</script>
