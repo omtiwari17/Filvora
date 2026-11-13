@@ -91,8 +91,16 @@ update_filvora() {
     echo " 🎬 UPDATING FILVORA (Port 8000)..."
     echo "=================================================="
     cd "$FILVORA_DIR" || return 1
+    # Clean stale index.lock if git is not actively running
+    if [ -f .git/index.lock ] && ! pgrep -x git > /dev/null; then
+        rm -f .git/index.lock
+    fi
     echo "==> 1. Pulling latest code from GitHub..."
-    git pull
+    GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 pull --ff-only
+    if [ $? -ne 0 ]; then
+        echo "⚠️ Git pull fast-forward failed or timed out. Retrying standard pull..."
+        GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 pull --no-edit
+    fi
     echo "==> 2. Applying Django database migrations..."
     python manage.py migrate
     echo "==> 3. Restarting Filvora server (Port 8000)..."
@@ -127,8 +135,16 @@ update_billing() {
     echo " 💼 UPDATING VISHWAGURU BILLING (Port 8080)..."
     echo "=================================================="
     cd "$BILLING_DIR" || return 1
+    # Clean stale index.lock if git is not actively running
+    if [ -f .git/index.lock ] && ! pgrep -x git > /dev/null; then
+        rm -f .git/index.lock
+    fi
     echo "==> 1. Pulling latest code from GitHub..."
-    git pull
+    GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 pull --ff-only
+    if [ $? -ne 0 ]; then
+        echo "⚠️ Git pull fast-forward failed or timed out. Retrying standard pull..."
+        GIT_TERMINAL_PROMPT=0 GIT_PAGER=cat git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 pull --no-edit
+    fi
     echo "==> 2. Applying Django database migrations..."
     python manage.py migrate
     echo "==> 3. Restarting Billing server (Port 8080)..."
