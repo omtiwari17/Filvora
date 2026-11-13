@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import json
 import hashlib
@@ -124,17 +125,136 @@ class TMDBClient:
 
     _RATING_CACHE = {}
 
-    CANONICAL_MOVIE_ALIASES = {
-        1824694: 299534,  # "Avengers endgame encore" (TMDB stub 1) -> "Avengers: Endgame" (2019, TMDB 299534)
-        1824935: 299534,  # "Avengers Endgame: Encore" (TMDB stub 2) -> "Avengers: Endgame" (2019, TMDB 299534)
+    # Stale/deleted duplicate stubs on TMDB mapped to live TMDB entries
+    DEPRECATED_STUB_ALIASES = {
+        1824694: 1824935,  # 1824694 was deleted on TMDB and superseded by live 1824935
     }
+
+    # Backward compatibility alias
+    CANONICAL_MOVIE_ALIASES = DEPRECATED_STUB_ALIASES
+
+    EDITION_REGEX = re.compile(
+        r'[:\-–—]?\s*\b(encore|director\'?s\s*cut|extended(\s*(edition|cut))?|special\s*edition|anniversary\s*edition|re-?release|remastered|unrated(\s*cut)?|the\s+more\s+fun\s+stuff\s+version)\b.*$',
+        re.IGNORECASE
+    )
+
+    @classmethod
+    def clean_title(cls, s):
+        return re.sub(r'[^a-zA-Z0-9\s]', '', str(s or '')).strip().lower()
+
+    def find_parent_movie(self, title, current_id=None):
+        """
+        Generic, automatic parent movie resolution for re-releases, director cuts, 
+        and special editions without requiring hardcoded movie ID dictionaries.
+        """
+        if not title:
+            return None
+        base = self.EDITION_REGEX.sub('', title).strip()
+        clean_base = self.clean_title(base)
+        if not clean_base or clean_base == self.clean_title(title):
+            return None
+
+        try:
+            res = self._fetch('/search/movie', {'query': base})
+            results = res.get('results', [])
+            for r in results:
+                if current_id and r.get('id') == int(current_id):
+                    continue
+                clean_cand = self.clean_title(r.get('title', ''))
+                if clean_base == clean_cand or clean_base in clean_cand:
+                    return r
+            return results[0] if results else None
+        except Exception:
+            return None
+
+    def _heal_movie_metadata(self, data, movie_id):
+        """
+        Universal self-healing engine for movies with sparse or incomplete TMDB records
+        (e.g. re-releases, foreign/community stubs, anniversary editions, director cuts).
+        """
+        if not data:
+            return data
+
+        # 1. Self-heal missing artwork from /movie/{id}/images
+        if not data.get('poster_path') or not data.get('backdrop_path'):
+            try:
+                images_data = self._fetch(f"/movie/{movie_id}/images", {"include_image_language": "en,null,tr,fr,de,es,it,pt,ru,zh,ja,ko"})
+                if images_data:
+                    if not data.get('poster_path'):
+                        posters = images_data.get('posters', [])
+                        if posters:
+                            data['poster_path'] = posters[0].get('file_path')
+                    if not data.get('backdrop_path'):
+                        backdrops = images_data.get('backdrops', [])
+                        if backdrops:
+                            data['backdrop_path'] = backdrops[0].get('file_path')
+            except Exception:
+                pass
+
+        # 2. Self-heal missing overview from /movie/{id}/translations
+        if not (data.get('overview') or '').strip():
+            try:
+                trans_data = self._fetch(f"/movie/{movie_id}/translations")
+                for t in trans_data.get('translations', []):
+                    ov = t.get('data', {}).get('overview', '').strip()
+                    if ov:
+                        data['overview'] = ov
+                        break
+            except Exception:
+                pass
+
+        # 3. Detect edition / re-release patterns and resolve parent movie
+        title = data.get('title') or data.get('original_title') or ''
+        parent = self.find_parent_movie(title, current_id=movie_id)
+        if parent:
+            data['is_edition'] = True
+            data['parent_movie'] = {
+                'id': parent.get('id'),
+                'title': parent.get('title'),
+                'release_year': (parent.get('release_date') or '')[:4],
+                'poster_path': parent.get('poster_path')
+            }
+            # Fallback stream source: if video servers only index the parent blockbuster,
+            # we link the parent ID so playback actually works
+            data['stream_tmdb_id'] = parent.get('id')
+
+            # Inherit missing artwork if still none
+            if not data.get('poster_path'):
+                data['poster_path'] = parent.get('poster_path')
+            if not data.get('backdrop_path'):
+                data['backdrop_path'] = parent.get('backdrop_path')
+
+            # Inherit missing overview if still empty
+            if not (data.get('overview') or '').strip():
+                parent_ov = parent.get('overview', '').strip()
+                if parent_ov:
+                    data['overview'] = f"Special edition re-release of {parent.get('title')}. {parent_ov}"
+
+            # Inherit missing cast / crew / videos if empty
+            credits = data.get('credits') or {}
+            if not credits.get('cast'):
+                try:
+                    parent_details = self._fetch(f"/movie/{parent.get('id')}", {"append_to_response": "credits,videos"})
+                    if parent_details:
+                        if parent_details.get('credits'):
+                            data['credits'] = parent_details['credits']
+                        if not data.get('runtime') and parent_details.get('runtime'):
+                            data['runtime'] = parent_details['runtime']
+                        if not data.get('genres') and parent_details.get('genres'):
+                            data['genres'] = parent_details['genres']
+                        if not data.get('videos', {}).get('results') and parent_details.get('videos'):
+                            data['videos'] = parent_details['videos']
+                except Exception:
+                    pass
+
+        return data
 
     @classmethod
     def resolve_movie_alias(cls, movie_id):
         """Resolves duplicate, ghost, or re-release TMDB IDs to their canonical parent movie ID."""
         try:
             raw_id = int(movie_id)
-            return cls.CANONICAL_MOVIE_ALIASES.get(raw_id, raw_id)
+            return cls.DEPRECATED_STUB_ALIASES.get(raw_id, raw_id)
         except (ValueError, TypeError):
             return movie_id
 
@@ -435,6 +555,13 @@ class TMDBClient:
         if data and (data.get('title') or data.get('name') or data.get('poster_path')):
             data_copy = dict(data)
             data_copy['media_type'] = media_type
+            if media_type == 'movie' and not data_copy.get('poster_path'):
+                try:
+                    imgs = self._fetch(f"/movie/{tmdb_id}/images", {"include_image_language": "en,null,tr"})
+                    if imgs and imgs.get('posters'):
+                        data_copy['poster_path'] = imgs['posters'][0].get('file_path')
+                except Exception:
+                    pass
             return self._attach_age_rating(data_copy, media_type)
 
         # Fallback to mock data if offline or unavailable
@@ -783,7 +910,8 @@ class TMDBClient:
 
         data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates,videos,watch/providers"})
         if data and (data.get('title') or data.get('poster_path')):
-            data['age_rating'] = self._extract_movie_rating(data)
+            data = self._heal_movie_metadata(data, movie_id)
+            data['age_rating'] = self._extract_movie_rating(data) or 'PG-13'
             if data['age_rating']:
                 self._RATING_CACHE[f"movie:{movie_id}"] = data['age_rating']
             if 'recommendations' in data and 'results' in data['recommendations']:
@@ -958,26 +1086,29 @@ class TMDBClient:
         
         filtered = []
         seen_ids = set()
-        seen_titles = set()
         for r in results:
             if r.get('media_type') in ['movie', 'tv']:
                 item_id = r.get('id')
-                if item_id in self.CANONICAL_MOVIE_ALIASES:
-                    canonical_id = self.CANONICAL_MOVIE_ALIASES[item_id]
-                    # If canonical movie is already in raw results or seen_ids, skip the ghost duplicate
-                    if canonical_id in seen_ids or any(x.get('id') == canonical_id for x in results):
-                        continue
-                    item_id = canonical_id
-                    r['id'] = canonical_id
-                item_title = (r.get('title') or r.get('name') or '').strip().lower()
-                if item_id in seen_ids or (item_title and item_title in seen_titles):
+                if item_id in self.DEPRECATED_STUB_ALIASES:
+                    item_id = self.DEPRECATED_STUB_ALIASES[item_id]
+                    r['id'] = item_id
+
+                if item_id in seen_ids:
                     continue
                 seen_ids.add(item_id)
-                if item_title:
-                    seen_titles.add(item_title)
                 r['display_title'] = r.get('title') or r.get('name')
                 r['release_year'] = (r.get('release_date') or r.get('first_air_date') or '')[:4]
                 self._attach_age_rating(r, r.get('media_type'))
+
+                # Quick artwork self-healing for search card if poster is missing
+                if not r.get('poster_path') and r.get('media_type') == 'movie' and item_id:
+                    try:
+                        imgs = self._fetch(f"/movie/{item_id}/images", {"include_image_language": "en,null,tr"})
+                        if imgs and imgs.get('posters'):
+                            r['poster_path'] = imgs['posters'][0].get('file_path')
+                    except Exception:
+                        pass
+
                 filtered.append(r)
         
         q_lower = query.lower()
@@ -1001,20 +1132,24 @@ class TMDBClient:
         data = self._fetch("/search/multi", {"query": query.strip()})
         results = data.get('results', [])
         categorized = {'movies': [], 'series': [], 'people': []}
-        seen_movie_titles = set()
+        seen_movie_ids = set()
         for r in results:
             mtype = r.get('media_type')
             if mtype == 'movie':
                 item_id = r.get('id')
-                if item_id in self.CANONICAL_MOVIE_ALIASES:
-                    canonical_id = self.CANONICAL_MOVIE_ALIASES[item_id]
-                    if any(x.get('id') == canonical_id for x in categorized['movies']) or any(x.get('id') == canonical_id for x in results):
-                        continue
-                    r['id'] = canonical_id
-                t_lower = (r.get('title') or '').strip().lower()
-                if t_lower in seen_movie_titles:
+                if item_id in self.DEPRECATED_STUB_ALIASES:
+                    item_id = self.DEPRECATED_STUB_ALIASES[item_id]
+                    r['id'] = item_id
+                if item_id in seen_movie_ids:
                     continue
-                seen_movie_titles.add(t_lower)
+                seen_movie_ids.add(item_id)
+                if not r.get('poster_path') and item_id:
+                    try:
+                        imgs = self._fetch(f"/movie/{item_id}/images", {"include_image_language": "en,null,tr"})
+                        if imgs and imgs.get('posters'):
+                            r['poster_path'] = imgs['posters'][0].get('file_path')
+                    except Exception:
+                        pass
                 r['display_title'] = r.get('title', 'Unknown Movie')
                 r['release_year'] = (r.get('release_date') or '')[:4]
                 self._attach_age_rating(r, 'movie')

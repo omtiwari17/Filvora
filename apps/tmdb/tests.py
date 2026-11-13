@@ -186,33 +186,33 @@ class TMDBTestCase(TestCase):
             self.assertEqual(params['sort_by'], 'first_air_date.asc')
 
     def test_canonical_movie_alias_resolution_and_search_dedup(self):
-        """Verifies TMDB client resolves re-release ghost IDs to canonical movie details and deduplicates search."""
+        """Verifies TMDB client resolves re-release editions, links parents, and preserves both in search."""
         from unittest.mock import patch
-        # 1. Alias IDs (1824694, 1824935) resolve to canonical movie 299534
-        for alias_id in [1824694, 1824935]:
-            with patch.object(self.client, '_fetch', return_value={'id': 299534, 'title': 'Avengers: Endgame'}) as mock_fetch:
-                movie = self.client.get_movie_details(alias_id)
-                self.assertEqual(movie['id'], 299534)
-                self.assertEqual(movie['title'], 'Avengers: Endgame')
-                endpoint, _ = mock_fetch.call_args[0]
-                self.assertEqual(endpoint, '/movie/299534')
+        # 1. Stale stub 1824694 resolves to live entry 1824935
+        self.assertEqual(self.client.resolve_movie_alias(1824694), 1824935)
+        self.assertEqual(self.client.resolve_movie_alias(1824935), 1824935)
 
-        # 2. Search multi deduplicates ghost aliases when canonical title is present
+        # 2. find_parent_movie generic detection for edition titles
+        with patch.object(self.client, '_fetch', return_value={'results': [{'id': 299534, 'title': 'Avengers: Endgame'}]}):
+            parent = self.client.find_parent_movie('Avengers Endgame: Encore')
+            self.assertIsNotNone(parent)
+            self.assertEqual(parent['id'], 299534)
+
+        # 3. Search multi preserves both edition (1824935) and parent (299534)
         mock_search_results = {
             'results': [
-                {'id': 1824694, 'media_type': 'movie', 'title': 'Avengers Endgame: Encore'},
-                {'id': 1824935, 'media_type': 'movie', 'title': 'Avengers Endgame: Encore'},
-                {'id': 299534, 'media_type': 'movie', 'title': 'Avengers: Endgame'},
+                {'id': 1824694, 'media_type': 'movie', 'title': 'Avengers Endgame: Encore', 'poster_path': '/encore.jpg', 'release_date': '2026-09-24'},
+                {'id': 299534, 'media_type': 'movie', 'title': 'Avengers: Endgame', 'poster_path': '/endgame.jpg', 'release_date': '2019-04-24'},
             ],
             'total_pages': 1,
-            'total_results': 3
+            'total_results': 2
         }
         with patch.object(self.client, '_fetch', return_value=mock_search_results):
             data = self.client.search_multi_paginated('avengers endgame encore')
             ids = [r['id'] for r in data['results']]
-            self.assertEqual(ids, [299534])
-            self.assertNotIn(1824694, ids)
-            self.assertNotIn(1824935, ids)
+            self.assertIn(1824935, ids)
+            self.assertIn(299534, ids)
+            self.assertEqual(len(ids), 2)
 
 
 

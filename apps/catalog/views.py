@@ -87,8 +87,8 @@ def movie_browse(request):
 def movie_detail(request, tmdb_id):
     try:
         raw_id = int(tmdb_id)
-        if raw_id in TMDBClient.CANONICAL_MOVIE_ALIASES:
-            return redirect(f'/movies/{TMDBClient.CANONICAL_MOVIE_ALIASES[raw_id]}/')
+        if raw_id in TMDBClient.DEPRECATED_STUB_ALIASES:
+            return redirect(f'/movies/{TMDBClient.DEPRECATED_STUB_ALIASES[raw_id]}/')
     except (ValueError, TypeError):
         pass
 

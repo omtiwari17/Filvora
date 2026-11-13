@@ -44,8 +44,8 @@ def _slice_drawer_episodes(episodes_list: list, current_ep: int, window_size: in
 def watch(request, media_type, tmdb_id, season=None, episode=None):
     try:
         raw_id = int(tmdb_id)
-        if media_type == 'movie' and raw_id in TMDBClient.CANONICAL_MOVIE_ALIASES:
-            canonical_id = TMDBClient.CANONICAL_MOVIE_ALIASES[raw_id]
+        if media_type == 'movie' and raw_id in TMDBClient.DEPRECATED_STUB_ALIASES:
+            canonical_id = TMDBClient.DEPRECATED_STUB_ALIASES[raw_id]
             qs = request.META.get('QUERY_STRING', '')
             suffix = f"?{qs}" if qs else ""
             return redirect(f'/watch/movie/{canonical_id}/{suffix}')
@@ -88,7 +88,8 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
     if media_type == 'movie':
         media = client.get_movie(tmdb_id)
         title = media.get('title', 'Unknown Movie')
-        source = provider.get_movie_source(tmdb_id)
+        stream_id = media.get('stream_tmdb_id') or tmdb_id
+        source = provider.get_movie_source(stream_id)
         video_url = source.url
         next_episode = None
     else:
@@ -215,6 +216,7 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
     return render(request, 'playback/watch.html', {
         'media': media,
         'title': title,
+        'parent_movie': media.get('parent_movie') if media_type == 'movie' else None,
         'source': source,
         'video_url': video_url,
         'media_type': media_type,

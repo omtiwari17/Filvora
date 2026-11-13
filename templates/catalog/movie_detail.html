@@ -126,6 +126,15 @@
                 </div>
                 {% endif %}
 
+                {% if movie.parent_movie %}
+                <div class="flex items-center gap-2 bg-gradient-to-r from-purple-950/70 via-indigo-950/60 to-purple-900/40 border border-purple-500/40 px-3.5 py-2 rounded-xl text-purple-200 text-xs shadow-sm backdrop-blur-sm">
+                    <svg class="w-4 h-4 text-purple-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                    </svg>
+                    <span>Special Theatrical Edition • Original Theatrical Cut: <a href="/movies/{{ movie.parent_movie.id }}/" class="text-white font-bold underline hover:text-brand-400 transition ml-1">{{ movie.parent_movie.title }} ({{ movie.parent_movie.release_year }})</a></span>
+                </div>
+                {% endif %}
+
                 <!-- Call to Action Buttons -->
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center md:justify-start gap-2.5 sm:gap-3.5 pt-1 sm:pt-2">
                     <a href="/watch/movie/{{ movie.id }}/" class="bg-brand-500 hover:bg-red-600 text-white px-6 sm:px-7 py-3 rounded-full font-black text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-xl shadow-brand-500/30 transition transform hover:scale-105 active:scale-95">

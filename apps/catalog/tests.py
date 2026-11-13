@@ -417,24 +417,30 @@ class CatalogViewsTestCase(TestCase):
         self.assertIn('/progress/mark-watched/', html_auth)
 
     def test_canonical_movie_alias_redirects_and_search_deduplication(self):
-        """Verifies ghost/alias movie IDs (1824694, 1824935) redirect to canonical titles and are deduplicated in search."""
-        for alias_id in [1824694, 1824935]:
-            # 1. Direct navigation to ghost/re-release ID redirects to canonical movie
-            res_movie = self.client.get(f'/movies/{alias_id}/')
-            self.assertEqual(res_movie.status_code, 302)
-            self.assertEqual(res_movie.url, '/movies/299534/')
+        """Verifies stale stubs redirect to live entries, and live editions render independently with linked parents."""
+        # 1. Stale/deleted duplicate stub ID 1824694 redirects to live TMDB entry 1824935
+        res_movie_stale = self.client.get('/movies/1824694/')
+        self.assertEqual(res_movie_stale.status_code, 302)
+        self.assertEqual(res_movie_stale.url, '/movies/1824935/')
 
-            # 2. Watch URL for ghost/re-release ID redirects to canonical watch URL with query params
-            res_watch = self.client.get(f'/watch/movie/{alias_id}/?server=vidlink')
-            self.assertEqual(res_watch.status_code, 302)
-            self.assertEqual(res_watch.url, '/watch/movie/299534/?server=vidlink')
+        # 2. Watch URL for stale stub ID redirects to live entry watch URL
+        res_watch_stale = self.client.get('/watch/movie/1824694/?server=vidlink')
+        self.assertEqual(res_watch_stale.status_code, 302)
+        self.assertEqual(res_watch_stale.url, '/watch/movie/1824935/?server=vidlink')
 
-            # 3. Following redirect loads canonical movie page with official title
-            res_followed = self.client.get(f'/movies/{alias_id}/', follow=True)
-            self.assertEqual(res_followed.status_code, 200)
-            html_followed = res_followed.content.decode('utf-8')
-            self.assertIn('Avengers: Endgame', html_followed)
-            self.assertNotIn(f'Movie {alias_id}', html_followed)
+        # 3. Live edition 1824935 renders independently without redirecting away
+        res_live = self.client.get('/movies/1824935/')
+        self.assertEqual(res_live.status_code, 200)
+        html_live = res_live.content.decode('utf-8')
+        self.assertIn('Avengers Endgame: Encore', html_live)
+        self.assertIn('/movies/299534/', html_live)  # Links to parent theatrical cut
+
+        # 4. Live edition watch page renders independently and links to original cut
+        res_live_watch = self.client.get('/watch/movie/1824935/')
+        self.assertEqual(res_live_watch.status_code, 200)
+        html_live_watch = res_live_watch.content.decode('utf-8')
+        self.assertIn('Avengers Endgame: Encore', html_live_watch)
+        self.assertIn('/watch/movie/299534/', html_live_watch)
 
 
 
