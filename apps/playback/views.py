@@ -1,5 +1,5 @@
 import json
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.contrib.auth.decorators import login_required
@@ -42,6 +42,16 @@ def _slice_drawer_episodes(episodes_list: list, current_ep: int, window_size: in
 
 @ensure_csrf_cookie
 def watch(request, media_type, tmdb_id, season=None, episode=None):
+    try:
+        raw_id = int(tmdb_id)
+        if media_type == 'movie' and raw_id in TMDBClient.CANONICAL_MOVIE_ALIASES:
+            canonical_id = TMDBClient.CANONICAL_MOVIE_ALIASES[raw_id]
+            qs = request.META.get('QUERY_STRING', '')
+            suffix = f"?{qs}" if qs else ""
+            return redirect(f'/watch/movie/{canonical_id}/{suffix}')
+    except (ValueError, TypeError):
+        pass
+
     client = TMDBClient()
     server_id = request.GET.get('server')
     s_num = season if season is not None else (1 if media_type == 'tv' else None)

@@ -185,6 +185,33 @@ class TMDBTestCase(TestCase):
             self.assertEqual(endpoint, '/discover/tv')
             self.assertEqual(params['sort_by'], 'first_air_date.asc')
 
+    def test_canonical_movie_alias_resolution_and_search_dedup(self):
+        """Verifies TMDB client resolves re-release ghost IDs to canonical movie details and deduplicates search."""
+        from unittest.mock import patch
+        # 1. Alias ID 1824694 resolves to canonical movie 299534
+        with patch.object(self.client, '_fetch', return_value={'id': 299534, 'title': 'Avengers: Endgame'}) as mock_fetch:
+            movie = self.client.get_movie_details(1824694)
+            self.assertEqual(movie['id'], 299534)
+            self.assertEqual(movie['title'], 'Avengers: Endgame')
+            endpoint, _ = mock_fetch.call_args[0]
+            self.assertEqual(endpoint, '/movie/299534')
+
+        # 2. Search multi deduplicates ghost alias when canonical title is present
+        mock_search_results = {
+            'results': [
+                {'id': 1824694, 'media_type': 'movie', 'title': 'Avengers Endgame: Encore'},
+                {'id': 299534, 'media_type': 'movie', 'title': 'Avengers: Endgame'},
+            ],
+            'total_pages': 1,
+            'total_results': 2
+        }
+        with patch.object(self.client, '_fetch', return_value=mock_search_results):
+            data = self.client.search_multi_paginated('avengers endgame encore')
+            ids = [r['id'] for r in data['results']]
+            self.assertEqual(ids, [299534])
+            self.assertNotIn(1824694, ids)
+
+
 
 
 

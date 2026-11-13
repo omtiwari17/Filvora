@@ -1,5 +1,5 @@
 import re
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from apps.tmdb.client import TMDBClient
 from apps.library.models import LibraryItem, FavoritePerson
@@ -85,6 +85,13 @@ def movie_browse(request):
     })
 
 def movie_detail(request, tmdb_id):
+    try:
+        raw_id = int(tmdb_id)
+        if raw_id in TMDBClient.CANONICAL_MOVIE_ALIASES:
+            return redirect(f'/movies/{TMDBClient.CANONICAL_MOVIE_ALIASES[raw_id]}/')
+    except (ValueError, TypeError):
+        pass
+
     client = TMDBClient()
     movie = client.get_movie_details(tmdb_id)
     movie['display_title'] = movie.get('title', f"Movie {tmdb_id}")

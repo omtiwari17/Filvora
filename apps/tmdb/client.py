@@ -124,6 +124,10 @@ class TMDBClient:
 
     _RATING_CACHE = {}
 
+    CANONICAL_MOVIE_ALIASES = {
+        1824694: 299534,  # "Avengers Endgame: Encore" is the 2026 theatrical encore release of "Avengers: Endgame" (TMDB 299534)
+    }
+
     def _extract_movie_rating(self, data):
         if not data:
             return None
@@ -753,6 +757,13 @@ class TMDBClient:
         return self.get_movie_details(movie_id)
 
     def get_movie_details(self, movie_id):
+        try:
+            raw_id = int(movie_id)
+            if raw_id in self.CANONICAL_MOVIE_ALIASES:
+                movie_id = self.CANONICAL_MOVIE_ALIASES[raw_id]
+        except (ValueError, TypeError):
+            pass
+
         if str(movie_id) in ["1744462", "1222222"]:
             data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates,videos,watch/providers"})
             if data and (data.get('title') or data.get('poster_path')):
@@ -944,6 +955,13 @@ class TMDBClient:
         for r in results:
             if r.get('media_type') in ['movie', 'tv']:
                 item_id = r.get('id')
+                if item_id in self.CANONICAL_MOVIE_ALIASES:
+                    canonical_id = self.CANONICAL_MOVIE_ALIASES[item_id]
+                    # If canonical movie is already in raw results or seen_ids, skip the ghost duplicate
+                    if canonical_id in seen_ids or any(x.get('id') == canonical_id for x in results):
+                        continue
+                    item_id = canonical_id
+                    r['id'] = canonical_id
                 item_title = (r.get('title') or r.get('name') or '').strip().lower()
                 if item_id in seen_ids or (item_title and item_title in seen_titles):
                     continue
@@ -980,6 +998,12 @@ class TMDBClient:
         for r in results:
             mtype = r.get('media_type')
             if mtype == 'movie':
+                item_id = r.get('id')
+                if item_id in self.CANONICAL_MOVIE_ALIASES:
+                    canonical_id = self.CANONICAL_MOVIE_ALIASES[item_id]
+                    if any(x.get('id') == canonical_id for x in categorized['movies']) or any(x.get('id') == canonical_id for x in results):
+                        continue
+                    r['id'] = canonical_id
                 t_lower = (r.get('title') or '').strip().lower()
                 if t_lower in seen_movie_titles:
                     continue
