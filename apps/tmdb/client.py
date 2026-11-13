@@ -125,8 +125,18 @@ class TMDBClient:
     _RATING_CACHE = {}
 
     CANONICAL_MOVIE_ALIASES = {
-        1824694: 299534,  # "Avengers Endgame: Encore" is the 2026 theatrical encore release of "Avengers: Endgame" (TMDB 299534)
+        1824694: 299534,  # "Avengers endgame encore" (TMDB stub 1) -> "Avengers: Endgame" (2019, TMDB 299534)
+        1824935: 299534,  # "Avengers Endgame: Encore" (TMDB stub 2) -> "Avengers: Endgame" (2019, TMDB 299534)
     }
+
+    @classmethod
+    def resolve_movie_alias(cls, movie_id):
+        """Resolves duplicate, ghost, or re-release TMDB IDs to their canonical parent movie ID."""
+        try:
+            raw_id = int(movie_id)
+            return cls.CANONICAL_MOVIE_ALIASES.get(raw_id, raw_id)
+        except (ValueError, TypeError):
+            return movie_id
 
     def _extract_movie_rating(self, data):
         if not data:
@@ -418,6 +428,8 @@ class TMDBClient:
         """
         if not tmdb_id:
             return {}
+        if media_type == 'movie':
+            tmdb_id = self.resolve_movie_alias(tmdb_id)
         endpoint = f"/movie/{tmdb_id}" if media_type == 'movie' else f"/tv/{tmdb_id}"
         data = self._fetch(endpoint)
         if data and (data.get('title') or data.get('name') or data.get('poster_path')):
@@ -757,12 +769,7 @@ class TMDBClient:
         return self.get_movie_details(movie_id)
 
     def get_movie_details(self, movie_id):
-        try:
-            raw_id = int(movie_id)
-            if raw_id in self.CANONICAL_MOVIE_ALIASES:
-                movie_id = self.CANONICAL_MOVIE_ALIASES[raw_id]
-        except (ValueError, TypeError):
-            pass
+        movie_id = self.resolve_movie_alias(movie_id)
 
         if str(movie_id) in ["1744462", "1222222"]:
             data = self._fetch(f"/movie/{movie_id}", {"append_to_response": "credits,recommendations,release_dates,videos,watch/providers"})
