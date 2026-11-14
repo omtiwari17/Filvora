@@ -214,6 +214,57 @@ class TMDBTestCase(TestCase):
             self.assertIn(299534, ids)
             self.assertEqual(len(ids), 2)
 
+    def test_edition_vs_parent_release_info_and_stub_synthesis(self):
+        """Verifies release info isolation between parent film and re-release edition, plus stub synthesis."""
+        mock_parent_raw = {
+            'id': 299534,
+            'title': 'Avengers: Endgame',
+            'overview': 'After the devastating events of Avengers: Infinity War...',
+            'release_date': '2019-04-26',
+            'poster_path': '/endgame.jpg',
+            'backdrop_path': '/endgame_bg.jpg',
+            'vote_average': 8.26,
+            'release_dates': {
+                'results': [
+                    {
+                        'iso_3166_1': 'US',
+                        'release_dates': [
+                            {'type': 3, 'release_date': '2019-04-26T00:00:00.000Z', 'note': ''},
+                            {'type': 4, 'release_date': '2019-11-12T00:00:00.000Z', 'note': 'Disney+'},
+                            {'type': 3, 'release_date': '2026-09-25T00:00:00.000Z', 'note': 'Avengers Endgame: Encore'},
+                            {'type': 4, 'release_date': '2026-11-13T00:00:00.000Z', 'note': 'Disney+ (Avengers Endgame: Encore)'},
+                        ]
+                    }
+                ]
+            }
+        }
+
+        # 1. Base film must preserve original 2019 dates and ignore the 2026 encore cut
+        base_info = self.client._extract_movie_release_info(mock_parent_raw, is_edition=False)
+        self.assertEqual(base_info['theatrical_release_date'], '2019-04-26')
+        self.assertEqual(base_info['ott_release_date'], '2019-11-12')
+        self.assertEqual(base_info['ott_platform'], 'Disney+')
+
+        # 2. Edition must isolate the 2026 encore cut dates
+        edition_info = self.client._extract_movie_release_info(mock_parent_raw, is_edition=True, edition_keyword='encore')
+        self.assertEqual(edition_info['theatrical_release_date'], '2026-09-25')
+        self.assertEqual(edition_info['ott_release_date'], '2026-11-13')
+        self.assertEqual(edition_info['ott_platform'], 'Disney+')
+
+        # 3. Known edition stub 1824935 synthesizes rich details from parent
+        from unittest.mock import patch
+        with patch.object(self.client, '_fetch', return_value=mock_parent_raw):
+            edition_details = self.client.get_movie_details(1824935)
+            self.assertEqual(edition_details['id'], 1824935)
+            self.assertEqual(edition_details['title'], 'Avengers Endgame: Encore')
+            self.assertIn('exclusive deleted scenes', edition_details['overview'])
+            self.assertEqual(edition_details['parent_movie']['id'], 299534)
+            self.assertEqual(edition_details['stream_tmdb_id'], 299534)
+            self.assertEqual(edition_details['release_year'], '2026')
+            self.assertEqual(edition_details['ott_release_date'], '2026-11-13')
+            self.assertEqual(edition_details['ott_platform'], 'Disney+')
+
+
 
 
 
