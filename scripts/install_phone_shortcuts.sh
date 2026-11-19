@@ -258,17 +258,19 @@ chmod +x "$PREFIX_BIN/update2"
 cat << 'EOF' > "$PREFIX_BIN/share-filvora"
 #!/data/data/com.termux/files/usr/bin/sh
 echo "==> Stopping any previous quick tunnel..."
-pkill -9 -f "cloudflared tunnel --url http://localhost:8000" 2>/dev/null
+pkill -9 -f "cloudflared tunnel.*trycloudflare" 2>/dev/null
+pkill -9 -f "cloudflared tunnel.*8000" 2>/dev/null
 sleep 1
 
 echo "==> Creating secure anonymous Cloudflare Quick Tunnel for Filvora..."
-nohup cloudflared tunnel --url http://localhost:8000 > ~/filvora-tunnel.log 2>&1 < /dev/null &
+# Using --config /dev/null prevents interference from ~/.cloudflared/config.yml 404 rules
+nohup cloudflared tunnel --config /dev/null --url http://127.0.0.1:8000 > ~/filvora-tunnel.log 2>&1 < /dev/null &
 
 echo "==> Connecting to Cloudflare edge..."
 for i in $(seq 1 15); do
     sleep 1
     printf "."
-    URL=$(grep -o 'https://[-a-zA-Z0-9]*\.trycloudflare\.com' ~/filvora-tunnel.log 2>/dev/null | head -n 1)
+    URL=$(grep -o 'https://[-a-zA-Z0-9]*\.trycloudflare\.com' ~/filvora-tunnel.log 2>/dev/null | tail -n 1)
     if [ -n "$URL" ]; then
         echo ""
         echo "=================================================="
