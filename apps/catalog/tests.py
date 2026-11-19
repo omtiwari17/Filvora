@@ -492,6 +492,57 @@ class CatalogViewsTestCase(TestCase):
         resolved_movie = client._resolve_genre_for_media_type('28,878', media_type='movie')
         self.assertEqual(resolved_movie, '28,878')
 
+    def test_quick_peek_modal_and_card_attributes(self):
+        """Verifies Phase 4 Quick Peek modal elements and rich card data attributes on catalog pages."""
+        res_movies = self.client.get('/movies/')
+        self.assertEqual(res_movies.status_code, 200)
+        html_movies = res_movies.content.decode('utf-8')
+
+        # Modal dialog and controls in base template
+        self.assertIn('id="quick-peek-modal"', html_movies)
+        self.assertIn('id="quick-peek-backdrop"', html_movies)
+        self.assertIn('id="quick-peek-watch-btn"', html_movies)
+        self.assertIn('id="quick-peek-detail-btn"', html_movies)
+        self.assertIn('id="quick-peek-trailer-btn"', html_movies)
+        self.assertIn('closeQuickPeekModal()', html_movies)
+
+        # Card attributes and peek triggers
+        self.assertIn('data-overview=', html_movies)
+        self.assertIn('data-rating=', html_movies)
+        self.assertIn('data-age-rating=', html_movies)
+        self.assertIn('openQuickPeek', html_movies)
+
+        # Verify series browse also contains modal and card attributes
+        res_series = self.client.get('/series/')
+        self.assertEqual(res_series.status_code, 200)
+        html_series = res_series.content.decode('utf-8')
+        self.assertIn('id="quick-peek-modal"', html_series)
+        self.assertIn('data-media-type="tv"', html_series)
+        self.assertIn('openQuickPeek', html_series)
+
+    def test_catalog_grid_list_view_switcher(self):
+        """Verifies Phase 4 2-segment Grid vs. Compact Detail List layout switcher on /movies/ and /series/."""
+        res_movies = self.client.get('/movies/')
+        self.assertEqual(res_movies.status_code, 200)
+        html_movies = res_movies.content.decode('utf-8')
+
+        self.assertIn('id="catalog-grid"', html_movies)
+        self.assertIn('id="catalog-view-grid-btn"', html_movies)
+        self.assertIn('id="catalog-view-list-btn"', html_movies)
+        self.assertIn("setCatalogView('grid')", html_movies)
+        self.assertIn("setCatalogView('list')", html_movies)
+
+        res_series = self.client.get('/series/')
+        self.assertEqual(res_series.status_code, 200)
+        html_series = res_series.content.decode('utf-8')
+
+        self.assertIn('id="catalog-grid"', html_series)
+        self.assertIn('id="catalog-view-grid-btn"', html_series)
+        self.assertIn('id="catalog-view-list-btn"', html_series)
+        self.assertIn("setCatalogView('grid')", html_series)
+        self.assertIn("setCatalogView('list')", html_series)
+
+
 
 
 

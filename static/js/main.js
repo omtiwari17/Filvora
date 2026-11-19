@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initHorizontalRails();
     initHeroSpotlight();
     initPosterFadeIn();
+    initCatalogView();
     initHtmxFeedback();
     initNetworkMonitor();
 });
@@ -25,6 +26,7 @@ function initPosterFadeIn(root = document) {
 }
 document.addEventListener('htmx:afterSwap', (e) => {
     if (e.target) initPosterFadeIn(e.target);
+    initCatalogView();
 });
 
 // --- Navbar & Navigation ---
@@ -229,6 +231,24 @@ function initKeyboardShortcuts() {
         const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
         const spotlightModal = document.getElementById('spotlight-modal');
         const isSpotlightOpen = spotlightModal && !spotlightModal.classList.contains('hidden');
+        const quickPeekModal = document.getElementById('quick-peek-modal');
+        const isQuickPeekOpen = quickPeekModal && !quickPeekModal.classList.contains('hidden');
+
+        // When Quick Peek Modal is open: handle Space/Esc to close, Enter to stream
+        if (isQuickPeekOpen) {
+            if (e.key === 'Escape' || e.key === ' ' || e.code === 'Space') {
+                e.preventDefault();
+                closeQuickPeekModal();
+                return;
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const watchBtn = document.getElementById('quick-peek-watch-btn');
+                if (watchBtn && watchBtn.href && watchBtn.href !== '#') {
+                    window.location.href = watchBtn.href;
+                }
+                return;
+            }
+        }
 
         // Ctrl+K or Cmd+K to open/close Spotlight modal
         if ((e.key === 'k' || e.key === 'K') && (e.ctrlKey || e.metaKey)) {
@@ -289,11 +309,22 @@ function initKeyboardShortcuts() {
             }
         }
 
+        // Press Space on hovered or focused card to open Quick Peek (unless on /watch/)
+        if ((e.key === ' ' || e.code === 'Space') && !isInput && !window.location.pathname.startsWith('/watch/')) {
+            const candidateCard = window.__lastHoveredCard || (active && active.closest && active.closest('[data-tmdb-id]'));
+            if (candidateCard) {
+                e.preventDefault();
+                openQuickPeek(candidateCard);
+                return;
+            }
+        }
+
         // Press 'Escape' to dismiss search dropdown, navbar dropdowns, mobile overlay, or modal
         if (e.key === 'Escape') {
             closeAllNavbarDropdowns();
             closeMobileSearch();
             closeCardQuickSheet();
+            closeQuickPeekModal();
             const shortcutsModal = document.getElementById('shortcuts-modal');
             if (shortcutsModal) shortcutsModal.classList.add('hidden');
         }
@@ -339,8 +370,12 @@ function toggleShortcutsModal() {
                 </div>
                 <div class="grid grid-cols-2 gap-3 text-sm">
                     <div class="flex items-center justify-between p-2 rounded bg-gray-950/60 border border-gray-800">
-                        <span class="text-gray-300">Quick Search</span>
-                        <kbd class="px-2 py-0.5 bg-gray-800 border border-gray-700 rounded text-xs text-brand-400 font-mono font-bold">/</kbd>
+                        <span class="text-gray-300">Spotlight Search</span>
+                        <kbd class="px-2 py-0.5 bg-gray-800 border border-gray-700 rounded text-xs text-brand-400 font-mono font-bold">Ctrl+K / /</kbd>
+                    </div>
+                    <div class="flex items-center justify-between p-2 rounded bg-gray-950/60 border border-gray-800">
+                        <span class="text-gray-300">Quick Peek Card</span>
+                        <kbd class="px-2 py-0.5 bg-gray-800 border border-gray-700 rounded text-xs text-brand-400 font-mono font-bold">Space</kbd>
                     </div>
                     <div class="flex items-center justify-between p-2 rounded bg-gray-950/60 border border-gray-800">
                         <span class="text-gray-300">Close Dialogs</span>
@@ -1664,3 +1699,169 @@ function initHeroSpotlight() {
         }
     }, { passive: true });
 }
+
+// --- Spacebar Quick Peek & Catalog Grid/List Switcher Engine (Phase 4) ---
+window.__lastHoveredCard = null;
+
+document.addEventListener('mouseover', (e) => {
+    const card = e.target.closest('[data-tmdb-id]');
+    if (card) window.__lastHoveredCard = card;
+}, { passive: true });
+
+document.addEventListener('focusin', (e) => {
+    const card = e.target.closest('[data-tmdb-id]');
+    if (card) window.__lastHoveredCard = card;
+}, { passive: true });
+
+function setCatalogView(mode) {
+    const grid = document.getElementById('catalog-grid');
+    const gridBtn = document.getElementById('catalog-view-grid-btn');
+    const listBtn = document.getElementById('catalog-view-list-btn');
+    if (!grid) return;
+
+    const isList = mode === 'list';
+    grid.classList.toggle('is-list-view', isList);
+    if (gridBtn && listBtn) {
+        gridBtn.className = isList
+            ? 'p-1.5 rounded-lg text-zinc-400 hover:text-white transition'
+            : 'p-1.5 rounded-lg text-white bg-brand-500 transition shadow-sm';
+        listBtn.className = isList
+            ? 'p-1.5 rounded-lg text-white bg-brand-500 transition shadow-sm'
+            : 'p-1.5 rounded-lg text-zinc-400 hover:text-white transition';
+    }
+    try {
+        localStorage.setItem('filvora_catalog_view', mode);
+    } catch (e) {}
+}
+window.setCatalogView = setCatalogView;
+
+function initCatalogView() {
+    try {
+        const savedMode = localStorage.getItem('filvora_catalog_view');
+        if (savedMode === 'list') {
+            setCatalogView('list');
+        }
+    } catch (e) {}
+}
+window.initCatalogView = initCatalogView;
+
+let __activePeekCard = null;
+
+function openQuickPeek(cardEl) {
+    if (!cardEl) return;
+    const modal = document.getElementById('quick-peek-modal');
+    const backdrop = document.getElementById('quick-peek-backdrop');
+    if (!modal || !backdrop) return;
+
+    __activePeekCard = cardEl;
+
+    const tmdbId = cardEl.getAttribute('data-tmdb-id') || '';
+    const mediaType = cardEl.getAttribute('data-media-type') || 'movie';
+    const title = cardEl.getAttribute('data-title') || '';
+    const year = cardEl.getAttribute('data-year') || '';
+    const rating = cardEl.getAttribute('data-rating') || '';
+    const ageRating = cardEl.getAttribute('data-age-rating') || (mediaType === 'tv' ? 'TV-MA' : 'PG-13');
+    const overview = cardEl.getAttribute('data-overview') || 'No storyline summary available.';
+    const poster = cardEl.getAttribute('data-poster') || '';
+    const backdropImg = cardEl.getAttribute('data-backdrop') || '';
+    const watchUrl = cardEl.getAttribute('data-watch-url') || (mediaType === 'tv' ? `/watch/tv/${tmdbId}/1/1/` : `/watch/movie/${tmdbId}/`);
+    const detailUrl = cardEl.getAttribute('data-detail-url') || (mediaType === 'tv' ? `/series/${tmdbId}/` : `/movies/${tmdbId}/`);
+
+    modal.setAttribute('data-tmdb-id', tmdbId);
+    modal.setAttribute('data-media-type', mediaType);
+
+    const titleEl = document.getElementById('quick-peek-title');
+    if (titleEl) titleEl.textContent = title;
+
+    const mediaBadge = document.getElementById('quick-peek-media-type');
+    if (mediaBadge) mediaBadge.textContent = mediaType === 'tv' ? 'TV Series' : 'Movie';
+
+    const yearEl = document.getElementById('quick-peek-year');
+    if (yearEl) yearEl.textContent = year;
+
+    const ageEl = document.getElementById('quick-peek-age-rating');
+    if (ageEl) ageEl.textContent = ageRating;
+
+    const ratingEl = document.getElementById('quick-peek-rating');
+    if (ratingEl) ratingEl.textContent = rating ? `★ ${rating}` : '★ --';
+
+    const overviewEl = document.getElementById('quick-peek-overview');
+    if (overviewEl) overviewEl.textContent = overview;
+
+    const posterEl = document.getElementById('quick-peek-poster');
+    const posterFallback = document.getElementById('quick-peek-poster-fallback');
+    if (posterEl) {
+        if (poster) {
+            posterEl.src = poster;
+            posterEl.alt = title;
+            posterEl.classList.remove('hidden');
+            if (posterFallback) posterFallback.classList.add('hidden');
+        } else {
+            posterEl.classList.add('hidden');
+            if (posterFallback) {
+                posterFallback.textContent = title;
+                posterFallback.classList.remove('hidden');
+            }
+        }
+    }
+
+    const backdropEl = document.getElementById('quick-peek-backdrop-img');
+    if (backdropEl) {
+        if (backdropImg) {
+            backdropEl.src = backdropImg;
+            backdropEl.classList.remove('hidden');
+        } else if (poster) {
+            backdropEl.src = poster;
+            backdropEl.classList.remove('hidden');
+        } else {
+            backdropEl.classList.add('hidden');
+        }
+    }
+
+    const watchBtn = document.getElementById('quick-peek-watch-btn');
+    if (watchBtn) watchBtn.href = watchUrl;
+
+    const detailBtn = document.getElementById('quick-peek-detail-btn');
+    if (detailBtn) detailBtn.href = detailUrl;
+
+    const trailerBtn = document.getElementById('quick-peek-trailer-btn');
+    if (trailerBtn) {
+        trailerBtn.onclick = function() {
+            closeQuickPeekModal();
+            if (typeof openTrailerFor === 'function') {
+                openTrailerFor(mediaType, tmdbId, title);
+            }
+        };
+    }
+
+    // Show modal dialog
+    backdrop.classList.remove('hidden');
+    modal.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        backdrop.classList.remove('opacity-0');
+        modal.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
+        modal.classList.add('opacity-100', 'scale-100');
+    });
+
+    if (watchBtn) watchBtn.focus();
+    triggerHaptic(10);
+}
+window.openQuickPeek = openQuickPeek;
+
+function closeQuickPeekModal() {
+    const modal = document.getElementById('quick-peek-modal');
+    const backdrop = document.getElementById('quick-peek-backdrop');
+    if (!modal || !backdrop || modal.classList.contains('hidden')) return;
+
+    backdrop.classList.add('opacity-0');
+    modal.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+    modal.classList.remove('opacity-100', 'scale-100');
+
+    setTimeout(() => {
+        backdrop.classList.add('hidden');
+        modal.classList.add('hidden');
+    }, 200);
+
+    triggerHaptic(8);
+}
+window.closeQuickPeekModal = closeQuickPeekModal;

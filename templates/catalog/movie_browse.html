@@ -183,9 +183,46 @@
     </div>
     {% endif %}
 
-    <!-- Grid -->
+    <!-- View Switcher & Catalog Header -->
     {% if movies %}
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4 md:gap-6 mb-12">
+    <div class="flex items-center justify-between gap-3 mb-4 sm:mb-6 pb-3 border-b border-white/[0.06]">
+        <div class="flex items-center gap-2">
+            <h2 class="text-sm sm:text-base font-bold text-white tracking-tight">
+                {% if selected_category == 'top_rated' %}Top Rated Movies
+                {% elif selected_category == 'upcoming' %}Upcoming Theatrical Releases
+                {% elif selected_category == 'now_playing' %}In Theaters &amp; Fresh OTT
+                {% else %}Popular Movies{% endif %}
+            </h2>
+            <span class="text-[11px] font-mono text-zinc-400 bg-zinc-900/90 border border-white/[0.08] px-2 py-0.5 rounded-full font-semibold">Page {{ pagination.current_page }}</span>
+        </div>
+
+        <!-- 2-Segment Grid vs. Compact Detail List View Switcher -->
+        <div class="inline-flex items-center bg-zinc-950/90 border border-white/10 rounded-xl p-1 gap-1 shadow-sm" role="group" aria-label="Catalog layout view">
+            <button id="catalog-view-grid-btn"
+                    type="button"
+                    onclick="setCatalogView('grid')"
+                    title="Poster Grid View"
+                    aria-label="Poster Grid View"
+                    class="p-1.5 rounded-lg text-white bg-brand-500 transition shadow-sm">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+            </button>
+            <button id="catalog-view-list-btn"
+                    type="button"
+                    onclick="setCatalogView('list')"
+                    title="Compact Detail List View"
+                    aria-label="Compact Detail List View"
+                    class="p-1.5 rounded-lg text-zinc-400 hover:text-white transition">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Results Grid / List -->
+    <div id="catalog-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4 md:gap-6 mb-12">
         {% for movie in movies %}
             {% include 'components/movie_card.html' with movie=movie user_saved_ids=user_saved_ids %}
         {% endfor %}

@@ -463,6 +463,62 @@ img.poster-fade.is-loaded {
     display: flex !important;
 }
 
+/* Phase 4: Catalog Grid / Compact List Mode */
+#catalog-grid.is-list-view {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+    gap: 0.875rem !important;
+}
+
+@media (min-width: 1024px) {
+    #catalog-grid.is-list-view {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+#catalog-grid.is-list-view .group\/card {
+    width: 100% !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    padding: 0.75rem !important;
+    border-radius: 1rem !important;
+    background-color: rgba(24, 24, 27, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 8px 20px -8px rgba(0, 0, 0, 0.6) !important;
+}
+
+#catalog-grid.is-list-view .group\/card:hover {
+    transform: translateY(-2px) !important;
+    border-color: rgba(229, 9, 20, 0.5) !important;
+}
+
+#catalog-grid.is-list-view .aspect-\[2\/3\] {
+    width: 4.5rem !important;
+    min-width: 4.5rem !important;
+    border-radius: 0.75rem !important;
+    flex-shrink: 0 !important;
+}
+
+#catalog-grid.is-list-view .catalog-card-body {
+    margin-top: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+}
+
+#catalog-grid.is-list-view .catalog-list-rating {
+    display: inline-flex !important;
+}
+
+#catalog-grid.is-list-view .catalog-list-overview {
+    display: -webkit-box !important;
+}
+
+#catalog-grid.is-list-view .catalog-list-actions {
+    display: flex !important;
+}
+
 /* Phase 6: Shimmer Skeleton Placeholders */
 @keyframes filvoraShimmer {
     0% { background-position: 200% 0; }
