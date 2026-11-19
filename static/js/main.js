@@ -32,7 +32,7 @@ document.addEventListener('htmx:afterSwap', (e) => {
         const items = Array.from(document.querySelectorAll('#spotlight-results .spotlight-item'));
         if (items.length > 0) {
             __spotlightSelectedIndex = 0;
-            updateSpotlightSelection(items, 0);
+            updateSpotlightSelection(items, 0, false);
             const statusText = document.getElementById('spotlight-status-text');
             if (statusText) statusText.textContent = `${items.length} titles found`;
         } else {
@@ -296,11 +296,13 @@ function updateSpotlightPreview(itemEl) {
     `;
 }
 
-function updateSpotlightSelection(items, newIndex) {
+function updateSpotlightSelection(items, newIndex, shouldScroll = false) {
     items.forEach((item, idx) => {
         if (idx === newIndex) {
             item.classList.add('spotlight-active');
-            item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            if (shouldScroll) {
+                item.scrollIntoView({ block: 'nearest' });
+            }
             updateSpotlightPreview(item);
         } else {
             item.classList.remove('spotlight-active');
@@ -315,9 +317,9 @@ function updateSpotlightSelection(items, newIndex) {
 function onSpotlightItemHover(itemEl) {
     const items = Array.from(document.querySelectorAll('#spotlight-results .spotlight-item'));
     const idx = items.indexOf(itemEl);
-    if (idx !== -1) {
+    if (idx !== -1 && idx !== __spotlightSelectedIndex) {
         __spotlightSelectedIndex = idx;
-        updateSpotlightSelection(items, idx);
+        updateSpotlightSelection(items, idx, false);
     }
 }
 
@@ -443,14 +445,14 @@ function initKeyboardShortcuts() {
                 e.preventDefault();
                 if (items.length > 0) {
                     __spotlightSelectedIndex = (__spotlightSelectedIndex + 1) % items.length;
-                    updateSpotlightSelection(items, __spotlightSelectedIndex);
+                    updateSpotlightSelection(items, __spotlightSelectedIndex, true);
                 }
                 return;
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 if (items.length > 0) {
                     __spotlightSelectedIndex = (__spotlightSelectedIndex - 1 + items.length) % items.length;
-                    updateSpotlightSelection(items, __spotlightSelectedIndex);
+                    updateSpotlightSelection(items, __spotlightSelectedIndex, true);
                 }
                 return;
             } else if (e.key === 'Enter') {
