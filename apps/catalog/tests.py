@@ -455,6 +455,43 @@ class CatalogViewsTestCase(TestCase):
         self.assertIn('Cache-Control', res_series.headers)
         self.assertIn('public', res_series.headers['Cache-Control'])
 
+    def test_multi_select_genre_filtering_movies(self):
+        """Verifies multi-genre filtering on /movies/?genre=28,878 populates selected_genres and active_genres_info."""
+        response = self.client.get('/movies/?genre=28,878')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('selected_genres', response.context)
+        self.assertEqual(response.context['selected_genres'], ['28', '878'])
+        self.assertIn('active_genres_info', response.context)
+        active_names = [g['name'] for g in response.context['active_genres_info']]
+        self.assertIn('Action', active_names)
+        self.assertIn('Sci-Fi', active_names)
+        html = response.content.decode('utf-8')
+        self.assertIn('(2 selected)', html)
+        self.assertIn('Reset to All', html)
+
+    def test_multi_select_genre_filtering_series(self):
+        """Verifies multi-genre filtering on /series/?genre=10759,10765 populates active genres and toggle URLs."""
+        response = self.client.get('/series/?genre=10759,10765')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('selected_genres', response.context)
+        self.assertEqual(response.context['selected_genres'], ['10759', '10765'])
+        html = response.content.decode('utf-8')
+        self.assertIn('(2 selected)', html)
+        self.assertIn('Reset to All', html)
+
+    def test_resolve_multi_genre_media_mapping(self):
+        """Verifies TMDBClient _resolve_genre_for_media_type cleanly translates multi-genre comma strings."""
+        from apps.tmdb.client import TMDBClient
+        client = TMDBClient()
+        # Movie action (28) -> TV action & adventure (10759)
+        # Movie sci-fi (878) -> TV sci-fi & fantasy (10765)
+        resolved_tv = client._resolve_genre_for_media_type('28,878', media_type='tv')
+        self.assertEqual(resolved_tv, '10759,10765')
+
+        # Movie media type preserves movie genres
+        resolved_movie = client._resolve_genre_for_media_type('28,878', media_type='movie')
+        self.assertEqual(resolved_movie, '28,878')
+
 
 
 

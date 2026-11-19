@@ -74,45 +74,152 @@ function triggerHaptic(duration = 10) {
 }
 window.triggerHaptic = triggerHaptic;
 
-// --- Mobile Dedicated Search ---
-function openMobileSearch() {
-    triggerHaptic(10);
-    const overlay = document.getElementById('mobile-search-overlay');
-    const backdrop = document.getElementById('mobile-search-backdrop');
-    const input = document.getElementById('mobile-search-input');
-    if (overlay) {
-        overlay.classList.remove('hidden');
-        if (backdrop) backdrop.classList.remove('hidden');
-        if (input) {
-            setTimeout(() => {
-                input.focus();
-                input.select();
-            }, 60);
-        }
+// --- Phase 2: Command-K Spotlight Omnibar Engine ---
+let __spotlightSelectedIndex = -1;
+
+function getRecentSearches() {
+    try {
+        return JSON.parse(localStorage.getItem('filvora_recent_searches') || '[]');
+    } catch (e) {
+        return [];
     }
 }
 
-function closeMobileSearch() {
-    triggerHaptic(8);
-    const overlay = document.getElementById('mobile-search-overlay');
-    const backdrop = document.getElementById('mobile-search-backdrop');
-    const dropdown = document.getElementById('mobile-search-results-dropdown');
-    if (overlay) overlay.classList.add('hidden');
-    if (backdrop) backdrop.classList.add('hidden');
-    if (dropdown) dropdown.classList.add('hidden');
+function saveRecentSearch(term) {
+    if (!term || typeof term !== 'string') return;
+    const clean = term.trim();
+    if (clean.length < 2) return;
+    try {
+        let recents = getRecentSearches().filter(t => t.toLowerCase() !== clean.toLowerCase());
+        recents.unshift(clean);
+        if (recents.length > 8) recents = recents.slice(0, 8);
+        localStorage.setItem('filvora_recent_searches', JSON.stringify(recents));
+    } catch (e) {}
 }
 
-function clearMobileSearch() {
-    const input = document.getElementById('mobile-search-input');
-    const dropdown = document.getElementById('mobile-search-results-dropdown');
+function removeRecentSearch(term, event) {
+    if (event) event.stopPropagation();
+    try {
+        let recents = getRecentSearches().filter(t => t.toLowerCase() !== term.toLowerCase());
+        localStorage.setItem('filvora_recent_searches', JSON.stringify(recents));
+        renderRecentSearches();
+    } catch (e) {}
+}
+
+function clearAllRecentSearches(event) {
+    if (event) event.stopPropagation();
+    try {
+        localStorage.removeItem('filvora_recent_searches');
+        renderRecentSearches();
+    } catch (e) {}
+}
+
+function selectRecentSearch(term) {
+    const input = document.getElementById('spotlight-input');
+    if (!input) return;
+    input.value = term;
+    const clearBtn = document.getElementById('spotlight-clear-btn');
+    if (clearBtn) clearBtn.classList.remove('hidden');
+    
+    // Trigger HTMX search
+    if (window.htmx) {
+        window.htmx.ajax('GET', '/search/suggest/?q=' + encodeURIComponent(term), {
+            target: '#spotlight-results',
+            swap: 'innerHTML'
+        });
+    }
+}
+
+function renderRecentSearches() {
+    const container = document.getElementById('spotlight-recents-container');
+    const list = document.getElementById('spotlight-recents-list');
+    if (!container || !list) return;
+    const recents = getRecentSearches();
+    if (!recents || recents.length === 0) {
+        container.classList.add('hidden');
+        list.innerHTML = '';
+        return;
+    }
+    container.classList.remove('hidden');
+    list.innerHTML = recents.map(term => `
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 border border-white/10 text-xs text-zinc-300 hover:text-white hover:border-white/20 transition cursor-pointer group" onclick="selectRecentSearch('${term.replace(/'/g, "\\'")}')">
+            <span>${term}</span>
+            <button type="button" onclick="removeRecentSearch('${term.replace(/'/g, "\\'")}', event)" class="text-zinc-500 hover:text-red-400 font-bold ml-0.5" title="Remove">&times;</button>
+        </div>
+    `).join('');
+}
+
+function openSpotlightModal() {
+    triggerHaptic(10);
+    const modal = document.getElementById('spotlight-modal');
+    const input = document.getElementById('spotlight-input');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+    __spotlightSelectedIndex = -1;
+    renderRecentSearches();
+    if (input) {
+        setTimeout(() => {
+            input.focus();
+            input.select();
+        }, 50);
+    }
+}
+
+function closeSpotlightModal() {
+    triggerHaptic(8);
+    const modal = document.getElementById('spotlight-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+    __spotlightSelectedIndex = -1;
+}
+
+function clearSpotlightInput() {
+    const input = document.getElementById('spotlight-input');
+    const clearBtn = document.getElementById('spotlight-clear-btn');
+    const results = document.getElementById('spotlight-results');
     if (input) {
         input.value = '';
         input.focus();
     }
-    if (dropdown) {
-        dropdown.innerHTML = '';
-        dropdown.classList.add('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    if (results) {
+        renderRecentSearches();
     }
+    __spotlightSelectedIndex = -1;
+}
+
+function updateSpotlightSelection(items, newIndex) {
+    items.forEach((item, idx) => {
+        if (idx === newIndex) {
+            item.classList.add('spotlight-active');
+            item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } else {
+            item.classList.remove('spotlight-active');
+        }
+    });
+}
+
+window.openSpotlightModal = openSpotlightModal;
+window.closeSpotlightModal = closeSpotlightModal;
+window.clearSpotlightInput = clearSpotlightInput;
+window.saveRecentSearch = saveRecentSearch;
+window.removeRecentSearch = removeRecentSearch;
+window.clearAllRecentSearches = clearAllRecentSearches;
+window.selectRecentSearch = selectRecentSearch;
+
+// --- Mobile Dedicated Search ---
+function openMobileSearch() {
+    openSpotlightModal();
+}
+
+function closeMobileSearch() {
+    closeSpotlightModal();
+}
+
+function clearMobileSearch() {
+    clearSpotlightInput();
 }
 
 // --- Keyboard Shortcuts ---
@@ -120,16 +227,65 @@ function initKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
         const active = document.activeElement;
         const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+        const spotlightModal = document.getElementById('spotlight-modal');
+        const isSpotlightOpen = spotlightModal && !spotlightModal.classList.contains('hidden');
+
+        // Ctrl+K or Cmd+K to open/close Spotlight modal
+        if ((e.key === 'k' || e.key === 'K') && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            if (isSpotlightOpen) {
+                closeSpotlightModal();
+            } else {
+                openSpotlightModal();
+            }
+            return;
+        }
 
         // Press '/' to search
         if (e.key === '/' && !isInput) {
             e.preventDefault();
-            const searchInput = document.querySelector('#navbar-search-container input[name="q"]');
-            if (!searchInput || searchInput.offsetParent === null) {
-                openMobileSearch();
-            } else {
-                searchInput.focus();
-                searchInput.select();
+            openSpotlightModal();
+            return;
+        }
+
+        // When Spotlight Modal is open: handle ArrowUp, ArrowDown, Enter, Shift+Enter, Escape
+        if (isSpotlightOpen) {
+            const items = Array.from(document.querySelectorAll('#spotlight-results .spotlight-item'));
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (items.length > 0) {
+                    __spotlightSelectedIndex = (__spotlightSelectedIndex + 1) % items.length;
+                    updateSpotlightSelection(items, __spotlightSelectedIndex);
+                }
+                return;
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (items.length > 0) {
+                    __spotlightSelectedIndex = (__spotlightSelectedIndex - 1 + items.length) % items.length;
+                    updateSpotlightSelection(items, __spotlightSelectedIndex);
+                }
+                return;
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const input = document.getElementById('spotlight-input');
+                const query = input ? input.value.trim() : '';
+                if (__spotlightSelectedIndex >= 0 && items[__spotlightSelectedIndex]) {
+                    const selItem = items[__spotlightSelectedIndex];
+                    if (query) saveRecentSearch(query);
+                    if (e.shiftKey && selItem.dataset.watchUrl) {
+                        window.location.href = selItem.dataset.watchUrl;
+                    } else {
+                        window.location.href = selItem.dataset.url || selItem.href;
+                    }
+                } else if (query) {
+                    saveRecentSearch(query);
+                    window.location.href = '/search/?q=' + encodeURIComponent(query);
+                }
+                return;
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeSpotlightModal();
+                return;
             }
         }
 
@@ -148,6 +304,22 @@ function initKeyboardShortcuts() {
             toggleShortcutsModal();
         }
     });
+
+    // Toggle clear button on spotlight input typing
+    const spotlightInput = document.getElementById('spotlight-input');
+    if (spotlightInput) {
+        spotlightInput.addEventListener('input', (e) => {
+            const clearBtn = document.getElementById('spotlight-clear-btn');
+            if (clearBtn) {
+                if (e.target.value.trim().length > 0) {
+                    clearBtn.classList.remove('hidden');
+                } else {
+                    clearBtn.classList.add('hidden');
+                    clearSpotlightInput();
+                }
+            }
+        });
+    }
 }
 
 function toggleShortcutsModal() {

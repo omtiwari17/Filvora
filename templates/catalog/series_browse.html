@@ -107,25 +107,17 @@
         </a>
     </div>
 
-    <!-- Genre Quick Filter (Wrapped, No Horizontal Scroll) -->
+    <!-- Genre Quick Filter (Wrapped Multi-Select Pill Chips) -->
     <div class="mb-8">
         <div class="flex items-center justify-between gap-2 mb-2.5">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Genres:</span>
-                {% if selected_genre %}
-                    {% for g in genres %}
-                        {% if selected_genre == g.id|stringformat:'i' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand-500/20 text-brand-400 border border-brand-500/40">
-                                <span>Active: {{ g.name }}</span>
-                                <a href="/series/?category={{ selected_category }}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
-                                   class="hover:text-white text-brand-400 font-black ml-0.5" title="Clear genre filter">&times;</a>
-                            </span>
-                        {% endif %}
-                    {% endfor %}
+                {% if active_genres_info %}
+                    <span class="text-[11px] font-mono text-zinc-400 font-semibold">({{ active_genres_info|length }} selected)</span>
                 {% endif %}
             </div>
-            {% if selected_genre %}
-            <a href="/series/?category={{ selected_category }}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+            {% if active_genres_info %}
+            <a href="{{ clear_genres_url }}" 
                class="text-xs text-gray-400 hover:text-brand-400 font-semibold transition flex items-center gap-1">
                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -136,13 +128,13 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-            <a href="/series/?category={{ selected_category }}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
-               class="px-3 py-1.5 rounded-xl text-[11px] font-bold transition {% if not selected_genre %}bg-gray-800 text-white border border-gray-600 shadow-sm{% else %}bg-gray-950 text-gray-400 hover:text-white border border-gray-800/80 hover:border-gray-700{% endif %}">
+            <a href="{{ clear_genres_url }}" 
+               class="px-3 py-1.5 rounded-xl text-[11px] font-bold transition {% if not active_genres_info %}bg-gray-800 text-white border border-gray-600 shadow-sm{% else %}bg-gray-950 text-gray-400 hover:text-white border border-gray-800/80 hover:border-gray-700{% endif %}">
                 All Genres
             </a>
             {% for g in genres %}
-                {% if selected_genre == g.id|stringformat:'i' %}
-                <a href="/series/?category={{ selected_category }}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+                {% if g.is_active %}
+                <a href="{{ g.toggle_url }}" 
                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition bg-brand-500 text-white border border-brand-400 shadow-lg shadow-brand-500/25 ring-2 ring-brand-500/30"
                    title="Click to remove {{ g.name }} filter">
                     {% include 'components/genre_icon.html' with name=g.name id=g.id class="w-3.5 h-3.5 text-white" %}
@@ -150,7 +142,7 @@
                     <span class="ml-0.5 text-xs font-black opacity-90">&times;</span>
                 </a>
                 {% else %}
-                <a href="/series/?category={{ selected_category }}&genre={{ g.id }}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}" 
+                <a href="{{ g.toggle_url }}" 
                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition bg-gray-950 text-gray-400 hover:text-white hover:bg-gray-900 border border-gray-800/80 hover:border-gray-700">
                     {% include 'components/genre_icon.html' with name=g.name id=g.id class="w-3.5 h-3.5" %}
                     <span>{{ g.name }}</span>
@@ -161,18 +153,16 @@
     </div>
     
     <!-- Active Filter Chips Summary -->
-    {% if selected_genre or selected_audience and selected_audience != 'all' or selected_sort and selected_sort != 'popularity.desc' %}
+    {% if active_genres_info or selected_audience and selected_audience != 'all' or selected_sort and selected_sort != 'popularity.desc' %}
     <div id="active-filter-chips" class="flex flex-wrap items-center gap-2 mb-6 px-3.5 py-2.5 rounded-2xl bg-zinc-900/70 border border-white/[0.08]">
         <span class="text-[11px] font-mono uppercase tracking-wider text-gray-400 mr-1">Active Filters:</span>
-        {% if selected_genre %}
-            {% for g in genres %}
-                {% if selected_genre == g.id|stringformat:'i' %}
-                <a href="/series/?category={{ selected_category }}{% if selected_audience and selected_audience != 'all' %}&audience={{ selected_audience }}{% endif %}{% if selected_sort %}&sort={{ selected_sort }}{% endif %}"
-                   class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-500/15 text-brand-300 border border-brand-500/35 hover:bg-brand-500/25 transition">
-                    <span>Genre: {{ g.name }}</span>
-                    <span class="font-bold">&times;</span>
-                </a>
-                {% endif %}
+        {% if active_genres_info %}
+            {% for g in active_genres_info %}
+            <a href="{{ g.toggle_url }}"
+               class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-500/15 text-brand-300 border border-brand-500/35 hover:bg-brand-500/25 transition">
+                <span>Genre: {{ g.name }}</span>
+                <span class="font-bold">&times;</span>
+            </a>
             {% endfor %}
         {% endif %}
         {% if selected_audience and selected_audience != 'all' %}

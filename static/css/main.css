@@ -495,6 +495,14 @@ img.poster-fade.is-loaded {
     transition: opacity 150ms ease-out;
 }
 
+/* Phase 2: Command-K Spotlight Active Item Highlight */
+.spotlight-item.spotlight-active {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    outline: 2px solid rgba(229, 9, 20, 0.5) !important;
+    outline-offset: -1px !important;
+}
+
 /* Respect OS reduced-motion preference */
 @media (prefers-reduced-motion: reduce) {
     .animate-ping,

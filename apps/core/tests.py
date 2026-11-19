@@ -888,6 +888,17 @@ class AdminDashboardTestCase(TestCase):
         prime_html = render_to_string('components/platform_badge.html', {'platform': 'Prime Video'})
         self.assertIn('Prime Video', prime_html)
 
+    def test_spotlight_modal_rendered_in_base_template(self):
+        """Verifies Command-K Spotlight modal component is rendered in base template with Omnibar input and shortcuts."""
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode('utf-8')
+        self.assertIn('id="spotlight-modal"', html)
+        self.assertIn('id="spotlight-input"', html)
+        self.assertIn('id="spotlight-results"', html)
+        self.assertIn('Ctrl K', html)
+        self.assertIn('ESC', html)
+
 
 
 

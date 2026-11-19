@@ -1331,6 +1331,11 @@ class TMDBClient:
     def _resolve_genre_for_media_type(self, genre_id, media_type='movie'):
         if not genre_id:
             return None
+        if isinstance(genre_id, str) and (',' in genre_id or '|' in genre_id):
+            sep = ',' if ',' in genre_id else '|'
+            parts = [p.strip() for p in genre_id.split(sep) if p.strip()]
+            resolved = [str(self._resolve_genre_for_media_type(p, media_type)) for p in parts]
+            return sep.join(resolved)
         try:
             gid = int(genre_id)
         except (ValueError, TypeError):

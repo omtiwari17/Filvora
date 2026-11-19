@@ -26,8 +26,8 @@
     <div class="flex items-center gap-1.5 sm:gap-2 xl:gap-2.5 2xl:gap-3 shrink-0">
         <!-- Mobile, Tablet & Compact-Laptop Search Trigger Button (Active on <1280px, hidden on xl+) -->
         <button type="button" 
-                onclick="openMobileSearch()" 
-                title="Search" 
+                onclick="openSpotlightModal()" 
+                title="Search (Ctrl+K or /)" 
                 aria-label="Open Search"
                 class="xl:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-900/90 hover:bg-gray-800 border border-gray-700/80 flex items-center justify-center text-gray-300 hover:text-white transition active:scale-95 shadow-sm">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -37,31 +37,30 @@
 
         <!-- Desktop Live Instant Search Bar (Visible on xl+, hidden on <1280px to prevent auth/nav overlap) -->
         <div class="hidden xl:block relative" id="navbar-search-container">
-            <form action="/search/" method="get" class="relative flex items-center">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-                <input type="text"
-                       name="q"
-                       placeholder="Search titles, cast..."
-                       autocomplete="off"
-                       hx-get="/search/suggest/"
-                       hx-trigger="keyup changed delay:250ms, search"
-                       hx-target="#search-results-dropdown"
-                       hx-swap="innerHTML"
-                       hx-indicator="#search-loading-skeleton"
-                       onfocus="document.getElementById('search-results-dropdown').classList.remove('hidden');"
-                       class="bg-gray-900/90 border border-gray-700/80 focus:border-brand-500 rounded-full pl-9 pr-8 py-1.5 2xl:py-2 text-xs 2xl:text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 w-40 2xl:w-52 transition-all duration-300 focus:w-48 2xl:focus:w-64 shadow-inner">
-                <!-- Keyboard Shortcut Hint Badge -->
-                <div class="flex absolute inset-y-0 right-0 pr-3 items-center pointer-events-none">
-                    <span class="text-[10px] text-gray-400 bg-gray-800 border border-gray-700 px-1.5 py-0.5 rounded font-mono font-bold">/</span>
-                </div>
-            </form>
+            <div onclick="openSpotlightModal()" class="cursor-pointer">
+                <form action="/search/" method="get" class="relative flex items-center pointer-events-none">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center">
+                        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input type="text"
+                           name="q"
+                           placeholder="Search titles, cast..."
+                           autocomplete="off"
+                           readonly
+                           hx-get="/search/suggest/"
+                           hx-indicator="#search-loading-skeleton"
+                           class="bg-zinc-900/90 hover:bg-zinc-800/90 border border-white/[0.08] hover:border-white/20 rounded-full pl-9 pr-14 py-1.5 2xl:py-2 text-xs 2xl:text-sm text-white placeholder-zinc-400 focus:outline-none w-44 2xl:w-56 transition-all duration-150 shadow-inner cursor-pointer">
+                    <!-- Keyboard Shortcut Hint Badge -->
+                    <div class="flex absolute inset-y-0 right-0 pr-2.5 items-center">
+                        <span class="text-[10px] text-zinc-400 bg-zinc-950/80 border border-white/10 px-1.5 py-0.5 rounded font-mono font-bold">Ctrl K</span>
+                    </div>
+                </form>
+            </div>
             <!-- Desktop Suggestions Dropdown -->
             <div id="search-results-dropdown" 
-                 class="absolute right-0 top-full mt-2 w-96 max-w-sm z-50">
+                 class="hidden absolute right-0 top-full mt-2 w-96 max-w-sm z-50">
             </div>
             <!-- Desktop Search HTMX Shimmer Skeleton -->
             <div id="search-loading-skeleton"

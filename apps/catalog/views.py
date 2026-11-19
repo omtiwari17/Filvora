@@ -39,10 +39,39 @@ def get_pagination_context(page, total_pages=500):
         'page_numbers': page_numbers,
     }
 
+def parse_selected_genres(request):
+    raw_genres = request.GET.get('genre') or request.GET.get('genres') or ''
+    return [g.strip() for g in raw_genres.replace('|', ',').split(',') if g.strip()]
+
+def build_genre_toggle_url(request, target_gid, current_list):
+    gid_str = str(target_gid)
+    if gid_str in current_list:
+        new_list = [g for g in current_list if g != gid_str]
+    else:
+        new_list = current_list + [gid_str]
+    params = request.GET.copy()
+    if new_list:
+        params['genre'] = ','.join(new_list)
+    else:
+        params.pop('genre', None)
+        params.pop('genres', None)
+    params.pop('page', None)
+    qs = params.urlencode()
+    return f"{request.path}?{qs}" if qs else request.path
+
+def build_clear_genres_url(request):
+    params = request.GET.copy()
+    params.pop('genre', None)
+    params.pop('genres', None)
+    params.pop('page', None)
+    qs = params.urlencode()
+    return f"{request.path}?{qs}" if qs else request.path
+
 def movie_browse(request):
     client = TMDBClient()
     category = request.GET.get('category', 'popular')
-    genre_id = request.GET.get('genre')
+    selected_genres_list = parse_selected_genres(request)
+    genre_param = ','.join(selected_genres_list) if selected_genres_list else None
     explicit_sort = request.GET.get('sort')
     audience = request.GET.get('audience', 'all')
     page = request.GET.get('page', '1')
@@ -57,13 +86,20 @@ def movie_browse(request):
 
     movies = client.get_movies_catalog(
         category=category,
-        genre_id=genre_id,
+        genre_id=genre_param,
         sort_by=sort_by,
         page=page,
         kids_only=kids_mode,
         audience=audience
     )
     genres = client.get_genres_list('movie')
+    for g in genres:
+        gid_str = str(g['id'])
+        g['is_active'] = gid_str in selected_genres_list
+        g['toggle_url'] = build_genre_toggle_url(request, g['id'], selected_genres_list)
+
+    active_genres_info = [g for g in genres if g.get('is_active')]
+    clear_genres_url = build_clear_genres_url(request)
 
     user_saved_ids = set()
     if request.user.is_authenticated:
@@ -76,8 +112,11 @@ def movie_browse(request):
     response = render(request, 'catalog/movie_browse.html', {
         'movies': movies,
         'genres': genres,
+        'active_genres_info': active_genres_info,
         'selected_category': category,
-        'selected_genre': genre_id,
+        'selected_genre': genre_param,
+        'selected_genres': selected_genres_list,
+        'clear_genres_url': clear_genres_url,
         'selected_sort': sort_by,
         'selected_audience': audience,
         'pagination': pagination,
@@ -216,7 +255,8 @@ def movie_detail(request, tmdb_id):
 def series_browse(request):
     client = TMDBClient()
     category = request.GET.get('category', 'popular')
-    genre_id = request.GET.get('genre')
+    selected_genres_list = parse_selected_genres(request)
+    genre_param = ','.join(selected_genres_list) if selected_genres_list else None
     explicit_sort = request.GET.get('sort')
     audience = request.GET.get('audience', 'all')
     page = request.GET.get('page', '1')
@@ -231,13 +271,20 @@ def series_browse(request):
 
     series_list = client.get_series_catalog(
         category=category,
-        genre_id=genre_id,
+        genre_id=genre_param,
         sort_by=sort_by,
         page=page,
         kids_only=kids_mode,
         audience=audience
     )
     genres = client.get_genres_list('tv')
+    for g in genres:
+        gid_str = str(g['id'])
+        g['is_active'] = gid_str in selected_genres_list
+        g['toggle_url'] = build_genre_toggle_url(request, g['id'], selected_genres_list)
+
+    active_genres_info = [g for g in genres if g.get('is_active')]
+    clear_genres_url = build_clear_genres_url(request)
 
     user_saved_ids = set()
     if request.user.is_authenticated:
@@ -250,8 +297,11 @@ def series_browse(request):
     response = render(request, 'catalog/series_browse.html', {
         'series_list': series_list,
         'genres': genres,
+        'active_genres_info': active_genres_info,
         'selected_category': category,
-        'selected_genre': genre_id,
+        'selected_genre': genre_param,
+        'selected_genres': selected_genres_list,
+        'clear_genres_url': clear_genres_url,
         'selected_sort': sort_by,
         'selected_audience': audience,
         'pagination': pagination,
