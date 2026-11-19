@@ -215,12 +215,65 @@
             z-index: 2147483647 !important;
             position: fixed !important;
         }
+        /* Phase 3: Ambient Glow / Cinema Canvas & Keyboard HUD */
+        #ambient-cinema-canvas {
+            will-change: opacity, transform;
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .ambient-glow-disabled #ambient-cinema-canvas {
+            display: none !important;
+            opacity: 0 !important;
+        }
+        .is-fullscreen #ambient-cinema-canvas,
+        :fullscreen #ambient-cinema-canvas,
+        :-webkit-full-screen #ambient-cinema-canvas,
+        :-moz-full-screen #ambient-cinema-canvas,
+        :-ms-fullscreen #ambient-cinema-canvas {
+            display: none !important;
+            opacity: 0 !important;
+        }
+        .theater-mode-active #ambient-cinema-canvas {
+            opacity: 0.95 !important;
+        }
+        #player-keyboard-hud {
+            transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            will-change: opacity, transform;
+        }
+        .is-fullscreen #player-keyboard-hud,
+        :fullscreen #player-keyboard-hud,
+        :-webkit-full-screen #player-keyboard-hud,
+        :-moz-full-screen #player-keyboard-hud,
+        :-ms-fullscreen #player-keyboard-hud {
+            z-index: 2147483646 !important;
+            position: fixed !important;
+        }
         @media (prefers-reduced-motion: reduce) {
             .skeleton-shimmer { animation: none !important; }
+            #ambient-cinema-canvas { transition: none !important; }
+            #ambient-glow-backdrop { transition: none !important; }
         }
     </style>
 </head>
 <body id="player-wrapper" class="bg-black text-white h-[100dvh] w-screen overflow-hidden select-none relative">
+    <!-- Phase 3: Ambient Cinema Canvas (Ambilight Halo Projection) -->
+    <div id="ambient-cinema-canvas" class="pointer-events-none fixed inset-0 z-0 overflow-hidden select-none transition-opacity duration-700 ease-out opacity-75">
+        {% if media.backdrop_path %}
+        <img id="ambient-glow-backdrop" 
+             src="https://image.tmdb.org/t/p/w780{{ media.backdrop_path }}" 
+             alt="" 
+             aria-hidden="true" 
+             class="w-full h-full object-cover scale-125 blur-3xl opacity-25 transform-gpu transition-opacity duration-700">
+        {% elif media.poster_path %}
+        <img id="ambient-glow-backdrop" 
+             src="https://image.tmdb.org/t/p/w500{{ media.poster_path }}" 
+             alt="" 
+             aria-hidden="true" 
+             class="w-full h-full object-cover scale-125 blur-3xl opacity-25 transform-gpu transition-opacity duration-700">
+        {% endif %}
+        <!-- Ambient Radial Vignette -->
+        <div class="absolute inset-0 bg-radial from-transparent via-black/50 to-black pointer-events-none"></div>
+    </div>
+
     <!-- Theater Mode Ambient Velvet Curtain Backdrop -->
     <div id="theater-curtain" onclick="toggleTheaterMode()" title="Click to Exit Theater Mode" class="fixed inset-0 bg-black z-40 opacity-0 pointer-events-none transition-opacity duration-500 cursor-pointer"></div>
 
@@ -480,6 +533,18 @@
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                 </svg>
+            </button>
+
+            <!-- Ambient Ambilight Glow Toggle (Desktop only) -->
+            <button type="button"
+                    id="ambient-glow-btn"
+                    onclick="toggleAmbientGlow()" 
+                    title="Toggle Ambient Canvas Glow (Alt + A)" 
+                    class="hidden xl:inline-flex bg-gray-900/90 hover:bg-gray-800 text-white px-3 py-2 rounded-xl font-bold transition backdrop-blur-xl text-xs border border-gray-700/80 items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 cursor-pointer group">
+                <svg class="h-4 w-4 text-purple-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Glow</span>
             </button>
 
             <!-- Theater Mode Dimming Toggle (Desktop only) -->
@@ -758,6 +823,20 @@
                     {% endfor %}
                 </div>
             </div>
+
+            <!-- Ambient Experience Toggle (Phase 3) -->
+            <div class="pt-2 border-t border-gray-800/80 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                    <span class="text-xs font-bold text-zinc-300">Ambient Glow</span>
+                </div>
+                <button type="button" 
+                        onclick="toggleAmbientGlow()" 
+                        id="mobile-ambient-toggle-btn"
+                        class="text-[10px] font-mono font-black text-purple-300 bg-purple-950/80 border border-purple-500/40 px-2.5 py-1 rounded-lg transition active:scale-95 cursor-pointer">
+                    Toggle Glow
+                </button>
+            </div>
         </div>
     </div>
 
@@ -980,6 +1059,24 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z" />
         </svg>
         <span class="text-[11px] font-black mt-1">+10s</span>
+    </div>
+
+    <!-- Floating Cinema Keyboard HUD (Phase 3: 2-Second Dwell Indicator) -->
+    <div id="player-keyboard-hud" 
+         class="fixed bottom-6 right-6 z-[2147483646] hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-950/92 border border-white/[0.08] text-zinc-300 text-[11px] font-mono shadow-2xl backdrop-blur-2xl pointer-events-none transition-all duration-300 transform opacity-0 translate-y-2 select-none">
+        <span class="flex items-center gap-1"><kbd class="px-1.5 py-0.5 rounded bg-white/10 text-white font-bold font-mono text-[10px] border border-white/10">Space</kbd> <span>Play</span></span>
+        <span class="text-zinc-600 font-sans">•</span>
+        <span class="flex items-center gap-1"><kbd class="px-1.5 py-0.5 rounded bg-white/10 text-white font-bold font-mono text-[10px] border border-white/10">F</kbd> <span>Cinema</span></span>
+        <span class="text-zinc-600 font-sans">•</span>
+        <span class="flex items-center gap-1"><kbd class="px-1.5 py-0.5 rounded bg-white/10 text-white font-bold font-mono text-[10px] border border-white/10">M</kbd> <span>Mute</span></span>
+        <span class="text-zinc-600 font-sans">•</span>
+        <span class="flex items-center gap-1"><kbd class="px-1.5 py-0.5 rounded bg-white/10 text-white font-bold font-mono text-[10px] border border-white/10">←/→</kbd> <span>10s</span></span>
+        <span class="text-zinc-600 font-sans">•</span>
+        <span class="flex items-center gap-1"><kbd class="px-1.5 py-0.5 rounded bg-white/10 text-white font-bold font-mono text-[10px] border border-white/10">T</kbd> <span>Theater</span></span>
+        {% if media_type == 'tv' %}
+        <span class="text-zinc-600 font-sans">•</span>
+        <span class="flex items-center gap-1"><kbd class="px-1.5 py-0.5 rounded bg-white/10 text-white font-bold font-mono text-[10px] border border-white/10">E</kbd> <span>Episodes</span></span>
+        {% endif %}
     </div>
 
     <!-- Automatic Server Failover HUD (Appears when a server is unresponsive, stalled, or errors) -->
@@ -2174,6 +2271,35 @@
         }
 
         // ==========================================
+        // Phase 3: Ambient Cinema Canvas (Ambilight Engine)
+        // ==========================================
+        function initAmbientGlow() {
+            const saved = localStorage.getItem('filvora_ambient_glow');
+            const btn = document.getElementById('ambient-glow-btn');
+            if (saved === 'false') {
+                document.body.classList.add('ambient-glow-disabled');
+                if (btn) btn.classList.add('opacity-40');
+            } else {
+                document.body.classList.remove('ambient-glow-disabled');
+                if (btn) btn.classList.remove('opacity-40');
+            }
+        }
+
+        function toggleAmbientGlow() {
+            const isDisabled = document.body.classList.toggle('ambient-glow-disabled');
+            localStorage.setItem('filvora_ambient_glow', (!isDisabled).toString());
+            const btn = document.getElementById('ambient-glow-btn');
+            if (btn) {
+                if (isDisabled) btn.classList.add('opacity-40');
+                else btn.classList.remove('opacity-40');
+            }
+            const label = isDisabled ? 'Ambient Canvas Glow Disabled' : 'Ambient Canvas Glow Enabled';
+            if (typeof showToast === 'function') {
+                showToast(label, 'info');
+            }
+        }
+
+        // ==========================================
         // Picture-in-Picture (PiP) Engine (Zero-Reload Floating Mini-Player)
         // ==========================================
         let isPipActive = false;
@@ -2384,6 +2510,23 @@
             return false;
         }
 
+        // ==========================================
+        // Phase 3: Floating Cinema Keyboard HUD Engine
+        // ==========================================
+        function showKeyboardHud() {
+            const hud = document.getElementById('player-keyboard-hud');
+            if (!hud || window.innerWidth < 640) return;
+            hud.classList.remove('opacity-0', 'translate-y-2');
+            hud.classList.add('opacity-100', 'translate-y-0');
+        }
+
+        function hideKeyboardHud() {
+            const hud = document.getElementById('player-keyboard-hud');
+            if (!hud) return;
+            hud.classList.remove('opacity-100', 'translate-y-0');
+            hud.classList.add('opacity-0', 'translate-y-2');
+        }
+
         function showOverlay() {
             const overlay = document.getElementById('player-overlay');
             const wrapper = document.getElementById('player-wrapper');
@@ -2395,6 +2538,7 @@
             if (wrapper) {
                 wrapper.classList.remove('hide-cursor');
             }
+            showKeyboardHud();
             clearTimeout(hideTimeout);
             if (!isInteractiveMenuOpen()) {
                 scheduleHide(2000);
@@ -2413,6 +2557,7 @@
             if (wrapper) {
                 wrapper.classList.add('hide-cursor');
             }
+            hideKeyboardHud();
         }
 
         function scheduleHide(ms = 2000) {
@@ -2439,6 +2584,11 @@
 
             // Initialize Automatic Server Failover & Watchdog Engine
             initServerWatchdog();
+
+            // Phase 3: Initialize Ambient Cinema Canvas & Floating Keyboard HUD
+            initAmbientGlow();
+            showKeyboardHud();
+            setTimeout(hideKeyboardHud, 2500);
 
             // Top sensor hover triggers: smooth reveal when cursor moves to top edge
             if (topSensor) {
@@ -2832,6 +2982,28 @@
                     e.preventDefault();
                     if (nextServerId) {
                         switchServer(nextServerId, false);
+                    }
+                    return;
+                }
+
+                // Phase 3: Alt + A Shortcut to toggle Ambient Canvas Glow
+                if (e.altKey && key === 'a') {
+                    e.preventDefault();
+                    toggleAmbientGlow();
+                    return;
+                }
+
+                // Phase 3: '?' shortcut to toggle floating keyboard shortcuts HUD
+                if (key === '?' || (e.shiftKey && (e.key === '?' || e.key === '/'))) {
+                    e.preventDefault();
+                    const hud = document.getElementById('player-keyboard-hud');
+                    if (hud) {
+                        if (hud.classList.contains('opacity-100')) {
+                            hideKeyboardHud();
+                        } else {
+                            showKeyboardHud();
+                            setTimeout(hideKeyboardHud, 3500);
+                        }
                     }
                     return;
                 }

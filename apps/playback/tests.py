@@ -389,6 +389,74 @@ class PlaybackTestCase(TestCase):
         self.assertIn('hx-post="/library/toggle/"', html_auth)
         self.assertIn('openBookmarkModal()', html_auth)
 
+    def test_ambient_cinema_canvas_and_keyboard_hud(self):
+        """Verifies Phase 3 Ambient Cinema Canvas (Ambilight) and Floating Keyboard HUD."""
+        self.client.login(username='playbackuser', password='password123')
+
+        # 1. Movie playback view contains ambient canvas and keyboard HUD
+        res_movie = self.client.get('/watch/movie/157336/')
+        self.assertEqual(res_movie.status_code, 200)
+        html_movie = res_movie.content.decode('utf-8')
+        self.assertIn('id="ambient-cinema-canvas"', html_movie)
+        self.assertIn('id="ambient-glow-backdrop"', html_movie)
+        self.assertIn('id="player-keyboard-hud"', html_movie)
+        self.assertIn('toggleAmbientGlow', html_movie)
+        self.assertIn('showKeyboardHud', html_movie)
+        self.assertIn(':fullscreen #ambient-cinema-canvas', html_movie)
+        self.assertIn('.ambient-glow-disabled #ambient-cinema-canvas', html_movie)
+
+        # 2. TV series playback view also renders ambient canvas and keyboard HUD with episode shortcut
+        res_tv = self.client.get('/watch/tv/1399/1/1/')
+        self.assertEqual(res_tv.status_code, 200)
+        html_tv = res_tv.content.decode('utf-8')
+        self.assertIn('id="ambient-cinema-canvas"', html_tv)
+        self.assertIn('id="player-keyboard-hud"', html_tv)
+        self.assertIn('Episodes', html_tv)
+
+    def test_episode_drawer_watch_progress_and_seen_badges(self):
+        """Verifies Phase 3 episode drawer reflects completed Seen badges and in-progress remaining time."""
+        self.client.login(username='playbackuser', password='password123')
+        profile = self.user.profiles.first()
+
+        # Episode 1 is completed (Seen)
+        WatchProgress.objects.create(
+            user=self.user,
+            profile=profile,
+            tmdb_id=1399,
+            media_type='tv',
+            season=1,
+            episode=1,
+            completed=True,
+            position_seconds=3600,
+            duration_seconds=3600
+        )
+        # Episode 2 is partially watched (in-progress)
+        WatchProgress.objects.create(
+            user=self.user,
+            profile=profile,
+            tmdb_id=1399,
+            media_type='tv',
+            season=1,
+            episode=2,
+            completed=False,
+            position_seconds=1200,
+            duration_seconds=3600
+        )
+
+        # 1. Initial watch view episode drawer contains Seen and progress indicators
+        res_tv = self.client.get('/watch/tv/1399/1/2/?server=vidlink')
+        self.assertEqual(res_tv.status_code, 200)
+        html_tv = res_tv.content.decode('utf-8')
+        self.assertIn('Seen', html_tv)
+        self.assertIn('data-episode-number="1"', html_tv)
+
+        # 2. HTMX partial endpoint returns episodes with Seen badge on ep 1 and progress line on ep 2
+        res_partial = self.client.get('/watch/tv/1399/episodes/1/?server=vidlink&active_season=1&active_episode=2')
+        self.assertEqual(res_partial.status_code, 200)
+        html_partial = res_partial.content.decode('utf-8')
+        self.assertIn('Seen', html_partial)
+        self.assertIn('40m left', html_partial)
+
 
 
 

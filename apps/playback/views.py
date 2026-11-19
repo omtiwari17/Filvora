@@ -40,6 +40,78 @@ def _slice_drawer_episodes(episodes_list: list, current_ep: int, window_size: in
     return episodes_list[start:end]
 
 
+def _attach_episode_watch_progress(request, tmdb_id, season, drawer_episodes):
+    """Attaches seen status, progress percentage, and remaining time to drawer episode items."""
+    if not drawer_episodes:
+        return drawer_episodes or []
+
+    progress_by_ep = {}
+    try:
+        t_id = int(tmdb_id)
+        s_id = int(season)
+    except (ValueError, TypeError):
+        return drawer_episodes
+
+    if request.user.is_authenticated:
+        from apps.accounts.utils import get_active_profile
+        profile = get_active_profile(request)
+        records = WatchProgress.objects.filter(
+            user=request.user,
+            profile=profile,
+            tmdb_id=t_id,
+            media_type='tv',
+            season=s_id
+        ).only('episode', 'position_seconds', 'duration_seconds', 'completed')
+        for r in records:
+            if r.episode is not None:
+                progress_by_ep[r.episode] = {
+                    'completed': r.completed,
+                    'position_seconds': r.position_seconds,
+                    'duration_seconds': r.duration_seconds,
+                    'pct': r.progress_percentage
+                }
+    else:
+        from apps.watch.guest_session import GUEST_PROGRESS_SESSION_KEY
+        guest_dict = request.session.get(GUEST_PROGRESS_SESSION_KEY, {})
+        if isinstance(guest_dict, dict):
+            for entry in guest_dict.values():
+                if isinstance(entry, dict) and entry.get('media_type') == 'tv':
+                    try:
+                        g_tmdb = int(entry.get('tmdb_id'))
+                        g_season = int(entry.get('season') or 0)
+                        g_ep = int(entry.get('episode') or 0)
+                    except (ValueError, TypeError):
+                        continue
+                    if g_tmdb == t_id and g_season == s_id and g_ep:
+                        pos = float(entry.get('position_seconds') or 0)
+                        dur = float(entry.get('duration_seconds') or 0)
+                        pct = (pos / dur * 100) if dur > 0 else 0
+                        progress_by_ep[g_ep] = {
+                            'completed': bool(entry.get('completed')),
+                            'position_seconds': pos,
+                            'duration_seconds': dur,
+                            'pct': min(100, max(0, round(pct, 1)))
+                        }
+
+    enhanced_episodes = []
+    for ep in drawer_episodes:
+        ep_copy = dict(ep)
+        ep_num = ep_copy.get('episode_number')
+        prog = progress_by_ep.get(ep_num)
+        if prog:
+            if prog['completed']:
+                ep_copy['is_seen'] = True
+            elif prog['position_seconds'] >= 15:
+                ep_copy['has_progress'] = True
+                ep_copy['progress_pct'] = prog['pct']
+                if prog['duration_seconds'] > prog['position_seconds']:
+                    rem_mins = max(1, round((prog['duration_seconds'] - prog['position_seconds']) / 60))
+                    ep_copy['remaining_str'] = f"{rem_mins}m left"
+        enhanced_episodes.append(ep_copy)
+
+    return enhanced_episodes
+
+
 @ensure_csrf_cookie
 def watch(request, media_type, tmdb_id, season=None, episode=None):
     try:
@@ -116,6 +188,7 @@ def watch(request, media_type, tmdb_id, season=None, episode=None):
             total_s = media.get('number_of_seasons') or max(1, s_num or 1)
             drawer_seasons = [{'season_number': i, 'name': f'Season {i}'} for i in range(1, total_s + 1)]
         drawer_episodes = _slice_drawer_episodes(episodes_in_season, ep_num or 1)
+        drawer_episodes = _attach_episode_watch_progress(request, tmdb_id, s_num or 1, drawer_episodes)
 
         next_ep_title = ""
         next_ep_still = ""
@@ -255,6 +328,7 @@ def player_episodes(request, tmdb_id, season):
     current_server = request.GET.get('server', '')
     target_ep = active_episode if active_season == season else 1
     drawer_episodes = _slice_drawer_episodes(episodes_list, target_ep)
+    drawer_episodes = _attach_episode_watch_progress(request, tmdb_id, season, drawer_episodes)
     return render(request, 'playback/partials/drawer_episodes.html', {
         'tmdb_id': tmdb_id,
         'drawer_active_season': season,
