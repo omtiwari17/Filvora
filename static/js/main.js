@@ -27,6 +27,19 @@ function initPosterFadeIn(root = document) {
 document.addEventListener('htmx:afterSwap', (e) => {
     if (e.target) initPosterFadeIn(e.target);
     initCatalogView();
+    const targetId = (e.detail && e.detail.target && e.detail.target.id) || (e.target && e.target.id);
+    if (targetId === 'spotlight-results') {
+        const items = Array.from(document.querySelectorAll('#spotlight-results .spotlight-item'));
+        if (items.length > 0) {
+            __spotlightSelectedIndex = 0;
+            updateSpotlightSelection(items, 0);
+            const statusText = document.getElementById('spotlight-status-text');
+            if (statusText) statusText.textContent = `${items.length} titles found`;
+        } else {
+            __spotlightSelectedIndex = -1;
+            resetSpotlightPreview();
+        }
+    }
 });
 
 // --- Navbar & Navigation ---
@@ -78,6 +91,7 @@ window.triggerHaptic = triggerHaptic;
 
 // --- Phase 2: Command-K Spotlight Omnibar Engine ---
 let __spotlightSelectedIndex = -1;
+let __spotlightDefaultViewHtml = null;
 
 function getRecentSearches() {
     try {
@@ -151,15 +165,176 @@ function renderRecentSearches() {
     `).join('');
 }
 
+function resetSpotlightPreview() {
+    const pane = document.getElementById('spotlight-preview-content');
+    if (!pane) return;
+    pane.innerHTML = `
+        <div class="h-full flex flex-col justify-between p-3 text-center rounded-xl bg-zinc-900/40 border border-white/[0.04]">
+            <div class="space-y-3 pt-6">
+                <div class="w-12 h-12 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center mx-auto text-brand-500 shadow-lg shadow-brand-500/20">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-sm font-bold text-zinc-100">Filvora Omni-Search</h3>
+                <p class="text-xs text-zinc-400 leading-relaxed max-w-xs mx-auto">
+                    Search thousands of blockbusters, TV series, actors, and directors with live instant keyboard preview.
+                </p>
+            </div>
+            <div class="space-y-1.5 pb-2 pt-6 border-t border-white/[0.04]">
+                <div class="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Keyboard Pro Tip</div>
+                <p class="text-[11px] text-zinc-400">
+                    Press <kbd class="px-1.5 py-0.5 rounded bg-zinc-800 border border-white/10 text-zinc-300 font-mono text-[10px]">⇧ ↵</kbd> on any title to start streaming immediately.
+                </p>
+            </div>
+        </div>
+    `;
+    const statusText = document.getElementById('spotlight-status-text');
+    if (statusText) statusText.textContent = 'Filvora Spotlight';
+}
+
+function updateSpotlightPreview(itemEl) {
+    const pane = document.getElementById('spotlight-preview-content');
+    if (!pane || !itemEl || !itemEl.dataset) return;
+
+    const title = itemEl.dataset.title || '';
+    const type = itemEl.dataset.type || '';
+    const year = itemEl.dataset.year || '';
+    const rating = itemEl.dataset.rating || '';
+    const cert = itemEl.dataset.cert || '';
+    const poster = itemEl.dataset.poster || '';
+    const backdrop = itemEl.dataset.backdrop || '';
+    const overview = itemEl.dataset.overview || '';
+    const url = itemEl.dataset.url || '#';
+    const watchUrl = itemEl.dataset.watchUrl || '';
+    const knownFor = itemEl.dataset.knownFor || '';
+
+    if (type === 'person') {
+        pane.innerHTML = `
+            <div class="h-full flex flex-col justify-between space-y-4">
+                <div class="space-y-4 text-center pt-4">
+                    <div class="w-24 h-24 rounded-full overflow-hidden bg-zinc-900 ring-2 ring-white/10 mx-auto shadow-xl">
+                        ${poster ? `<img src="${poster}" alt="${title}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-zinc-600 bg-zinc-900"><svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></div>`}
+                    </div>
+                    <div>
+                        <span class="inline-block px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono uppercase tracking-wider mb-1.5">Cast & Crew</span>
+                        <h3 class="text-base font-bold text-white">${title}</h3>
+                        ${knownFor ? `<p class="text-xs text-zinc-400 font-mono mt-1">${knownFor}</p>` : ''}
+                    </div>
+                </div>
+                <div class="pt-4 border-t border-white/[0.06]">
+                    <a href="${url}" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-white border border-white/10 transition shadow-sm">
+                        <span>View Filmography</span>
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </a>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    // Movies and Series
+    const heroBg = backdrop || poster;
+    pane.innerHTML = `
+        <div class="h-full flex flex-col justify-between space-y-3">
+            <div class="space-y-3">
+                <!-- Hero Artwork Header -->
+                <div class="relative w-full h-32 rounded-xl overflow-hidden bg-zinc-900 ring-1 ring-white/10 shadow-lg">
+                    ${heroBg ? `<img src="${heroBg}" alt="${title}" class="w-full h-full object-cover scale-105 filter blur-[0.5px] opacity-80">` : `<div class="w-full h-full bg-gradient-to-t from-zinc-900 to-zinc-800"></div>`}
+                    <div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent"></div>
+                    <div class="absolute bottom-2 left-3 right-3 flex items-end gap-2.5">
+                        ${poster ? `
+                            <div class="w-10 h-14 rounded-md overflow-hidden bg-zinc-900 ring-1 ring-white/20 shadow-md shrink-0">
+                                <img src="${poster}" alt="${title}" class="w-full h-full object-cover">
+                            </div>
+                        ` : ''}
+                        <div class="min-w-0 flex-1">
+                            <span class="inline-block px-1.5 py-0.2 rounded bg-black/60 border border-white/20 text-[9px] font-mono uppercase tracking-wider text-zinc-300 mb-0.5">
+                                ${type === 'series' ? 'TV Series' : 'Movie'}
+                            </span>
+                            <h3 class="text-sm font-bold text-white truncate leading-tight">${title}</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Meta Badges -->
+                <div class="flex items-center gap-1.5 flex-wrap text-xs">
+                    ${year ? `<span class="px-2 py-0.5 rounded-md bg-zinc-800/80 border border-white/10 text-zinc-300 font-mono text-[11px]">${year}</span>` : ''}
+                    ${rating ? `
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-300 font-mono font-bold text-[11px]">
+                            <svg class="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                            <span>${rating}</span>
+                        </span>
+                    ` : ''}
+                    ${cert ? `<span class="px-1.5 py-0.5 rounded-md bg-zinc-800/80 border border-white/10 text-zinc-300 font-mono text-[11px]">${cert}</span>` : ''}
+                </div>
+
+                <!-- Storyline Synopsis -->
+                ${overview ? `
+                    <div class="space-y-1">
+                        <span class="text-[10px] font-mono uppercase tracking-wider text-zinc-500 font-semibold">Storyline</span>
+                        <p class="text-xs text-zinc-300/90 leading-relaxed line-clamp-4 font-normal">${overview}</p>
+                    </div>
+                ` : ''}
+            </div>
+
+            <!-- Primary Actions CTAs -->
+            <div class="pt-3 border-t border-white/[0.06] space-y-2">
+                ${watchUrl ? `
+                    <a href="${watchUrl}" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-xs shadow-lg shadow-brand-500/25 transition active:scale-[0.98]">
+                        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <span>Stream Now</span>
+                        <kbd class="text-[9px] bg-red-800/60 text-white px-1 py-0.2 rounded font-sans ml-1">↵</kbd>
+                    </a>
+                ` : ''}
+                <a href="${url}" class="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-zinc-800/70 hover:bg-zinc-700 text-xs text-zinc-300 hover:text-white border border-white/10 transition">
+                    <span>View Full Details</span>
+                    <svg class="w-3 h-3 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+        </div>
+    `;
+}
+
+function updateSpotlightSelection(items, newIndex) {
+    items.forEach((item, idx) => {
+        if (idx === newIndex) {
+            item.classList.add('spotlight-active');
+            item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            updateSpotlightPreview(item);
+        } else {
+            item.classList.remove('spotlight-active');
+        }
+    });
+    const statusText = document.getElementById('spotlight-status-text');
+    if (statusText && newIndex >= 0 && items[newIndex]) {
+        statusText.textContent = `Result ${newIndex + 1} of ${items.length}`;
+    }
+}
+
+function onSpotlightItemHover(itemEl) {
+    const items = Array.from(document.querySelectorAll('#spotlight-results .spotlight-item'));
+    const idx = items.indexOf(itemEl);
+    if (idx !== -1) {
+        __spotlightSelectedIndex = idx;
+        updateSpotlightSelection(items, idx);
+    }
+}
+
 function openSpotlightModal() {
     triggerHaptic(10);
     const modal = document.getElementById('spotlight-modal');
     const input = document.getElementById('spotlight-input');
+    const defaultView = document.getElementById('spotlight-default-view');
     if (!modal) return;
     modal.classList.remove('hidden');
     document.body.classList.add('overflow-hidden');
     __spotlightSelectedIndex = -1;
+    if (defaultView && !__spotlightDefaultViewHtml) {
+        __spotlightDefaultViewHtml = defaultView.outerHTML;
+    }
     renderRecentSearches();
+    resetSpotlightPreview();
     if (input) {
         setTimeout(() => {
             input.focus();
@@ -186,21 +361,12 @@ function clearSpotlightInput() {
         input.focus();
     }
     if (clearBtn) clearBtn.classList.add('hidden');
-    if (results) {
+    if (results && __spotlightDefaultViewHtml) {
+        results.innerHTML = __spotlightDefaultViewHtml;
         renderRecentSearches();
     }
+    resetSpotlightPreview();
     __spotlightSelectedIndex = -1;
-}
-
-function updateSpotlightSelection(items, newIndex) {
-    items.forEach((item, idx) => {
-        if (idx === newIndex) {
-            item.classList.add('spotlight-active');
-            item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        } else {
-            item.classList.remove('spotlight-active');
-        }
-    });
 }
 
 window.openSpotlightModal = openSpotlightModal;
@@ -210,6 +376,8 @@ window.saveRecentSearch = saveRecentSearch;
 window.removeRecentSearch = removeRecentSearch;
 window.clearAllRecentSearches = clearAllRecentSearches;
 window.selectRecentSearch = selectRecentSearch;
+window.onSpotlightItemHover = onSpotlightItemHover;
+
 
 // --- Mobile Dedicated Search ---
 function openMobileSearch() {
