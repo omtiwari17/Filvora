@@ -48,13 +48,26 @@ while true; do
         sshd 2>/dev/null
     fi
 
-    # 2. Filvora (Port 8000)
-    if ! pgrep -f "runserver.*8000" > /dev/null; then
-        echo "[\$(date)] Filvora (8000) down. Restarting..." >> ~/filvora.log
+    # 2. Filvora (Port 8000) - Production Gunicorn with --noreload fallback
+    if ! pgrep -f "gunicorn.*8000" > /dev/null && ! pgrep -f "runserver.*8000" > /dev/null; then
+        echo "[$(date)] Filvora (8000) down. Restarting..." >> ~/filvora.log
+        pkill -9 -f "gunicorn.*8000" 2>/dev/null
         pkill -9 -f "runserver.*8000" 2>/dev/null
         sleep 1
-        if [ -d "\$HOME/Filvora" ]; then
-            cd "\$HOME/Filvora" && nohup python manage.py runserver 0.0.0.0:8000 >> ~/filvora.log 2>&1 < /dev/null &
+        if [ -d "$HOME/Filvora" ]; then
+            cd "$HOME/Filvora"
+            if command -v gunicorn > /dev/null 2>&1; then
+                nohup gunicorn config.wsgi:application \
+                    --bind 0.0.0.0:8000 \
+                    --workers 2 \
+                    --threads 4 \
+                    --max-requests 1000 \
+                    --max-requests-jitter 100 \
+                    --timeout 30 \
+                    --log-file ~/filvora.log >> ~/filvora.log 2>&1 < /dev/null &
+            else
+                nohup python manage.py runserver 0.0.0.0:8000 --noreload >> ~/filvora.log 2>&1 < /dev/null &
+            fi
         fi
         sleep 2
     fi

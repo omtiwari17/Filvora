@@ -22,6 +22,8 @@ backups/
 # Media & Temporary Downloads & Cache
 media/
 .cache/
+staticfiles/
+*.log
 
 # VSCode / IDEs
 .vscode/

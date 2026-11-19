@@ -2613,6 +2613,18 @@
                     navigator.sendBeacon('/progress/save/', blob);
                 }
 
+                try {
+                    localStorage.setItem('filvora_last_stream', JSON.stringify({
+                        tmdb_id: tmdbId,
+                        media_type: mediaType,
+                        position: Math.round(currentSecs),
+                        duration: Math.round(totalSecs || 7200),
+                        season: seasonNum,
+                        episode: episodeNum,
+                        timestamp: Date.now()
+                    }));
+                } catch (e) {}
+
                 if (currentSecs >= 15 && !successRecorded) {
                     successRecorded = true;
                     const serverPayload = JSON.stringify({

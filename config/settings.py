@@ -92,6 +92,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -132,7 +133,13 @@ DATABASES = {
 if DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
     DATABASES['default']['OPTIONS'] = {
         'timeout': 30,  # 30s busy timeout to prevent "database table is locked"
-        'init_command': 'PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;',
+        'init_command': (
+            'PRAGMA journal_mode=WAL; '
+            'PRAGMA synchronous=NORMAL; '
+            'PRAGMA mmap_size=134217728; '  # 128 MB memory-mapped I/O
+            'PRAGMA cache_size=-8000; '     # 8 MB RAM page cache
+            'PRAGMA temp_store=MEMORY;'     # Temp tables and sorts in RAM, not flash
+        ),
     }
 
 # Persistent File-Based Cache for TMDB API payloads and computed affinity profiles
@@ -170,13 +177,62 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+os.makedirs(STATIC_ROOT, exist_ok=True)
+
+# WhiteNoise Compressed Static Asset Storage with immutable far-future caching
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_USE_FINDERS = True       # Serves assets smoothly without mandatory upfront build
+WHITENOISE_MANIFEST_STRICT = False  # Graceful fallback for dynamically named assets
+WHITENOISE_MAX_AGE = 31536000       # 1 year immutable cache headers for fingerprinted assets
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Bounded 5MB Log Rotation (Prevents internal phone flash storage from bloating)
+LOG_FILE_PATH = os.getenv('FILVORA_LOG_PATH') or str(BASE_DIR / 'filvora.log')
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+        },
+        'rotating_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_FILE_PATH,
+            'maxBytes': 5 * 1024 * 1024,  # 5 MB maximum
+            'backupCount': 2,             # 2 rotated backups (15 MB total disk cap)
+            'formatter': 'standard',
+            'encoding': 'utf-8',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'rotating_file'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django.server': {
+            'handlers': ['rotating_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
 
 # Session & Authentication Persistence (Long-Lived Netflix-Style Sessions)
 LOGIN_URL = '/accounts/login/'

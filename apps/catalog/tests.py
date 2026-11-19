@@ -442,6 +442,20 @@ class CatalogViewsTestCase(TestCase):
         self.assertIn('Avengers Endgame: Encore', html_live_watch)
         self.assertIn('/watch/movie/299534/', html_live_watch)
 
+    def test_guest_catalog_cache_control_headers(self):
+        """Verifies unauthenticated guest requests to catalog browse views receive public Cache-Control headers."""
+        res_movies = self.client.get('/movies/')
+        self.assertEqual(res_movies.status_code, 200)
+        self.assertIn('Cache-Control', res_movies.headers)
+        self.assertIn('public', res_movies.headers['Cache-Control'])
+        self.assertIn('max-age=180', res_movies.headers['Cache-Control'])
+
+        res_series = self.client.get('/series/')
+        self.assertEqual(res_series.status_code, 200)
+        self.assertIn('Cache-Control', res_series.headers)
+        self.assertIn('public', res_series.headers['Cache-Control'])
+
+
 
 
 

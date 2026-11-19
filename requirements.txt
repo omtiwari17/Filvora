@@ -1,0 +1,15 @@
+# Filvora Production & Development Dependencies
+Django>=5.2,<6.0
+dj-database-url>=3.1.2
+python-dotenv>=1.2.0
+requests>=2.32.0
+curl-cffi>=0.16.0
+Pillow>=10.0.0
+PyNaCl>=1.5.0
+bcrypt>=4.0.0
+paramiko>=3.4.0
+whitenoise>=6.8.0
+yt-dlp>=2024.0.0
+
+# Linux / Android (Termux) Production WSGI Server
+gunicorn>=23.0.0; sys_platform != 'win32'

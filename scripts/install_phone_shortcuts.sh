@@ -20,8 +20,9 @@ IP=$(ip addr show wlan0 2>/dev/null | grep 'inet ' | awk '{print $2}' | cut -d/ 
 IP="${IP:-192.168.1.50}"
 
 # Filvora (Port 8000)
-if pgrep -f "runserver.*8000" > /dev/null || (pgrep -f "Filvora.*manage.py" > /dev/null && pgrep -f "8000" > /dev/null); then
-    PID=$(pgrep -f "8000" | head -n 1)
+if pgrep -f "gunicorn.*8000" > /dev/null || pgrep -f "runserver.*8000" > /dev/null || (pgrep -f "Filvora.*manage.py" > /dev/null && pgrep -f "8000" > /dev/null); then
+    PID=$(pgrep -f "gunicorn.*8000" | head -n 1)
+    [ -z "$PID" ] && PID=$(pgrep -f "8000" | head -n 1)
     echo " [FILVORA (8000)]   : ✅ RUNNING (PID: $PID)"
     echo "   Local URL        : http://$IP:8000/"
 elif pgrep -f "manage.py runserver" > /dev/null; then
@@ -119,10 +120,22 @@ update_filvora() {
     echo "==> 2. Applying Django database migrations..."
     python manage.py migrate
     echo "==> 3. Restarting Filvora server (Port 8000)..."
+    pkill -9 -f "gunicorn.*8000" 2>/dev/null
     pkill -9 -f "runserver.*8000" 2>/dev/null
-    pkill -9 -f "Filvora.*manage.py runserver" 2>/dev/null
+    pkill -9 -f "Filvora.*manage.py" 2>/dev/null
     sleep 1
-    nohup python manage.py runserver 0.0.0.0:8000 >> ~/filvora.log 2>&1 < /dev/null &
+    if command -v gunicorn > /dev/null 2>&1; then
+        nohup gunicorn config.wsgi:application \
+            --bind 0.0.0.0:8000 \
+            --workers 2 \
+            --threads 4 \
+            --max-requests 1000 \
+            --max-requests-jitter 100 \
+            --timeout 30 \
+            --log-file ~/filvora.log >> ~/filvora.log 2>&1 < /dev/null &
+    else
+        nohup python manage.py runserver 0.0.0.0:8000 --noreload >> ~/filvora.log 2>&1 < /dev/null &
+    fi
     sleep 2
     echo "=================================================="
     echo " ✅ Filvora updated and running at Port 8000!"

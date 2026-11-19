@@ -73,7 +73,7 @@ def movie_browse(request):
 
     pagination = get_pagination_context(page)
 
-    return render(request, 'catalog/movie_browse.html', {
+    response = render(request, 'catalog/movie_browse.html', {
         'movies': movies,
         'genres': genres,
         'selected_category': category,
@@ -83,6 +83,9 @@ def movie_browse(request):
         'pagination': pagination,
         'user_saved_ids': user_saved_ids
     })
+    if not request.user.is_authenticated:
+        response['Cache-Control'] = 'public, max-age=180, stale-while-revalidate=600'
+    return response
 
 def movie_detail(request, tmdb_id):
     try:
@@ -244,7 +247,7 @@ def series_browse(request):
 
     pagination = get_pagination_context(page)
 
-    return render(request, 'catalog/series_browse.html', {
+    response = render(request, 'catalog/series_browse.html', {
         'series_list': series_list,
         'genres': genres,
         'selected_category': category,
@@ -254,6 +257,9 @@ def series_browse(request):
         'pagination': pagination,
         'user_saved_ids': user_saved_ids
     })
+    if not request.user.is_authenticated:
+        response['Cache-Control'] = 'public, max-age=180, stale-while-revalidate=600'
+    return response
 
 
 def format_season_runtime(minutes: int) -> str:

@@ -792,6 +792,48 @@ class AdminDashboardTestCase(TestCase):
         self.assertIn('e.button !== 0 && e.button !== 2', js)
         self.assertIn('requestAnimationFrame(step)', js)
 
+    def test_mobile_host_sqlite_pragmas_and_mmap(self):
+        """Verifies SQLite PRAGMAs include WAL, memory-mapped I/O (128MB), RAM cache, and memory temp store for phone flash endurance."""
+        from django.conf import settings
+        db_opts = settings.DATABASES['default'].get('OPTIONS', {})
+        init_cmd = db_opts.get('init_command', '')
+        self.assertIn('PRAGMA journal_mode=WAL;', init_cmd)
+        self.assertIn('PRAGMA synchronous=NORMAL;', init_cmd)
+        self.assertIn('PRAGMA mmap_size=134217728;', init_cmd)
+        self.assertIn('PRAGMA cache_size=-8000;', init_cmd)
+        self.assertIn('PRAGMA temp_store=MEMORY;', init_cmd)
+
+    def test_bounded_log_rotation_configuration(self):
+        """Verifies server logging enforces 5MB maximum file size with 2 backups to prevent phone flash storage bloat."""
+        from django.conf import settings
+        logging_conf = getattr(settings, 'LOGGING', {})
+        handlers = logging_conf.get('handlers', {})
+        self.assertIn('rotating_file', handlers)
+        rotating = handlers['rotating_file']
+        self.assertEqual(rotating['class'], 'logging.handlers.RotatingFileHandler')
+        self.assertLessEqual(rotating['maxBytes'], 5 * 1024 * 1024)
+        self.assertLessEqual(rotating['backupCount'], 2)
+
+    def test_whitenoise_and_static_cache_configuration(self):
+        """Verifies WhiteNoise middleware is configured for compressed, immutable static asset serving."""
+        from django.conf import settings
+        self.assertIn('whitenoise.middleware.WhiteNoiseMiddleware', settings.MIDDLEWARE)
+        self.assertIn('whitenoise', settings.STATICFILES_STORAGE.lower())
+        self.assertTrue(getattr(settings, 'WHITENOISE_USE_FINDERS', False))
+
+    def test_mobile_bottom_navigation_dock_rendered(self):
+        """Verifies mobile bottom navigation dock renders with links to Home, Discover, Movies, Series, and My List."""
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode('utf-8')
+        self.assertIn('Mobile Ergonomic Bottom Navigation Dock', html)
+        self.assertIn('href="/"', html)
+        self.assertIn('href="/discover/"', html)
+        self.assertIn('href="/movies/"', html)
+        self.assertIn('href="/series/"', html)
+        self.assertIn('href="/library/"', html)
+
+
 
 
 
