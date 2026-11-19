@@ -208,7 +208,9 @@
     </div>
 
     <!-- Navbar -->
+    {% block navbar %}
     {% include 'includes/navbar.html' %}
+    {% endblock %}
 
     <!-- Main Content -->
     <main class="flex-grow">
@@ -216,6 +218,7 @@
     </main>
 
     <!-- Filvora v2.0 Modern Footer -->
+    {% block footer %}
     <footer class="mt-20 border-t border-gray-800/60 bg-gray-950/80 backdrop-blur-xl text-gray-400">
         <div class="max-w-7xl mx-auto px-6 md:px-12 py-12">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
@@ -283,8 +286,10 @@
             </div>
         </div>
     </footer>
+    {% endblock %}
 
     <!-- Mobile Bottom Navigation Bar (App-Style UX for Mobile with Safe Area Support) -->
+    {% block mobile_nav %}
     <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-950/95 backdrop-blur-2xl border-t border-gray-800/90 px-3 pt-2 flex items-center justify-around text-[10px] font-semibold text-gray-400 shadow-2xl"
          style="padding-bottom: max(0.6rem, env(safe-area-inset-bottom, 0px));">
         <a href="/" class="flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all duration-200 active:scale-90 {% if request.path == '/' %}text-brand-500 font-bold bg-brand-500/10 shadow-sm ring-1 ring-brand-500/20{% else %}hover:text-white text-gray-400{% endif %}">
@@ -327,6 +332,7 @@
         </a>
         {% endif %}
     </nav>
+    {% endblock %}
 
     <!-- Universal Cinematic Trailer Modal -->
     {% include 'components/trailer_modal.html' %}

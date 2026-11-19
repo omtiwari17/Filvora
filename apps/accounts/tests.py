@@ -111,3 +111,36 @@ class AccountsTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn('/accounts/login/', response.url)
 
+    def test_login_view_renders_minimalist_auth_header(self):
+        response = self.client.get('/accounts/login/')
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        # Minimalist auth header should be present
+        self.assertIn('Sign Up', content)
+        self.assertIn('Browse Catalog', content)
+        self.assertIn('id_username', content)
+        self.assertIn('id_password', content)
+        self.assertIn('togglePasswordVisibility', content)
+        # Global header search should NOT be present on distraction-free auth view
+        self.assertNotIn('id="header-search"', content)
+
+    def test_login_valid_submission(self):
+        response = self.client.post('/accounts/login/', {
+            'username': 'accountuser',
+            'password': 'password123'
+        })
+        self.assertEqual(response.status_code, 302)
+
+    def test_register_view_renders_minimalist_auth_header(self):
+        response = self.client.get('/accounts/register/')
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        self.assertIn('Sign In', content)
+        self.assertIn('Browse Catalog', content)
+        self.assertIn('id_username', content)
+        self.assertIn('id_password1', content)
+        self.assertIn('id_password2', content)
+        self.assertIn('togglePasswordVisibility', content)
+        self.assertNotIn('id="header-search"', content)
+
+

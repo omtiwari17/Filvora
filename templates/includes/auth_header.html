@@ -1,0 +1,31 @@
+{% load static %}
+<!-- Minimalist Distraction-Free Auth Header (Zero-Emoji, Strict Lucide SVG) -->
+<header class="absolute top-0 left-0 right-0 z-50 px-4 sm:px-8 py-4 sm:py-6 flex items-center justify-between">
+    <!-- Brand Logo -->
+    <a href="/" class="flex items-center gap-2 group transition-transform duration-200 hover:scale-105" title="Return to Filvora Home">
+        <img src="{% static 'icons/favicon.svg' %}" alt="Filvora Logo" class="w-8 h-8 rounded-xl shadow-lg shadow-brand-500/25">
+        <span class="text-xl sm:text-2xl font-black bg-gradient-to-r from-brand-500 via-rose-500 to-amber-500 bg-clip-text text-transparent tracking-tighter">FILVORA</span>
+        <span class="bg-gradient-to-r from-red-600 to-rose-500 text-[10px] font-black text-white px-2 py-0.5 rounded-full ring-1 ring-white/20">v2.5</span>
+    </a>
+
+    <!-- Contextual Auth Actions -->
+    <div class="flex items-center gap-2 sm:gap-3.5">
+        {% if auth_mode == 'login' %}
+            <span class="hidden sm:inline text-xs text-zinc-400">New to Filvora?</span>
+            <a href="/accounts/register/" class="px-3.5 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 hover:text-white font-semibold text-xs border border-white/10 hover:border-white/20 transition shadow-sm active:scale-95">
+                Sign Up
+            </a>
+        {% else %}
+            <span class="hidden sm:inline text-xs text-zinc-400">Already have an account?</span>
+            <a href="/accounts/login/" class="px-3.5 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 hover:text-white font-semibold text-xs border border-white/10 hover:border-white/20 transition shadow-sm active:scale-95">
+                Sign In
+            </a>
+        {% endif %}
+        <a href="/" class="hidden md:inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition pl-2 border-l border-white/10">
+            <span>Browse Catalog</span>
+            <svg class="w-3.5 h-3.5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+        </a>
+    </div>
+</header>

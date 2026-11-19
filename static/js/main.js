@@ -1865,3 +1865,22 @@ function closeQuickPeekModal() {
     triggerHaptic(8);
 }
 window.closeQuickPeekModal = closeQuickPeekModal;
+
+// --- Password Visibility Toggle Engine ---
+function togglePasswordVisibility(inputId, btnEl) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    if (btnEl) {
+        btnEl.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+        btnEl.setAttribute('title', isPassword ? 'Hide password' : 'Show password');
+        const eyeIcon = btnEl.querySelector('.pwd-eye-icon');
+        const eyeOffIcon = btnEl.querySelector('.pwd-eye-off-icon');
+        if (eyeIcon && eyeOffIcon) {
+            eyeIcon.classList.toggle('hidden', isPassword);
+            eyeOffIcon.classList.toggle('hidden', !isPassword);
+        }
+    }
+}
+window.togglePasswordVisibility = togglePasswordVisibility;
