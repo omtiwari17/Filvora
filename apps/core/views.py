@@ -106,6 +106,15 @@ class HomeView(TemplateView):
                 key = (p.media_type, p.tmdb_id)
                 if key not in seen:
                     seen.add(key)
+                    rem_display = ""
+                    if p.duration_seconds and p.duration_seconds > p.position_seconds:
+                        rem_secs = max(0, p.duration_seconds - p.position_seconds)
+                        rem_mins = int(rem_secs // 60)
+                        if rem_mins >= 60:
+                            rem_display = f"{rem_mins // 60}h {rem_mins % 60}m left"
+                        elif rem_mins > 0:
+                            rem_display = f"{rem_mins}m left"
+
                     raw_cw_entries.append({
                         'tmdb_id': p.tmdb_id,
                         'media_type': p.media_type,
@@ -113,12 +122,27 @@ class HomeView(TemplateView):
                         'episode': p.episode,
                         'progress_percentage': p.progress_percentage,
                         'position_seconds': p.position_seconds,
+                        'duration_seconds': p.duration_seconds,
+                        'remaining_display': rem_display,
                     })
                 if len(raw_cw_entries) >= 10:
                     break
         else:
             from apps.watch.guest_session import get_guest_progress_map
-            raw_cw_entries = list(get_guest_progress_map(self.request).values())
+            guest_entries = list(get_guest_progress_map(self.request).values())
+            for entry in guest_entries:
+                pos = entry.get('position_seconds', 0)
+                dur = entry.get('duration_seconds', 0)
+                rem_display = ""
+                if dur and dur > pos:
+                    rem_secs = max(0, dur - pos)
+                    rem_mins = int(rem_secs // 60)
+                    if rem_mins >= 60:
+                        rem_display = f"{rem_mins // 60}h {rem_mins % 60}m left"
+                    elif rem_mins > 0:
+                        rem_display = f"{rem_mins}m left"
+                entry['remaining_display'] = rem_display
+                raw_cw_entries.append(entry)
 
         if raw_cw_entries and not client.is_offline():
             with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(raw_cw_entries), 6)) as ex:
@@ -143,6 +167,7 @@ class HomeView(TemplateView):
                     data['media_type'] = mtype
                     data['progress_percentage'] = entry['progress_percentage']
                     data['position_seconds'] = entry['position_seconds']
+                    data['remaining_display'] = entry.get('remaining_display', '')
                     return data
                 continue_watching = list(ex.map(_fetch_cw_item, raw_cw_entries))
         elif raw_cw_entries and client.is_offline():
@@ -160,6 +185,7 @@ class HomeView(TemplateView):
                     'watch_url': f"/watch/{mtype}/{tid}/" if mtype == 'movie' else f"/watch/tv/{tid}/{s_num}/{ep_num}/",
                     'progress_percentage': entry['progress_percentage'],
                     'position_seconds': entry['position_seconds'],
+                    'remaining_display': entry.get('remaining_display', ''),
                     'poster_path': None
                 })
 

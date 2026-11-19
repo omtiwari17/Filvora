@@ -101,13 +101,13 @@
                     {% endif %}
 
                     {% if movie.ott_release_display or movie.digital_release_display %}
-                    <div class="flex items-center gap-1.5 bg-gradient-to-r from-blue-950/70 via-indigo-950/70 to-blue-900/50 border border-blue-500/40 px-3 py-1.5 rounded-lg text-blue-200 shadow-sm backdrop-blur-sm">
+                    <div class="flex items-center gap-2 bg-gradient-to-r from-blue-950/70 via-indigo-950/70 to-blue-900/50 border border-blue-500/40 px-3 py-1.5 rounded-lg text-blue-200 shadow-sm backdrop-blur-sm flex-wrap">
                         <svg class="w-4 h-4 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
                         <span>OTT / Digital: <strong class="text-white font-semibold">{{ movie.ott_release_display|default:movie.digital_release_display }}</strong></span>
                         {% if movie.ott_platform %}
-                        <span class="bg-blue-500/20 text-blue-300 text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-500/30">{{ movie.ott_platform }}</span>
+                        {% include 'components/platform_badge.html' with platform=movie.ott_platform %}
                         {% endif %}
                         {% if movie.ott_status == 'upcoming' %}
                         <span class="bg-indigo-500/20 text-indigo-300 text-[10px] font-bold px-1.5 py-0.5 rounded border border-indigo-500/30">Upcoming</span>
@@ -118,9 +118,13 @@
                     {% endif %}
 
                     {% if movie.streaming_providers %}
-                    <div class="hidden sm:flex items-center gap-1.5 bg-gray-900/80 border border-gray-700/80 px-3 py-1.5 rounded-lg text-gray-300 shadow-sm backdrop-blur-sm">
-                        <span class="text-gray-400 font-medium">Streaming on:</span>
-                        <span class="text-white font-semibold">{{ movie.streaming_providers|slice:":2"|join:", " }}</span>
+                    <div class="hidden sm:flex items-center gap-2 bg-zinc-900/80 border border-zinc-700/80 px-3 py-1.5 rounded-lg text-zinc-300 shadow-sm backdrop-blur-sm">
+                        <span class="text-zinc-400 font-medium">Streaming on:</span>
+                        <div class="flex items-center gap-1.5">
+                            {% for p in movie.streaming_providers|slice:":2" %}
+                            {% include 'components/platform_badge.html' with platform=p %}
+                            {% endfor %}
+                        </div>
                     </div>
                     {% endif %}
                 </div>

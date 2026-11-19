@@ -833,6 +833,61 @@ class AdminDashboardTestCase(TestCase):
         self.assertIn('href="/series/"', html)
         self.assertIn('href="/library/"', html)
 
+    def test_continue_watching_remaining_display_and_glow_bar(self):
+        """Verifies Continue Watching calculates remaining_display (e.g. Xm left) and renders glow bar."""
+        self.client.login(username='regular', password='password123')
+        # 1200 position, 3600 duration -> 2400 remaining (40m left)
+        WatchProgress.objects.create(
+            user=self.regular_user,
+            tmdb_id=157336,
+            media_type='movie',
+            position_seconds=1200,
+            duration_seconds=3600,
+            completed=False
+        )
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['continue_watching']), 1)
+        cw_item = response.context['continue_watching'][0]
+        self.assertEqual(cw_item['remaining_display'], '40m left')
+        html = response.content.decode('utf-8')
+        self.assertIn('40m left', html)
+        self.assertIn('shadow-[0_0_8px_rgba(229,9,20,0.8)]', html)
+
+    def test_user_watch_context_progress_map(self):
+        """Verifies user_watch_context populates user_progress_map for in-progress titles (5% to 95%)."""
+        self.client.login(username='regular', password='password123')
+        WatchProgress.objects.create(
+            user=self.regular_user,
+            tmdb_id=99999,
+            media_type='movie',
+            position_seconds=1800,
+            duration_seconds=3600, # 50%
+            completed=False
+        )
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('user_progress_map', response.context)
+        self.assertIn('movie:99999', response.context['user_progress_map'])
+        self.assertEqual(response.context['user_progress_map']['movie:99999'], 50.0)
+
+    def test_platform_badge_svg_rendering(self):
+        """Verifies platform_badge component renders official SVG vector logos for major streaming services."""
+        from django.template.loader import render_to_string
+        disney_html = render_to_string('components/platform_badge.html', {'platform': 'Disney+'})
+        self.assertIn('Disney+', disney_html)
+        self.assertIn('<svg', disney_html)
+
+        netflix_html = render_to_string('components/platform_badge.html', {'platform': 'Netflix'})
+        self.assertIn('Netflix', netflix_html)
+        self.assertIn('#e50914', netflix_html)
+
+        apple_html = render_to_string('components/platform_badge.html', {'platform': 'Apple TV+'})
+        self.assertIn('Apple TV+', apple_html)
+
+        prime_html = render_to_string('components/platform_badge.html', {'platform': 'Prime Video'})
+        self.assertIn('Prime Video', prime_html)
+
 
 
 

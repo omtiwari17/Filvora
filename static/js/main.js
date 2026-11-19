@@ -64,8 +64,19 @@ function initNavbar() {
     });
 }
 
+// --- Mobile Haptic Touch Feedback (Web Vibration API) ---
+function triggerHaptic(duration = 10) {
+    if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        try {
+            navigator.vibrate(duration);
+        } catch (e) {}
+    }
+}
+window.triggerHaptic = triggerHaptic;
+
 // --- Mobile Dedicated Search ---
 function openMobileSearch() {
+    triggerHaptic(10);
     const overlay = document.getElementById('mobile-search-overlay');
     const backdrop = document.getElementById('mobile-search-backdrop');
     const input = document.getElementById('mobile-search-input');
@@ -82,6 +93,7 @@ function openMobileSearch() {
 }
 
 function closeMobileSearch() {
+    triggerHaptic(8);
     const overlay = document.getElementById('mobile-search-overlay');
     const backdrop = document.getElementById('mobile-search-backdrop');
     const dropdown = document.getElementById('mobile-search-results-dropdown');
@@ -290,9 +302,17 @@ function fallbackCopyToClipboard(text, message) {
     }
 }
 
-// --- HTMX Interactive Feedback ---
+// --- HTMX Interactive Feedback & Haptic Confirmation ---
 function initHtmxFeedback() {
+    document.body.addEventListener('htmx:beforeRequest', (event) => {
+        const el = event.detail.elt;
+        if (el && (el.matches('button, a, .star-opt, [hx-post], .quick-rate-btn'))) {
+            triggerHaptic(10);
+        }
+    });
+
     document.body.addEventListener('htmx:afterSwap', (event) => {
+        triggerHaptic(14);
         if (event.detail.target && event.detail.target.matches('button[hx-post*="/library/toggle/"]')) {
             const titleAttr = event.detail.target.getAttribute('title') || '';
             if (titleAttr.includes('Saved') || titleAttr.includes('Remove')) {
@@ -1144,6 +1164,7 @@ function renderMobileSheetState(isSaved, isWatched, score) {
 }
 
 function openCardQuickSheet(triggerEl) {
+    triggerHaptic(12);
     const sheet = document.getElementById('mobile-card-sheet');
     const backdrop = document.getElementById('mobile-card-sheet-backdrop');
     if (!sheet || !backdrop || !triggerEl) return;
@@ -1217,6 +1238,7 @@ function openCardQuickSheet(triggerEl) {
 window.openCardQuickSheet = openCardQuickSheet;
 
 function closeCardQuickSheet() {
+    triggerHaptic(8);
     const sheet = document.getElementById('mobile-card-sheet');
     const backdrop = document.getElementById('mobile-card-sheet-backdrop');
     if (!sheet || !backdrop || sheet.classList.contains('hidden')) return;

@@ -1,0 +1,66 @@
+{% comment %}
+Filvora - Streaming Platform Brand Badge with Official SVG Vector Logos
+Usage: {% include 'components/platform_badge.html' with platform=movie.ott_platform %}
+       {% include 'components/platform_badge.html' with platform=provider_name variant='mini' %}
+{% endcomment %}
+{% with p_lower=platform|lower %}
+{% if 'disney' in p_lower %}
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#040814]/90 border border-[#0063e5]/40 text-[#4bc0ff] text-[11px] font-bold shadow-sm shadow-[#0063e5]/10 hover:border-[#0063e5]/70 transition" title="{{ platform }}">
+    <svg class="w-3.5 h-3.5 shrink-0 fill-current" viewBox="0 0 24 24">
+        <!-- Disney+ Arched Crest Mark -->
+        <path d="M11.5 2C6.25 2 2 6.25 2 11.5c0 3.8 2.2 7.08 5.4 8.6-.2-1.2-.2-2.7.1-3.9l.8-3.2s-.2-.4-.2-1c0-1 .6-1.7 1.3-1.7.6 0 .9.5.9 1 0 .6-.4 1.6-.6 2.5-.2.8.4 1.4 1.2 1.4 1.4 0 2.5-1.5 2.5-3.7 0-1.9-1.4-3.3-3.4-3.3-2.5 0-3.9 1.9-3.9 3.8 0 .8.3 1.6.7 2.1.1.1.1.2 0 .4l-.3 1.1c0 .2-.2.2-.4.1-1.3-.6-2.1-2.5-2.1-4 0-3.3 2.4-6.3 6.9-6.3 3.6 0 6.5 2.6 6.5 6.1 0 3.6-2.3 6.5-5.4 6.5-1.1 0-2.1-.6-2.4-1.2l-.7 2.6c-.3 1-.9 2.3-1.4 3.1 1.1.3 2.2.5 3.4.5 5.25 0 9.5-4.25 9.5-9.5S16.75 2 11.5 2z"/>
+        <path d="M20.5 11.5h-2v-2h-1v2h-2v1h2v2h1v-2h2z" fill="#00d6fe"/>
+    </svg>
+    <span class="tracking-tight text-white font-bold">Disney+</span>
+</span>
+{% elif 'netflix' in p_lower %}
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#140203]/90 border border-[#e50914]/40 text-[#ff333a] text-[11px] font-bold shadow-sm shadow-[#e50914]/10 hover:border-[#e50914]/70 transition" title="{{ platform }}">
+    <svg class="w-3.5 h-3.5 shrink-0 fill-[#e50914]" viewBox="0 0 24 24">
+        <!-- Netflix Iconic N Ribbon -->
+        <path d="M4 2h4.2l5.6 13.5V2H18v20h-4.2L8.2 8.5V22H4V2z"/>
+    </svg>
+    <span class="tracking-tight text-white font-bold">Netflix</span>
+</span>
+{% elif 'apple' in p_lower %}
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900/90 border border-white/20 text-zinc-100 text-[11px] font-bold shadow-sm hover:border-white/40 transition" title="{{ platform }}">
+    <svg class="w-3.5 h-3.5 shrink-0 fill-current" viewBox="0 0 24 24">
+        <!-- Apple Logo -->
+        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 0.93-2.85-.9.04-1.99.6-2.63 1.35-.56.64-1.05 1.7-0.92 2.73 1.01.08 2.03-.5 2.62-1.23z"/>
+    </svg>
+    <span class="tracking-tight text-white font-bold">Apple TV+</span>
+</span>
+{% elif 'prime' in p_lower or 'amazon' in p_lower %}
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#001726]/90 border border-[#00a8e1]/40 text-[#00a8e1] text-[11px] font-bold shadow-sm shadow-[#00a8e1]/10 hover:border-[#00a8e1]/70 transition" title="{{ platform }}">
+    <svg class="w-3.5 h-3.5 shrink-0 fill-current" viewBox="0 0 24 24">
+        <!-- Prime Smile Curved Arrow -->
+        <path d="M13.8 15.5c-3.1 2.2-7.5 3.4-11.4 3.4-2.3 0-4.1-.3-5.4-.9-.4-.2-.5-.7-.1-.9.3-.2.9-.2 1.4-.1 3.5 1.1 7.4.8 10.6-.7.6-.3 1.2.2.8.6l-1.9 1.6z"/>
+        <path d="M19.5 8c-.2 0-.4.2-.4.4v7.2c0 .2.2.4.4.4s.4-.2.4-.4V8.4c0-.2-.2-.4-.4-.4zM16 9.8c-.2 0-.4.2-.4.4v5.4c0 .2.2.4.4.4s.4-.2.4-.4v-5.4c0-.2-.2-.4-.4-.4zM8.5 7.6C6.6 7.6 5 9.2 5 11.1c0 1.9 1.6 3.5 3.5 3.5 1 0 1.9-.4 2.5-1.1v.7c0 .2.2.4.4.4s.4-.2.4-.4V8c0-.2-.2-.4-.4-.4s-.4.2-.4.4v.7c-.6-.7-1.5-1.1-2.5-1.1zm0 .9c1.4 0 2.6 1.2 2.6 2.6s-1.2 2.6-2.6 2.6-2.6-1.2-2.6-2.6 1.2-2.6 2.6-2.6z"/>
+    </svg>
+    <span class="tracking-tight text-white font-bold">Prime Video</span>
+</span>
+{% elif 'max' in p_lower or 'hbo' in p_lower %}
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0e031a]/90 border border-[#9b51e0]/40 text-[#c77dff] text-[11px] font-bold shadow-sm shadow-[#9b51e0]/10 hover:border-[#9b51e0]/70 transition" title="{{ platform }}">
+    <svg class="w-3.5 h-3.5 shrink-0 fill-current" viewBox="0 0 24 24">
+        <!-- Max / HBO Lettermark Ring -->
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+        <path d="M8 8v8M16 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <span class="tracking-tight text-white font-bold">Max</span>
+</span>
+{% elif 'hulu' in p_lower %}
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#02180a]/90 border border-[#1ce783]/40 text-[#1ce783] text-[11px] font-bold shadow-sm shadow-[#1ce783]/10 hover:border-[#1ce783]/70 transition" title="{{ platform }}">
+    <svg class="w-3.5 h-3.5 shrink-0 fill-current" viewBox="0 0 24 24">
+        <!-- Hulu Brand Mark -->
+        <path d="M4 6v12h3.5v-4.5h4.5V18h3.5V6h-3.5v4.5H7.5V6H4z"/>
+    </svg>
+    <span class="tracking-tight text-white font-bold">Hulu</span>
+</span>
+{% else %}
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900/90 border border-zinc-700/80 text-zinc-300 text-[11px] font-bold shadow-sm hover:border-zinc-500 transition" title="{{ platform }}">
+    <svg class="w-3.5 h-3.5 shrink-0 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+    </svg>
+    <span class="tracking-tight text-white font-semibold">{{ platform }}</span>
+</span>
+{% endif %}
+{% endwith %}
