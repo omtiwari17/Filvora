@@ -265,10 +265,12 @@ echo "==> Creating secure anonymous Cloudflare Quick Tunnel for Filvora..."
 nohup cloudflared tunnel --url http://localhost:8000 > ~/filvora-tunnel.log 2>&1 < /dev/null &
 
 echo "==> Connecting to Cloudflare edge..."
-for i in 1 2 3 4 5 6; do
+for i in $(seq 1 15); do
     sleep 1
-    URL=$(grep -o 'https://[-a-zA-Z0-9]*\.trycloudflare\.com' ~/filvora-tunnel.log | head -n 1)
+    printf "."
+    URL=$(grep -o 'https://[-a-zA-Z0-9]*\.trycloudflare\.com' ~/filvora-tunnel.log 2>/dev/null | head -n 1)
     if [ -n "$URL" ]; then
+        echo ""
         echo "=================================================="
         echo " 🎬 FILVORA PUBLIC STREAMING LINK IS READY!"
         echo " $URL"
@@ -279,6 +281,7 @@ for i in 1 2 3 4 5 6; do
         exit 0
     fi
 done
+echo ""
 
 echo "Tunnel started in background. Check your URL with:"
 echo "cat ~/filvora-tunnel.log | grep trycloudflare"
